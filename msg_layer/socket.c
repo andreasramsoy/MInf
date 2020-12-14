@@ -21,6 +21,16 @@ enum {
 	SEND_FLAG_POSTED = 0,
 };
 
+
+struct message_node {
+	uint32_t address;
+	bool enabled;
+	//protocol_type protocol; //define acceptable protocols
+	struct sock_handle *handle;
+	struct transport_socket transport;
+}
+
+
 struct q_item {
 	struct pcn_kmsg_message *msg;
 	unsigned long flags;
@@ -32,7 +42,7 @@ struct sock_handle {
 	int nid;
 
 	/* Ring buffer for queueing outbound messages */
-	struct q_item *msg_q;
+	struct q_item *msg_q;s
 	unsigned long q_head;
 	unsigned long q_tail;
 	spinlock_t q_lock;
@@ -43,7 +53,7 @@ struct sock_handle {
 	struct task_struct *send_handler;
 	struct task_struct *recv_handler;
 };
-static struct sock_handle sock_handles[MAX_NUM_NODES] = {};
+//static struct sock_handle sock_handles[MAX_NUM_NODES] = {}; //////////////////////////////////////
 
 static struct socket *sock_listen = NULL;
 static struct ring_buffer send_buffer = {};
@@ -145,7 +155,7 @@ static int enq_send(int dest_nid, struct pcn_kmsg_message *msg, unsigned long fl
 {
 	int ret;
 	unsigned long at;
-	struct sock_handle *sh = sock_handles + dest_nid;
+	struct sock_handle *sh = get_node(dest_nid).handle;
 	struct q_item *qi;
 	do {
 		ret = down_interruptible(&sh->q_full);
@@ -266,9 +276,9 @@ int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 	DECLARE_COMPLETION_ONSTACK(done);
 	enq_send(dest_nid, msg, 0, &done);
 
-	if (!try_wait_for_completion(&done)) {
-		int ret = wait_for_completion_io_timeout(&done, 60 * HZ);
-		if (!ret) return -EAGAIN;
+	if (!try_wait_for_completion(&done)) { 
+		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
+		if (!ret) return -EAGAIN;df
 	}
 	return 0;
 }
@@ -317,14 +327,11 @@ static int __show_peers(struct seq_file *seq, void *v)
 {	
 	int i;
 	char* myself = " ";	
-	for (i = 0; i < MAX_NUM_NODES; i++) 
+	for (i = 0; i < node_list_length; i++) 
 	{
 		if (i == my_nid) myself = "*";
-		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n",
-				myself,
-                                i,
-                                NIPQUAD(ip_table[i]),
-                                "NODE_IP");
+		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n", myself,
+		           i, NIPQUAD(get_node(i).address), "NODE_IP");
 		myself = " ";
 	}
 	return 0;
@@ -362,7 +369,7 @@ static struct task_struct * __init __start_handler(const int nid, const char *ty
 	struct task_struct *tsk;
 
 	sprintf(name, "pcn_%s_%d", type, nid);
-	tsk = kthread_run(handler, sock_handles + nid, name);
+	tsk = kthread_run(handler, get_node(nid).handle, name);
 	if (IS_ERR(tsk)) {
 		printk(KERN_ERR "Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
 		return tsk;
@@ -391,8 +398,8 @@ static int __start_handlers(const int nid)
 		kthread_stop(tsk_send);
 		return PTR_ERR(tsk_recv);
 	}
-	sock_handles[nid].send_handler = tsk_send;
-	sock_handles[nid].recv_handler = tsk_recv;
+	get_node(nid).handle.send_handler = tsk_send;
+	get_node(nid).handle.recv_handler = tsk_recv;
 	return 0;
 }
 
@@ -410,9 +417,9 @@ static int __init __connect_to_server(int nid)
 
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT);
-	addr.sin_addr.s_addr = ip_table[nid];
+	addr.sin_addr.s_addr = get_node(nid).address;
 
-	MSGPRINTK("Connecting to %d at %pI4\n", nid, ip_table + nid);
+	MSGPRINTK("Connecting to %d at %pI4\n", nid, get_node(nid).address);
 	do {
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
@@ -421,7 +428,7 @@ static int __init __connect_to_server(int nid)
 		}
 	} while (ret < 0);
 
-	sock_handles[nid].sock = sock;
+	get_node(nid).handle.sock = sock;
 	ret = __start_handlers(nid);
 	if (ret) return ret;
 
@@ -457,8 +464,8 @@ static int __init __accept_client(int *nid)
 		}
 
 		/* Identify incoming peer nid */
-		for (i = 0; i < MAX_NUM_NODES; i++) {
-			if (addr.sin_addr.s_addr == ip_table[i]) {
+		for (i = 0; i < node_list_length; i++) {
+			if (addr.sin_addr.s_addr == get_node(i).address) {
 				*nid = i;
 				found = true;
 			}
@@ -470,7 +477,7 @@ static int __init __accept_client(int *nid)
 	} while (retry++ < 10 && !found);
 
 	if (!found) return -EAGAIN;
-	sock_handles[*nid].sock = sock;
+	get_node(*nid).handle.sock = sock;
 
 	ret = __start_handlers(*nid);
 	if (ret) goto out_release;
@@ -503,7 +510,7 @@ static int __init __listen_to_connection(void)
 		goto out_release;
 	}
 
-	ret = kernel_listen(sock_listen, MAX_NUM_NODES);
+	ret = kernel_listen(sock_listen, node_list_length);
 	if (ret < 0) {
 		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
 		goto out_release;
@@ -524,8 +531,8 @@ static void __exit exit_kmsg_sock(void)
 
 	if (sock_listen) sock_release(sock_listen);
 
-	for (i = 0; i < MAX_NUM_NODES; i++) {
-		struct sock_handle *sh = sock_handles + i;
+	for (i = 0; i < node_list_length; i++) {
+		struct sock_handle *sh = get_node(i).handle;
 		if (sh->send_handler) {
 			kthread_stop(sh->send_handler);
 		} else {
@@ -540,6 +547,8 @@ static void __exit exit_kmsg_sock(void)
 	}
 	ring_buffer_destroy(&send_buffer);
 
+	node_list_destroy();
+
 	MSGPRINTK("Successfully unloaded module!\n");
 }
 
@@ -552,8 +561,8 @@ static int __init init_kmsg_sock(void)
 	if (!identify_myself()) return -EINVAL;
 	pcn_kmsg_set_transport(&transport_socket);
 
-	for (i = 0; i < MAX_NUM_NODES; i++) {
-		struct sock_handle *sh = sock_handles + i;
+	for (i = 0; i < node_list_length; i++) {
+		struct sock_handle *sh = get_node(i).handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
 		if (!sh->msg_q) {
@@ -594,7 +603,7 @@ static int __init init_kmsg_sock(void)
 
 	set_popcorn_node_online(my_nid, true);
 
-	for (i = my_nid + 1; i < MAX_NUM_NODES; i++) {
+	for (i = my_nid + 1; i < node_list_length; i++) {
 		int nid;
 		if ((ret = __accept_client(&nid))) goto out_exit;
 		set_popcorn_node_online(nid, true);

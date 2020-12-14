@@ -20,13 +20,76 @@
 
 #include "config.h"
 
-#define MAX_NUM_NODES		ARRAY_SIZE(ip_addresses)
-static uint32_t ip_table[MAX_NUM_NODES] = { 0 };
+int node_list_length = 0;
+int MAX_NUM_NODES = 64; //absolute maximum number of nodes
+message_node* node_list[MAX_NUM_NODES]; //Do not access directly! Use get_node(i) function
 
 
 static char *ip = "N";
 module_param(ip,charp, 0000);
 MODULE_PARM_DESC(ip, "");
+
+/* function to access the node_list safely, will return 1 if invalid request */
+message_node get_node(int index) {
+	if (index >= node_list_length) {
+		MSGPRINTK("Attempted to get details of node %d, but only %d exist (indexed from zero)\n", index, node_list_length);
+		/*
+				Decide what should be done in the event of an error? *****************
+		*/
+		return 1;
+	}
+	else {
+		return node_list[index];
+	}
+}
+
+void load_node_list() {
+	MSGPRINTK("Populating the list of nodes\n");
+	/*
+		Stub for getting this data from a file, nodes are currently hard-coded
+	*/
+	node_list_length = 2; ///////REMEMBER TO UPDATE THE MAX_NUM_NODES
+	node_list[0] = kmalloc(sizeof(message_node), GFP_KERNEL);
+	struct message_node node_list[0] = {
+		.address = in_aton("192.168.10.100")
+		.enabled = true;
+		.transport = { //copied the tcp socket
+			.name = "socket",
+			.features = 0,
+
+			.get = sock_kmsg_get,
+			.put = sock_kmsg_put,
+			.stat = sock_kmsg_stat,
+
+			.send = sock_kmsg_send,
+			.post = sock_kmsg_post,
+			.done = sock_kmsg_done,
+		};
+	};
+	node_list[1] = kmalloc(sizeof(message_node), GFP_KERNEL);
+	struct message_node node_list[1] = {
+		.address = in_aton("192.168.10.101")
+		.enabled = true;
+		.transport = { //copied the tcp socket
+			.name = "socket",
+			.features = 0,
+
+			.get = sock_kmsg_get,
+			.put = sock_kmsg_put,
+			.stat = sock_kmsg_stat,
+
+			.send = sock_kmsg_send,
+			.post = sock_kmsg_post,
+			.done = sock_kmsg_done,
+		};
+	};
+}
+
+void node_list_destroy() {
+	for (int i = 0; i < node_list_length; i++) {
+		kfree(get_node(i));
+	}
+}
 
 static uint32_t __init __get_host_ip(void)
 {
@@ -38,7 +101,7 @@ static uint32_t __init __get_host_ip(void)
 			int i;
 			uint32_t addr = ifaddr->ifa_local;
 			for (i = 0; i < MAX_NUM_NODES; i++) {
-				if (addr == ip_table[i]) {
+				if (addr == get_node(i).address) {
 					return addr;
 				}
 			}
@@ -49,7 +112,7 @@ static uint32_t __init __get_host_ip(void)
 
 bool __init identify_myself(void)
 {
-	int i;
+	/*int i;
 	uint32_t my_ip;
 	printk("%s\n",ip);
 	if(ip[0]=='N'){
@@ -63,40 +126,42 @@ bool __init identify_myself(void)
 		PCNPRINTK("Loading user configuration...\n");
 		int j, k = 0;
 		char* tem, *temp;
-/*
-		for (i = 0; i < MAX_NUM_NODES; i++) {
-			tem = (char*)kmalloc(15*sizeof(char),GFP_KERNEL);
-			for(j = 0; j< 16; j++) {
-				if( k == strlen(ip)) {i==MAX_NUM_NODES; break;}
-				if (ip[k]==':'){ k++;break;} else {tem[j] = ip[k]; k++;}
-			}
+
+		// for (i = 0; i < MAX_NUM_NODES; i++) {
+		// 	tem = (char*)kmalloc(15*sizeof(char),GFP_KERNEL);
+		// 	for(j = 0; j< 16; j++) {
+		// 		if( k == strlen(ip)) {i==MAX_NUM_NODES; break;}
+		// 		if (ip[k]==':'){ k++;break;} else {tem[j] = ip[k]; k++;}
+		// 	}
 			
-			printk("tem[%d] %s\n",i,tem);
-			ip_table[i] = in_aton(tem);
-		}
-		for (i = 0; i < MAX_NUM_NODES; i++) {
-                        printk("%zu\n",ip_table[i]);
-                }
-*/
+		// 	printk("tem[%d] %s\n",i,tem);
+		// 	ip_table[i] = in_aton(tem);
+		// }
+		// for (i = 0; i < MAX_NUM_NODES; i++) {
+        //                 printk("%zu\n",ip_table[i]);
+        //         }
+
 		temp=strlen(ip) + ip;
 		while (tem = strchrnul(ip, ',')) {
 			*tem = 0;
-			ip_table[k++] = in_aton(ip);
+			ip_table[k++].address = in_aton(ip);
 			ip=tem+1;
 			if (ip > temp)
 				break;
 		}
-	}
+	}*/
+
+	load_node_list(); //populated the node_list
 
 	my_ip = __get_host_ip();
 
 	for (i = 0; i < MAX_NUM_NODES; i++) {
 		char *me = " ";
-		if (my_ip == ip_table[i]) {
+		if (my_ip == get_node(i).address) {
 			my_nid = i;
 			me = "*";
 		}
-		PCNPRINTK("%s %d: %pI4\n", me, i, ip_table + i);
+		PCNPRINTK("%s %d: %pI4\n", me, i, get_node(i).address);
 	}
 
 	if (my_nid < 0) {
