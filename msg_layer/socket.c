@@ -406,7 +406,7 @@ static int __init __connect_to_server(int nid)
 		To be replaced
 
 	*/
-	pcn_kmsg_transport t = { //copied the tcp socket
+	struct pcn_kmsg_transport t = { //copied the tcp socket
 			.name = "socket",
 			.features = 0,
 
