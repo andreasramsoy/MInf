@@ -26,7 +26,7 @@ struct message_node {
 	bool enabled;
 	//protocol_type protocol; //define acceptable protocols
 	struct sock_handle *handle;
-	struct transport_socket transport;
+	struct transport_socket *transport;
 };
 
 struct q_item {
@@ -52,10 +52,10 @@ struct sock_handle {
 	struct task_struct *recv_handler;
 };
 
-#define MAX_NUM_NODES = 64; //absolute maximum number of nodes
+#define MAX_NUM_NODES 64 //absolute maximum number of nodes
 
 int node_list_length = 0;
-message_node* node_list[MAX_NUM_NODES] = {}; //Do not access directly! Use get_node(i) function
+struct message_node* node_list[MAX_NUM_NODES] = {}; //Do not access directly! Use get_node(i) function
 
 
 static char *ip = "N";
@@ -64,13 +64,13 @@ MODULE_PARM_DESC(ip, "");
 
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
-message_node* get_node(int index) {
+struct message_node* get_node(int index) {
 	if (index >= node_list_length) {
 		MSGPRINTK("Attempted to get details of node %d, but only %d exist (indexed from zero)\n", index, node_list_length);
 		/*
 				Decide what should be done in the event of an error? *****************
 		*/
-		return 1;
+		return node_list[0]; //need better solution for error handling, maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
 	}
 	else {
 		return node_list[index];
@@ -83,39 +83,28 @@ void load_node_list(void) {
 		Stub for getting this data from a file, nodes are currently hard-coded
 	*/
 	node_list_length = 2; ///////REMEMBER TO UPDATE THE MAX_NUM_NODES
-	struct message_node node0 = kmalloc(sizeof(message_node), GFP_KERNEL);
-	node0 = {
+	struct transport_socket t = { //copied the tcp socket
+			.name = "socket",
+			.features = 0,
+
+			.get = sock_kmsg_get,
+			.put = sock_kmsg_put,
+			.stat = sock_kmsg_stat,
+
+			.send = sock_kmsg_send,
+			.post = sock_kmsg_post,
+			.done = sock_kmsg_done,
+		};
+	struct message_node node0 = {
 		.address = in_aton("192.168.10.100"),
 		.enabled = true,
-		.transport = { //copied the tcp socket
-			.name = "socket",
-			.features = 0,
-
-			.get = sock_kmsg_get,
-			.put = sock_kmsg_put,
-			.stat = sock_kmsg_stat,
-
-			.send = sock_kmsg_send,
-			.post = sock_kmsg_post,
-			.done = sock_kmsg_done,
-		},
-	struct message_node node1 = kmalloc(sizeof(message_node), GFP_KERNEL);
-	node1 = {
+		.transport = &t,
+	struct message_node node1 = {
 		.address = in_aton("192.168.10.101"),
 		.enabled = true,
-		.transport = { //copied the tcp socket
-			.name = "socket",
-			.features = 0,
-
-			.get = sock_kmsg_get,
-			.put = sock_kmsg_put,
-			.stat = sock_kmsg_stat,
-
-			.send = sock_kmsg_send,
-			.post = sock_kmsg_post,
-			.done = sock_kmsg_done,
-		},
+		.transport = &t,
 	};
+	node_list[0] = &node0;
 	node_list[1] = &node1;
 }
 
