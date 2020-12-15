@@ -25,7 +25,7 @@ struct message_node {
 	uint32_t address;
 	bool enabled;
 	//protocol_type protocol; //define acceptable protocols
-	struct sock_handle *handle;
+	struct sock_handle handle;
 	struct pcn_kmsg_transport *transport;
 };
 
@@ -83,27 +83,14 @@ void load_node_list(void) {
 		Stub for getting this data from a file, nodes are currently hard-coded
 	*/
 	node_list_length = 2; ///////REMEMBER TO UPDATE THE MAX_NUM_NODES
-	struct pcn_kmsg_transport t = { //copied the tcp socket
-			.name = "socket",
-			.features = 0,
 
-			.get = sock_kmsg_get,
-			.put = sock_kmsg_put,
-			.stat = sock_kmsg_stat,
-
-			.send = sock_kmsg_send,
-			.post = sock_kmsg_post,
-			.done = sock_kmsg_done,
-		};
 	struct message_node node0 = {
 		.address = in_aton("192.168.10.100"),
 		.enabled = true,
-		.transport = &t,
 	};
 	struct message_node node1 = {
 		.address = in_aton("192.168.10.101"),
 		.enabled = true,
-		.transport = &t,
 	};
 	node_list[0] = &node0;
 	node_list[1] = &node1;

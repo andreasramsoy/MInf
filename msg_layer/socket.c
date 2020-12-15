@@ -399,6 +399,34 @@ static int __init __connect_to_server(int nid)
 
 	get_node(nid)->handle.sock = sock;
 	ret = __start_handlers(nid);
+
+
+	/*
+
+		To be replaced
+
+	*/
+	struct pcn_kmsg_transport t = { //copied the tcp socket
+			.name = "socket",
+			.features = 0,
+
+			.get = sock_kmsg_get,
+			.put = sock_kmsg_put,
+			.stat = sock_kmsg_stat,
+
+			.send = sock_kmsg_send,
+			.post = sock_kmsg_post,
+			.done = sock_kmsg_done,
+		};
+	get_node(nid)->transport = &t;
+
+	/*
+		End of to be replaced
+	*/
+
+
+
+
 	if (ret) return ret;
 
 	return 0;
