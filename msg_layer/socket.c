@@ -367,8 +367,8 @@ static int __start_handlers(const int nid)
 		kthread_stop(tsk_send);
 		return PTR_ERR(tsk_recv);
 	}
-	get_node(nid)->handle.send_handler = tsk_send;
-	get_node(nid)->handle.recv_handler = tsk_recv;
+	get_node(nid)->handle->send_handler = tsk_send;
+	get_node(nid)->handle->recv_handler = tsk_recv;
 	return 0;
 }
 
@@ -397,7 +397,7 @@ static int __init __connect_to_server(int nid)
 		}
 	} while (ret < 0);
 
-	get_node(nid)->handle.sock = sock;
+	get_node(nid)->handle->sock = sock;
 	ret = __start_handlers(nid);
 
 
@@ -406,7 +406,7 @@ static int __init __connect_to_server(int nid)
 		To be replaced
 
 	*/
-	struct pcn_kmsg_transport t = { //copied the tcp socket
+	pcn_kmsg_transport t = { //copied the tcp socket
 			.name = "socket",
 			.features = 0,
 
@@ -474,7 +474,7 @@ static int __init __accept_client(int *nid)
 	} while (retry++ < 10 && !found);
 
 	if (!found) return -EAGAIN;
-	get_node(*nid)->handle.sock = sock;
+	get_node(*nid)->handle->sock = sock;
 
 	ret = __start_handlers(*nid);
 	if (ret) goto out_release;
