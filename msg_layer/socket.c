@@ -400,33 +400,6 @@ static int __init __connect_to_server(int nid)
 	get_node(nid)->handle->sock = sock;
 	ret = __start_handlers(nid);
 
-
-	/*
-
-		To be replaced
-
-	*/
-	struct pcn_kmsg_transport t = { //copied the tcp socket
-			.name = "socket",
-			.features = 0,
-
-			.get = sock_kmsg_get,
-			.put = sock_kmsg_put,
-			.stat = sock_kmsg_stat,
-
-			.send = sock_kmsg_send,
-			.post = sock_kmsg_post,
-			.done = sock_kmsg_done,
-		};
-	get_node(nid)->transport = &t;
-
-	/*
-		End of to be replaced
-	*/
-
-
-
-
 	if (ret) return ret;
 
 	return 0;
@@ -559,6 +532,26 @@ static int __init init_kmsg_sock(void)
 	pcn_kmsg_set_transport(&transport_socket);
 
 	for (i = 0; i < node_list_length; i++) {
+		/*
+			To be replaced
+		*/
+		struct pcn_kmsg_transport t = { //copied the tcp socket
+				.name = "socket",
+				.features = 0,
+
+				.get = sock_kmsg_get,
+				.put = sock_kmsg_put,
+				.stat = sock_kmsg_stat,
+
+				.send = sock_kmsg_send,
+				.post = sock_kmsg_post,
+				.done = sock_kmsg_done,
+			};
+		get_node(i)->transport = &t;
+		/*
+			End of to be replaced
+		*/
+
 		struct sock_handle *sh = get_node(i)->handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
