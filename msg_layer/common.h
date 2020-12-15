@@ -47,7 +47,7 @@ struct message_node {
 	uint32_t address;
 	bool enabled;
 	//protocol_type protocol; //define acceptable protocols
-	struct sock_handle handle;
+	struct sock_handle *handle;
 	struct pcn_kmsg_transport *transport;
 };
 
