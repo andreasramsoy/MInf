@@ -22,37 +22,6 @@ enum {
 };
 
 
-struct message_node {
-	uint32_t address;
-	bool enabled;
-	//protocol_type protocol; //define acceptable protocols
-	struct sock_handle *handle;
-	struct transport_socket transport;
-}
-
-
-struct q_item {
-	struct pcn_kmsg_message *msg;
-	unsigned long flags;
-	struct completion *done;
-};
-
-/* Per-node handle for socket */
-struct sock_handle {
-	int nid;
-
-	/* Ring buffer for queueing outbound messages */
-	struct q_item *msg_q;s
-	unsigned long q_head;
-	unsigned long q_tail;
-	spinlock_t q_lock;
-	struct semaphore q_empty;
-	struct semaphore q_full;
-
-	struct socket *sock;
-	struct task_struct *send_handler;
-	struct task_struct *recv_handler;
-};
 //static struct sock_handle sock_handles[MAX_NUM_NODES] = {}; //////////////////////////////////////
 
 static struct socket *sock_listen = NULL;
@@ -155,7 +124,7 @@ static int enq_send(int dest_nid, struct pcn_kmsg_message *msg, unsigned long fl
 {
 	int ret;
 	unsigned long at;
-	struct sock_handle *sh = get_node(dest_nid).handle;
+	struct sock_handle *sh = get_node(dest_nid)->handle;
 	struct q_item *qi;
 	do {
 		ret = down_interruptible(&sh->q_full);
@@ -278,7 +247,7 @@ int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 
 	if (!try_wait_for_completion(&done)) { 
 		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
-		if (!ret) return -EAGAIN;df
+		if (!ret) return -EAGAIN;
 	}
 	return 0;
 }
@@ -331,7 +300,7 @@ static int __show_peers(struct seq_file *seq, void *v)
 	{
 		if (i == my_nid) myself = "*";
 		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n", myself,
-		           i, NIPQUAD(get_node(i).address), "NODE_IP");
+		           i, NIPQUAD(get_node(i)->address), "NODE_IP");
 		myself = " ";
 	}
 	return 0;
@@ -369,7 +338,7 @@ static struct task_struct * __init __start_handler(const int nid, const char *ty
 	struct task_struct *tsk;
 
 	sprintf(name, "pcn_%s_%d", type, nid);
-	tsk = kthread_run(handler, get_node(nid).handle, name);
+	tsk = kthread_run(handler, get_node(nid)->handle, name);
 	if (IS_ERR(tsk)) {
 		printk(KERN_ERR "Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
 		return tsk;
@@ -398,8 +367,8 @@ static int __start_handlers(const int nid)
 		kthread_stop(tsk_send);
 		return PTR_ERR(tsk_recv);
 	}
-	get_node(nid).handle.send_handler = tsk_send;
-	get_node(nid).handle.recv_handler = tsk_recv;
+	get_node(nid)->handle.send_handler = tsk_send;
+	get_node(nid)->handle.recv_handler = tsk_recv;
 	return 0;
 }
 
@@ -417,9 +386,9 @@ static int __init __connect_to_server(int nid)
 
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT);
-	addr.sin_addr.s_addr = get_node(nid).address;
+	addr.sin_addr.s_addr = get_node(nid)->address;
 
-	MSGPRINTK("Connecting to %d at %pI4\n", nid, get_node(nid).address);
+	MSGPRINTK("Connecting to %d at %pI4\n", nid, get_node(nid)->address);
 	do {
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
@@ -428,7 +397,7 @@ static int __init __connect_to_server(int nid)
 		}
 	} while (ret < 0);
 
-	get_node(nid).handle.sock = sock;
+	get_node(nid)->handle.sock = sock;
 	ret = __start_handlers(nid);
 	if (ret) return ret;
 
@@ -465,7 +434,7 @@ static int __init __accept_client(int *nid)
 
 		/* Identify incoming peer nid */
 		for (i = 0; i < node_list_length; i++) {
-			if (addr.sin_addr.s_addr == get_node(i).address) {
+			if (addr.sin_addr.s_addr == get_node(i)->address) {
 				*nid = i;
 				found = true;
 			}
@@ -477,7 +446,7 @@ static int __init __accept_client(int *nid)
 	} while (retry++ < 10 && !found);
 
 	if (!found) return -EAGAIN;
-	get_node(*nid).handle.sock = sock;
+	get_node(*nid)->handle.sock = sock;
 
 	ret = __start_handlers(*nid);
 	if (ret) goto out_release;
@@ -532,7 +501,7 @@ static void __exit exit_kmsg_sock(void)
 	if (sock_listen) sock_release(sock_listen);
 
 	for (i = 0; i < node_list_length; i++) {
-		struct sock_handle *sh = get_node(i).handle;
+		struct sock_handle *sh = get_node(i)->handle;
 		if (sh->send_handler) {
 			kthread_stop(sh->send_handler);
 		} else {
@@ -562,7 +531,7 @@ static int __init init_kmsg_sock(void)
 	pcn_kmsg_set_transport(&transport_socket);
 
 	for (i = 0; i < node_list_length; i++) {
-		struct sock_handle *sh = get_node(i).handle;
+		struct sock_handle *sh = get_node(i)->handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
 		if (!sh->msg_q) {

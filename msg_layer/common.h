@@ -20,17 +20,51 @@
 
 #include "config.h"
 
+
+struct message_node {
+	uint32_t address;
+	bool enabled;
+	//protocol_type protocol; //define acceptable protocols
+	struct sock_handle *handle;
+	struct transport_socket transport;
+};
+
+struct q_item {
+	struct pcn_kmsg_message *msg;
+	unsigned long flags;
+	struct completion *done;
+};
+
+/* Per-node handle for socket */
+struct sock_handle {
+	int nid;
+
+	/* Ring buffer for queueing outbound messages */
+	struct q_item *msg_q;
+	unsigned long q_head;
+	unsigned long q_tail;
+	spinlock_t q_lock;
+	struct semaphore q_empty;
+	struct semaphore q_full;
+
+	struct socket *sock;
+	struct task_struct *send_handler;
+	struct task_struct *recv_handler;
+};
+
+#define MAX_NUM_NODES = 64; //absolute maximum number of nodes
+
 int node_list_length = 0;
-int MAX_NUM_NODES = 64; //absolute maximum number of nodes
-message_node* node_list[MAX_NUM_NODES]; //Do not access directly! Use get_node(i) function
+message_node* node_list[MAX_NUM_NODES] = {}; //Do not access directly! Use get_node(i) function
 
 
 static char *ip = "N";
 module_param(ip,charp, 0000);
 MODULE_PARM_DESC(ip, "");
 
-/* function to access the node_list safely, will return 1 if invalid request */
-message_node get_node(int index) {
+/* function to access the node_list safely, will return 1 if invalid request
+   Also allows for changes in data structure (list to avoid limit of 64 nodes) */
+message_node* get_node(int index) {
 	if (index >= node_list_length) {
 		MSGPRINTK("Attempted to get details of node %d, but only %d exist (indexed from zero)\n", index, node_list_length);
 		/*
@@ -43,16 +77,16 @@ message_node get_node(int index) {
 	}
 }
 
-void load_node_list() {
+void load_node_list(void) {
 	MSGPRINTK("Populating the list of nodes\n");
 	/*
 		Stub for getting this data from a file, nodes are currently hard-coded
 	*/
 	node_list_length = 2; ///////REMEMBER TO UPDATE THE MAX_NUM_NODES
-	node_list[0] = kmalloc(sizeof(message_node), GFP_KERNEL);
-	struct message_node node_list[0] = {
-		.address = in_aton("192.168.10.100")
-		.enabled = true;
+	struct message_node node0 = kmalloc(sizeof(message_node), GFP_KERNEL);
+	node0 = {
+		.address = in_aton("192.168.10.100"),
+		.enabled = true,
 		.transport = { //copied the tcp socket
 			.name = "socket",
 			.features = 0,
@@ -64,12 +98,11 @@ void load_node_list() {
 			.send = sock_kmsg_send,
 			.post = sock_kmsg_post,
 			.done = sock_kmsg_done,
-		};
-	};
-	node_list[1] = kmalloc(sizeof(message_node), GFP_KERNEL);
-	struct message_node node_list[1] = {
-		.address = in_aton("192.168.10.101")
-		.enabled = true;
+		},
+	struct message_node node1 = kmalloc(sizeof(message_node), GFP_KERNEL);
+	node1 = {
+		.address = in_aton("192.168.10.101"),
+		.enabled = true,
 		.transport = { //copied the tcp socket
 			.name = "socket",
 			.features = 0,
@@ -81,12 +114,15 @@ void load_node_list() {
 			.send = sock_kmsg_send,
 			.post = sock_kmsg_post,
 			.done = sock_kmsg_done,
-		};
+		},
 	};
+	node_list[1] = &node1;
 }
 
-void node_list_destroy() {
-	for (int i = 0; i < node_list_length; i++) {
+void node_list_destroy(void) {
+	int i;
+
+	for (i = 0; i < node_list_length; i++) {
 		kfree(get_node(i));
 	}
 }
@@ -112,9 +148,9 @@ static uint32_t __init __get_host_ip(void)
 
 bool __init identify_myself(void)
 {
-	/*int i;
+	int i;
 	uint32_t my_ip;
-	printk("%s\n",ip);
+	/*printk("%s\n",ip);
 	if(ip[0]=='N'){
 		PCNPRINTK("Loading default node configuration...\n");
 
