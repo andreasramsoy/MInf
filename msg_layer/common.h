@@ -20,15 +20,6 @@
 
 #include "config.h"
 
-
-struct message_node {
-	uint32_t address;
-	bool enabled;
-	//protocol_type protocol; //define acceptable protocols
-	struct sock_handle handle;
-	struct pcn_kmsg_transport *transport;
-};
-
 struct q_item {
 	struct pcn_kmsg_message *msg;
 	unsigned long flags;
@@ -51,6 +42,15 @@ struct sock_handle {
 	struct task_struct *send_handler;
 	struct task_struct *recv_handler;
 };
+
+struct message_node {
+	uint32_t address;
+	bool enabled;
+	//protocol_type protocol; //define acceptable protocols
+	struct sock_handle handle;
+	struct pcn_kmsg_transport *transport;
+};
+
 
 #define MAX_NUM_NODES 64 //absolute maximum number of nodes
 
