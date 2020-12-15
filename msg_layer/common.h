@@ -26,7 +26,7 @@ struct message_node {
 	bool enabled;
 	//protocol_type protocol; //define acceptable protocols
 	struct sock_handle *handle;
-	struct transport_socket *transport;
+	struct pcn_kmsg_transport *transport;
 };
 
 struct q_item {
@@ -83,7 +83,7 @@ void load_node_list(void) {
 		Stub for getting this data from a file, nodes are currently hard-coded
 	*/
 	node_list_length = 2; ///////REMEMBER TO UPDATE THE MAX_NUM_NODES
-	struct transport_socket t = { //copied the tcp socket
+	struct pcn_kmsg_transport t = { //copied the tcp socket
 			.name = "socket",
 			.features = 0,
 
@@ -99,6 +99,7 @@ void load_node_list(void) {
 		.address = in_aton("192.168.10.100"),
 		.enabled = true,
 		.transport = &t,
+	};
 	struct message_node node1 = {
 		.address = in_aton("192.168.10.101"),
 		.enabled = true,
@@ -109,11 +110,9 @@ void load_node_list(void) {
 }
 
 void node_list_destroy(void) {
-	int i;
-
-	for (i = 0; i < node_list_length; i++) {
-		kfree(get_node(i));
-	}
+	/*
+		Nothing within the node list is currently called with kalloc
+	*/
 }
 
 static uint32_t __init __get_host_ip(void)
@@ -126,7 +125,7 @@ static uint32_t __init __get_host_ip(void)
 			int i;
 			uint32_t addr = ifaddr->ifa_local;
 			for (i = 0; i < MAX_NUM_NODES; i++) {
-				if (addr == get_node(i).address) {
+				if (addr == get_node(i)->address) {
 					return addr;
 				}
 			}
@@ -182,11 +181,11 @@ bool __init identify_myself(void)
 
 	for (i = 0; i < MAX_NUM_NODES; i++) {
 		char *me = " ";
-		if (my_ip == get_node(i).address) {
+		if (my_ip == get_node(i)->address) {
 			my_nid = i;
 			me = "*";
 		}
-		PCNPRINTK("%s %d: %pI4\n", me, i, get_node(i).address);
+		PCNPRINTK("%s %d: %pI4\n", me, i, get_node(i)->address);
 	}
 
 	if (my_nid < 0) {
