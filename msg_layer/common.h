@@ -26,6 +26,7 @@ struct q_item {
 	struct completion *done;
 };
 
+
 /* Per-node handle for socket */
 struct sock_handle {
 	int nid;
@@ -46,35 +47,85 @@ struct sock_handle {
 struct message_node {
 	uint32_t address;
 	bool enabled;
-	//protocol_type protocol; //define acceptable protocols
+	enum protocol_t protocol; //define acceptable protocols
 	struct sock_handle *handle;
 	struct pcn_kmsg_transport *transport;
 };
 
+#define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
-#define MAX_NUM_NODES 64 //absolute maximum number of nodes
+struct node_list {
+	message_node* nodes[MAX_NUM_NODES_PER_LIST];
+	message_list* next_list;
+};
+
+
 
 int node_list_length = 0;
-struct message_node* node_list[MAX_NUM_NODES] = {}; //Do not access directly! Use get_node(i) function
+struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
 
 static char *ip = "N";
 module_param(ip,charp, 0000);
 MODULE_PARM_DESC(ip, "");
 
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////  Need to add the node_list transport structure to the pcn_kmsg.c
+///////////////////////////  So that the transport structure is actually dynamic
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+
+
+
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
-	if (index >= node_list_length) {
-		MSGPRINTK("Attempted to get details of node %d, but only %d exist (indexed from zero)\n", index, node_list_length);
-		/*
-				Decide what should be done in the event of an error? *****************
-		*/
-		return node_list[0]; //need better solution for error handling, maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
+	node_list* list = root_node_list;
+	if (index >= node_list_length) goto node_doesnt_exist;
+	else {
+		//move to the appropriate list
+		//List number:       index / MAX_NUM_NODES_PER_LIST
+		//Index within list: index % MAX_NUM_NODES_PER_LIST
+		int list_number = index / MAX_NUM_NODES_PER_LIST;
+		for (int i = 0; i < list_number; i++) {
+			#ifdef CONFIG_POPCORN_CHECK_SANITY
+					BUG_ON(list->next_list == nullptr); //a list must have been removed without deleting the pointer or updating the length variable
+			#endif
+			list = list->next_list; //move to next list
+		}
+		if (list->nodes[index % MAX_NUM_NODES_PER_LIST] == nullptr) {
+			goto node_doesnt_exist;
+		}
+		return list->nodes[index % MAX_NUM_NODES_PER_LIST];
+	}
+
+	node_doesnt_exist:
+		MSGPRINTK("Attempted to get details of node %d, but it does not exist (only %d exist [indexed from zero] but some may be null)\n", index, node_list_length);
+		#ifdef CONFIG_POPCORN_CHECK_SANITY
+				BUG_ON(false); //you should never call a node that isn't here
+		#endif
+
+		//need better solution for error handling
+		//maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
+		return node_list[0]; 
+}
+
+struct node_list* create_node_list(node_list *previous_list) { //do not use directly - add_node will use this automatically
+	node_list ret = kmalloc(sizeof(node_list));
+	if (previous_list != NULL) {
+		previous_list.next_list = &ret; //link the previous list to this one
 	}
 	else {
-		return node_list[index];
+		MSGPRINTK("A node list was being added but only a null pointer was provided to link it to. Provide the previous list instead\n");
 	}
+	return &ret;
 }
 
 void load_node_list(void) {
@@ -92,8 +143,33 @@ void load_node_list(void) {
 		.address = in_aton("192.168.10.101"),
 		.enabled = true,
 	};
-	node_list[0] = &node0;
-	node_list[1] = &node1;
+	node_list->nodes[0] = &node0;
+	node_list->nodes[1] = &node1;
+}
+
+void add_node(message_node node) { //function for adding a single node to the list
+	#ifdef CONFIG_POPCORN_CHECK_SANITY
+			if (node_list_length != 0) {
+				BUG_ON(get_node(node_list_length - 1) != nullptr); //ensure that the previous node has not been used
+			}
+	#endif
+	node_list* list = root_node_list;
+
+	//naviagate to the appropriate list
+	int list_number = (node_list_length + 1) / MAX_NUM_NODES_PER_LIST;
+	for (int i = 0; i < list_number && list->next_list; i++) {
+		list = list->next_list; //move to next list
+	}
+
+	//add another list if needed (only adding one at a time as only one node is added at a time)
+	if (i < list_number) {
+		create_node_list(list);
+		list = list->next_list;
+	}
+
+	//add to that list
+	list->nodes[(node_list_length + 1) % MAX_NUM_NODES_PER_LIST] = &node;
+	node_list_length++; //increment here because there are sanity checks that use this variable
 }
 
 void node_list_destroy(void) {
@@ -162,7 +238,7 @@ bool __init identify_myself(void)
 		}
 	}*/
 
-	load_node_list(); //populated the node_list
+	//load_node_list(); //populated the node_list
 
 	my_ip = __get_host_ip();
 
