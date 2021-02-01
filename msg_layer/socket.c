@@ -12,6 +12,7 @@
 #include <popcorn/stat.h>
 #include "ring_buffer.h"
 #include "node_list.h"
+#include "node_controller.h"
 #define PORT 30467
 #define MAX_SEND_DEPTH	1024
 #define NIPQUAD(addr) ((unsigned char *)&addr)[0],((unsigned char *)&addr)[1],((unsigned char *)&addr)[2],((unsigned char *)&addr)[3]
@@ -21,6 +22,8 @@ enum {
 	SEND_FLAG_POSTED = 0,
 };
 
+
+static struct proc_dir_entry *node_command_channel; //allows userspace to send commands to popcorn
 
 //static struct sock_handle sock_handles[MAX_NUM_NODES] = {}; //////////////////////////////////////
 
@@ -497,6 +500,10 @@ out_release:
 
 static void __exit exit_kmsg_sock(void)
 {
+	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
+
+	proc_remove(proc_entry);
+
 	int i;
 
 	if (sock_listen) sock_release(sock_listen);
@@ -605,6 +612,8 @@ static int __init init_kmsg_sock(void)
 
 	PCNPRINTK("Ready on TCP/IP\n");
 	peers_init();
+	
+	initialise_node_list_controller(); //allow user to change nodes
 	
 	return 0;
 
