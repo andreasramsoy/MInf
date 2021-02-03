@@ -1,8 +1,8 @@
 #include <linux/slab.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
 #include <stdbool.h>
-#include <string.h>
+
 
 #define LENGTH_OF_IPV4_ADDRESS_STRING 16 //"192.168.192.168\0" is max length
 #define MAX_NUMBER_OF_NODES 64
@@ -51,8 +51,8 @@ struct sock_handle {
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
 struct node_list { //////////////////////////////////////not currently being used
-	message_node* nodes[MAX_NUM_NODES_PER_LIST];
-	message_list* next_list;
+	struct message_node* nodes[MAX_NUM_NODES_PER_LIST];
+	struct message_list* next_list;
 };
 
 bool set_transport_structure(struct message_node* node) {
@@ -63,11 +63,11 @@ struct message_node *node_list[MAX_NUMBER_OF_NODES] = {0};
 
 struct message_node* get_node(int index) { ///////////////////////////////////////////function will need to be adjusted to whatever it is
     if (index >= MAX_NUMBER_OF_NODES) {
-        MSGPRINTK("The index %d is greater than the number of nodes %d (indexed from zero)", index, MAX_NUMBER_OF_NODES);
+        printk(KERN_ERR "The index %d is greater than the number of nodes %d (indexed from zero)", index, MAX_NUMBER_OF_NODES);
         return NULL;
     }
     if (node_list[index] == NULL) {
-        MSGPRINTK("There is no node at this index, %d, this is likely because the node has been removed or an incorrect index is being used\n", index);
+        printk(KERN_ERR "There is no node at this index, %d, this is likely because the node has been removed or an incorrect index is being used\n", index);
         return NULL;
     }
     return node_list[index];
@@ -83,10 +83,10 @@ struct message_node* get_node(int index) { /////////////////////////////////////
 struct message_node* create_node(uint32_t address_p, enum protocol_t protocol_p) {
     bool success;
 
-    struct message_node* node = kmalloc(sizeof(struct message_node));
+    struct message_node* node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
-        MSGPRINTK("Could not create the node as a null pointer was returned");
-        exit(1);
+        printk(KERN_ERR "Could not create the node as a null pointer was returned");
+        return NULL;
     }
     node->address = address_p;
     node->protocol = protocol_p;
@@ -96,23 +96,23 @@ struct message_node* create_node(uint32_t address_p, enum protocol_t protocol_p)
 
     if (!success) {
         kfree(node);
-        MSGPRINTK("Failed to create the node");
+        printk(KERN_ERR "Failed to create the node");
         return NULL;
     }
 
     return node;
 }
 
-int find_first_null_pointer() {
-    if (after_last_node_index == 0) return 0; //the node list is empty
+int find_first_null_pointer(void) {
     int i = 0;
+    if (after_last_node_index == 0) return 0; //the node list is empty
     while (get_node(i) != NULL && i < MAX_NUMBER_OF_NODES) {
         i++;
     }
 
     if (i >= MAX_NUMBER_OF_NODES) {////////////////////////////////arbitary max
-        MSGPRINTK("There were no free spaces in the node_list");
-        exit(1);
+        printk(KERN_ERR "There were no free spaces in the node_list");
+        return -1;
     }/////////////////////////////////////////////////
     
     return i;
@@ -141,17 +141,18 @@ bool enable_node(int index) {
 
 const char* protocol_to_string(enum protocol_t protocol) {
     if (protocol >= NUMBER_OF_PROTOCOLS || protocol < 0) {
-        MSGPRINTK("The protocol was invalid");
+        printk(KERN_ERR "The protocol was invalid");
         return "INVALID";
     }
     return protocol_strings[protocol];
 }
 
 enum protocol_t string_to_protocol(char* protocol) {
-    for (int i = 0; i < NUMBER_OF_PROTOCOLS; i++) {
+    int i = 0;
+    for (i = 0; i < NUMBER_OF_PROTOCOLS; i++) {
         if (strcmp(protocol_strings[i], protocol) == 0) return i; //the integers are mapped to enums
     }
-    MSGPRINTK("The string did not match any of the protocols known. Defaulting to %s\n", protocol_strings[DEFAULT_PROTOCOL]);
+    printk(KERN_ERR "The string did not match any of the protocols known. Defaulting to %s\n", protocol_strings[DEFAULT_PROTOCOL]);
     return DEFAULT_PROTOCOL;
 }
 
@@ -164,23 +165,25 @@ char* address_int_to_string(uint32_t address) { ////////////////////////////////
 }
 ///////////////end of stub for address translation
 
-void save_to_file() {
+void save_to_file(void) {
+    /*struct message_node* node;
     FILE *fileptr = fopen(NODE_LIST_FILE_ADDRESS, "w");
 
     if (fileptr == NULL) {
-        MSGPRINTK("The node list file could not be opened and so could not be saved");
-        exit(1);
+        printk(KERN_ERR "The node list file could not be opened and so could not be saved");
+        return;
     }
 
-    struct message_node* node;
-    for (int i = 0; i < after_last_node_index; i++) {
+    int i;
+    for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
         if (node != NULL) {
             fMSGPRINTK(fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->protocol));
         }
     }
 
-    fclose(fileptr);
+    fclose(fileptr);*/
+    return;
 }
 
 /**
@@ -209,11 +212,12 @@ int add_node(struct message_node *node) {
 }
 
 void remove_node(int index) {
-    disable_node(index); //disables and tears down connections
+    int i;
     struct message_node* node = get_node(index); //get so it can be deleted from list so it cannot be accessed before it is freed
+    disable_node(index); //disables and tears down connections
 
     //update the last node index
-    int i = index;
+    i = index;
     if (index + 1 == after_last_node_index) {
         while (i > 0 && get_node(i) != NULL) i--; //roll back until you file a node
         after_last_node_index = i + 1;
@@ -225,12 +229,15 @@ void remove_node(int index) {
 }
 
 struct message_node* parse_node(char* node_string) {
-    char* address = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH);
-    char* protocol = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH);
+    int i;
+    int j;
+    struct message_node* rtn;
+    char* address = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH, GFP_KERNEL);
+    char* protocol = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH, GFP_KERNEL);
     //
     //    Structure of CSV line: address, protocol
     //
-    int i = 0;
+    i = 0;
     while (i < MAX_FILE_LINE_LENGTH && node_string[i] != '\0' && node_string[i] != ',') i++;
     if (i >= MAX_FILE_LINE_LENGTH) {
         MSGPRINTK("The address was malformed in the node list file\n");
@@ -241,7 +248,7 @@ struct message_node* parse_node(char* node_string) {
         address[i] = '\0'; //finishes the string
     }
 
-    int j = i + 1; //move past the comma
+    j = i + 1; //move past the comma
     while (j < MAX_FILE_LINE_LENGTH && node_string[j] != '\n' &&node_string[j] != '\0' && node_string[j] != ',') j++;
     if (j >= MAX_FILE_LINE_LENGTH) {
         MSGPRINTK("The protocol was malformed in the node list file\n");
@@ -252,7 +259,7 @@ struct message_node* parse_node(char* node_string) {
         protocol[j - i] = '\0'; //finishes the string
     }
 
-    struct message_node* rtn = create_node(address_string_to_int(address), string_to_protocol(protocol));
+    rtn = create_node(address_string_to_int(address), string_to_protocol(protocol));
 
     kfree(address);
     kfree(protocol);
@@ -261,16 +268,16 @@ struct message_node* parse_node(char* node_string) {
 }
 
 bool get_node_list_from_file(const char * address) {
-    FILE * fileptr = fopen(address, "r");
+    /*FILE * fileptr = fopen(address, "r");
 
     if (fileptr == NULL) {
         MSGPRINTK("The node list file could not be opened and so the node list could not be found");
-        exit(1);
+        return false;
     }
 
     char line[MAX_FILE_LINE_LENGTH];
     struct message_node* new_node;
-    while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr) != NULL) {
+    while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr)) {
         new_node = parse_node(line);
         if (new_node == NULL) { //process each node line by line
             MSGPRINTK("Failed to parse node line: %s\n", line);
@@ -283,20 +290,21 @@ bool get_node_list_from_file(const char * address) {
         else add_node(new_node);
     }
 
-    fclose(fileptr);
+    fclose(fileptr);*/
 
     return true;
 }
 
-void initialise_node_list() {
+void initialise_node_list(void) {
     MSGPRINTK("Initialising existing node list...\n");
     get_node_list_from_file(NODE_LIST_FILE_ADDRESS);
     MSGPRINTK("Finished creating node list\n");
 }
 
-void destroy_node_list() {
-    for (int i = 0; i < after_last_node_index, i++) {
-        if (node_exists(i)) remove_node(i); //note this disables and frees up memory, the node list file is only updated when saved
+void destroy_node_list(void) {
+    int i;
+    for (i = 0; i < after_last_node_index; i++) {
+        if (get_node(i)) remove_node(i); //note this disables and frees up memory, the node list file is only updated when saved
 
 
         //UPDATE ALL THE PRINT STATEMENTS

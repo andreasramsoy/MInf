@@ -10,8 +10,8 @@
 #include <linux/proc_fs.h>
 #include <linux/kthread.h>
 #include <popcorn/stat.h>
+#include "common.h"
 #include "ring_buffer.h"
-#include "node_list.h"
 #include "node_controller.h"
 #define PORT 30467
 #define MAX_SEND_DEPTH	1024
@@ -21,9 +21,6 @@
 enum {
 	SEND_FLAG_POSTED = 0,
 };
-
-
-static struct proc_dir_entry *node_command_channel; //allows userspace to send commands to popcorn
 
 //static struct sock_handle sock_handles[MAX_NUM_NODES] = {}; //////////////////////////////////////
 

@@ -5,13 +5,12 @@
 //automate the process of changing the node list. The popcorn-nodes utility uses this file in to change the nodes.
 
 #include "node_list.h"
-#include <string.h>
 
 #define COMMAND_BUFFER_SIZE 200 //unlikely to come close to this for adjusting popcorn nodes
 #define BOOL_TRUE_RETURN_STRING "1"
 #define BOOL_FALSE_RETURN_STRING "0"
 
-char[COMMAND_BUFFER_SIZE] output_buffer;
+char output_buffer[COMMAND_BUFFER_SIZE];
 
 /**
  * Info on a given node. Returns NULL if it does not exist
@@ -19,7 +18,7 @@ char[COMMAND_BUFFER_SIZE] output_buffer;
  * @return void however the output_buffer is filled with pointer to a node, NULL if no node exists
 */
 void node_get(int index) {
-    message_node* node = get_node(index);
+    struct message_node* node = get_node(index);
     //copy the desired output to the buffer
     sprintf(output_buffer, "%s %s", address_to_string(node->address), protocol_to_string(node->protocol));
 }
@@ -30,8 +29,8 @@ void node_get(int index) {
  * @return void however the output_buffer is filled with bool exists true if there is a node (path to the node is not null)
 */
 void node_exists(int index) {
-    if (get_node(index) != NULL) output_buffer = BOOL_TRUE_RETURN_STRING;
-    else output_buffer = BOOL_FALSE_RETURN_STRING;
+    if (get_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
+    else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
 }
 
 /**
@@ -49,9 +48,9 @@ void node_add(char* address_string, char* protocol_string) {
     //using the values create a node and add it to the list
     struct message_node* node = create_node(address, protocol);
     if (node != NULL) {
-        sprintf(output_buffer, "%d", add_node(node);
+        sprintf(output_buffer, "%d", add_node(node));
     }
-    else output_buffer = "-1";
+    else strcpy(output_buffer, "-1");
 }
 
 /**
@@ -62,10 +61,10 @@ void node_add(char* address_string, char* protocol_string) {
  * @return void however the output_buffer is filled with true if successful false if not
 */
 void node_remove(int index) {
-    if (!node_exists(index)) return output_buffer = BOOL_FALSE_RETURN_STRING;
+    if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         remove_node(index);
-        output_buffer = BOOL_TRUE_RETURN_STRING;
+        strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
     }
 }
 
@@ -75,7 +74,7 @@ void node_remove(int index) {
  * @param char *address[] string that the result will be placed in
 */
 void node_get_address(int index, char address[LENGTH_OF_IPV4_ADDRESS_STRING]) {
-    if (!node_exists(index)) printf("Failed to get the node address, the address variable has not been updated and so has it's previous value");
+    if (!get_node(index)) printk(KERN_ERR "Failed to get the node address, the address variable has not been updated and so has it's previous value");
     else {
         uint32_t ip = get_node(index)->address;
 
@@ -90,8 +89,9 @@ void node_get_address(int index, char address[LENGTH_OF_IPV4_ADDRESS_STRING]) {
  * @return void however the output_buffer is filled with the protocol used as a string
 */
 char* node_get_protocol(int index) {
-    if (!node_exists(index)) return false;
-    enum protocol_t protocol = get_node(index)->protocol;
+    enum protocol_t protocol;
+    if (!get_node(index)) return "Node does not exist";
+    protocol = get_node(index)->protocol;
     if (protocol == TCP) return "TCP";
     else if (protocol == RDMA) return "RDMA";
     else return "Unknown protocol, has a new one been added?";
@@ -103,13 +103,13 @@ char* node_get_protocol(int index) {
  * @param char* protocol the protocol to be updated to
  * @return void however the output_buffer is filled with bool success
 */
-bool node_update_protocol(int index, char* protocol) {
-    if (!node_exists(index)) output_buffer = BOOL_FALSE_RETURN_STRING;
+void node_update_protocol(int index, char* protocol) {
+    if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         disable_node(index); //tear down existing connection
         get_node(index)->protocol = string_to_protocol(protocol); //change the protocol
-        if (enable_node(index)) output_buffer = BOOL_TRUE_RETURN_STRING;
-        else output_buffer = BOOL_FALSE_RETURN_STRING;
+        if (enable_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
+        else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
 }
 
 /**
@@ -121,12 +121,14 @@ bool node_update_protocol(int index, char* protocol) {
  * @return int index index of the node with the given address
 */
 int node_find(char* address) {
+    int found_at;
+    int i;
+    struct message_node* node;
     uint32_t search_term = address_string_to_int(address);
 
-    struct message_node* node;
-    int found_at = -1;
+    found_at = -1;
 
-    for (int i = 0; i < after_last_node_index && found_at == -1; i++) {
+    for (i = 0; i < after_last_node_index && found_at == -1; i++) {
         node = get_node(i);
         if (node != NULL) { //some may be null so needed before dereference
             if (node->address == search_term) {
@@ -155,13 +157,13 @@ void node_load(char* address) {
  * Gives the highest indexed node.
  * @return void however the output_buffer is filled with the highest index of a node that exists
 */
-int node_highest_index() {
-    sprint(output_buffer, "%d", after_last_node_index - 1);
+int node_highest_index(void) {
+    sprintf(output_buffer, "%d", after_last_node_index - 1);
 }
 
 /**
  * Saves the current configuration so that when booting occurs this is the configuration
 */
-void node_save() {
+void node_save(void) {
     save_to_file();
 }
