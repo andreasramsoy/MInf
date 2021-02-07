@@ -1,3 +1,11 @@
+/*
+    This header file is designed to control the node list. Taking user space
+    input and changing the node list accordingly, it should only call on
+    functions within the node_list_manger.h file which is used to manipulate
+    the node list
+*/
+
+
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 

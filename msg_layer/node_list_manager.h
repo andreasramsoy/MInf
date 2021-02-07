@@ -1,8 +1,7 @@
-//node-list manager
-//
-//Purpose is to alter the node list (add, removing or updating the node list) taking as much work out of the kernel 
-//specific code so that this can be tested with a stub for the node list. This file can be included in C programs to 
-//automate the process of changing the node list. The popcorn-nodes utility uses this file in to change the nodes.
+/*
+    This file, the node_list_manager.h, is responsible for manipluating the
+    node list specified in node_list.h
+*/
 
 #include "node_list.h"
 

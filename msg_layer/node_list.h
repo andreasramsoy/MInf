@@ -1,7 +1,27 @@
+/*
+ * This specifies the structure of the node list and the basic functions
+ * to interact with it
+ *
+ * 
+ * This file takes some parts from the old common.h:
+ * Copyright (C) 2017 jackchuang <jackchuang@echo3>
+ *
+ * Distributed under terms of the MIT license.
+ */
+
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <stdbool.h>
+#include <popcorn/pcn_kmsg.h>
+#include <popcorn/bundle.h>
+#include <popcorn/debug.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/kernel.h>
+#include <linux/inet.h>
+#include <linux/inetdevice.h>
+#include <linux/netdevice.h>
 
 #include "common.h"
 
@@ -11,7 +31,14 @@
 #define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
 
+//these are the available protocols
+#define NUMBER_OF_PROTOCOLS 2
+enum protocol_t {TCP, RDMA}; //update both this and the following line to add more protocols
+const char* protocol_strings[NUMBER_OF_PROTOCOLS] = {"TCP", "RDMA"}; //ensure that the strings are in the same order as above line
+#define DEFAULT_PROTOCOL TCP
 
+int node_list_length = 0;
+struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
 int after_last_node_index;
 
@@ -23,28 +50,59 @@ struct q_item {
 
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
-struct node_list { //////////////////////////////////////not currently being used
+struct node_list {
 	struct message_node* nodes[MAX_NUM_NODES_PER_LIST];
 	struct message_list* next_list;
+};
+
+/* Per-node handle for socket */
+struct sock_handle {
+	int nid;
+
+	/* Ring buffer for queueing outbound messages */
+	struct q_item *msg_q;
+	unsigned long q_head;
+	unsigned long q_tail;
+	spinlock_t q_lock;
+	struct semaphore q_empty;
+	struct semaphore q_full;
+
+	struct socket *sock;
+	struct task_struct *send_handler;
+	struct task_struct *recv_handler;
+};
+
+struct message_node {
+	uint32_t address;
+	bool enabled;
+	enum protocol_t protocol; //define acceptable protocols
+	struct sock_handle *handle;
+	struct pcn_kmsg_transport *transport;
+};
+
+#define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
+
+struct node_list {
+	message_node* nodes[MAX_NUM_NODES_PER_LIST];
+	message_list* next_list;
 };
 
 bool set_transport_structure(struct message_node* node) {
     return true; //////////////////////stub, will need to check protocol in the popcorn module
 }
 
-struct message_node *node_list[MAX_NUMBER_OF_NODES] = {0};
-
-/*struct message_node* get_node(int index) { ///////////////////////////////////////////function will need to be adjusted to whatever it is
-    if (index >= MAX_NUMBER_OF_NODES) {
-        printk(KERN_ERR "The index %d is greater than the number of nodes %d (indexed from zero)", index, MAX_NUMBER_OF_NODES);
-        return NULL;
-    }
-    if (node_list[index] == NULL) {
-        printk(KERN_ERR "There is no node at this index, %d, this is likely because the node has been removed or an incorrect index is being used\n", index);
-        return NULL;
-    }
-    return node_list[index];
-}*/
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////  Need to add the node_list transport structure to the pcn_kmsg.c
+///////////////////////////  So that the transport structure is actually dynamic
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
+///////////////////////////
 
 /**
  * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
@@ -159,29 +217,80 @@ void save_to_file(void) {
     return;
 }
 
+/* function to access the node_list safely, will return 1 if invalid request
+   Also allows for changes in data structure (list to avoid limit of 64 nodes) */
+struct message_node* get_node(int index) {
+	int list_number;
+	int i;
+	struct node_list* list = root_node_list;
+	if (index >= node_list_length) goto node_doesnt_exist;
+	else {
+		//move to the appropriate list
+		//List number:       index / MAX_NUM_NODES_PER_LIST
+		//Index within list: index % MAX_NUM_NODES_PER_LIST
+		list_number = index / MAX_NUM_NODES_PER_LIST;
+		for (i = 0; i < list_number; i++) {
+			#ifdef CONFIG_POPCORN_CHECK_SANITY
+					BUG_ON(list->next_list == nullptr); //a list must have been removed without deleting the pointer or updating the length variable
+			#endif
+			list = list->next_list; //move to next list
+		}
+		if (list->nodes[index % MAX_NUM_NODES_PER_LIST] == nullptr) {
+			goto node_doesnt_exist;
+		}
+		return list->nodes[index % MAX_NUM_NODES_PER_LIST];
+	}
+
+	node_doesnt_exist:
+		MSGPRINTK("Attempted to get details of node %d, but it does not exist (only %d exist [indexed from zero] but some may be null)\n", index, node_list_length);
+		#ifdef CONFIG_POPCORN_CHECK_SANITY
+				BUG_ON(false); //you should never call a node that isn't here
+		#endif
+
+	//need better solution for error handling
+	//maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
+	return node_list[0]; 
+}
+
+struct node_list* create_node_list(node_list *previous_list) { //do not use directly - add_node will use this automatically
+	node_list ret = kmalloc(sizeof(node_list));
+	if (previous_list != NULL) {
+		previous_list.next_list = &ret; //link the previous list to this one
+	}
+	else {
+		MSGPRINTK("A node list was being added but only a null pointer was provided to link it to. Provide the previous list instead\n");
+	}
+	return &ret;
+}
+
 /**
  * Takes a node and adds it to the node list.
  * @param message_node* node the node that will be added to the list
  * @return int index of the location of the new node (-1 if it could not be added)
 */
-int add_node(struct message_node *node) {
-    int index = find_first_null_pointer();
-    if (index == -1) {
-        MSGPRINTK("Could not get a space for the node within the note list");
-        return -1;
-    }
-    if (index > MAX_NUMBER_OF_NODES) {
-        MSGPRINTK("Max number of nodes exceeded\n");
-        return -1; /////////////////////////////////////////////remove arbitary limit
-    }
+void add_node(message_node node) { //function for adding a single node to the list
+	#ifdef CONFIG_POPCORN_CHECK_SANITY
+			if (node_list_length != 0) {
+				BUG_ON(get_node(node_list_length - 1) != nullptr); //ensure that the previous node has not been used
+			}
+	#endif
+	node_list* list = root_node_list;
 
-    node_list[index] = node; ///////////////////////////////////////////////////change to be whatever structure it should be
+	//naviagate to the appropriate list
+	int list_number = (node_list_length + 1) / MAX_NUM_NODES_PER_LIST;
+	for (int i = 0; i < list_number && list->next_list; i++) {
+		list = list->next_list; //move to next list
+	}
 
-    if (index == after_last_node_index) after_last_node_index++; //increment so that the end is one larger (this is the next free node)
+	//add another list if needed (only adding one at a time as only one node is added at a time)
+	if (i < list_number) {
+		create_node_list(list);
+		list = list->next_list;
+	}
 
-    enable_node(index); //establishes connections
-
-    return index;
+	//add to that list
+	list->nodes[(node_list_length + 1) % MAX_NUM_NODES_PER_LIST] = &node;
+	node_list_length++; //increment here because there are sanity checks that use this variable
 }
 
 void remove_node(int index) {
@@ -268,6 +377,52 @@ bool get_node_list_from_file(const char * address) {
     return true;
 }
 
+
+static uint32_t __init __get_host_ip(void)
+{
+	struct net_device *d;
+	for_each_netdev(&init_net, d) {
+		struct in_ifaddr *ifaddr;
+
+		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
+			int i;
+			uint32_t addr = ifaddr->ifa_local;
+			for (i = 0; i < MAX_NUM_NODES; i++) {
+				if (addr == get_node(i)->address) {
+					return addr;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+bool __init identify_myself(void)
+{
+	int i;
+	uint32_t my_ip;
+
+	//load_node_list(); //populated the node_list
+
+	my_ip = __get_host_ip();
+
+	for (i = 0; i < MAX_NUM_NODES; i++) {
+		char *me = " ";
+		if (my_ip == get_node(i)->address) {
+			my_nid = i;
+			me = "*";
+		}
+		PCNPRINTK("%s %d: %pI4\n", me, i, get_node(i)->address);
+	}
+
+	if (my_nid < 0) {
+		PCNPRINTK_ERR("My IP is not listed in the node configuration\n");
+		return false;
+	}
+
+	return true;
+}
+
 void initialise_node_list(void) {
     MSGPRINTK("Initialising existing node list...\n");
     get_node_list_from_file(NODE_LIST_FILE_ADDRESS);
@@ -277,10 +432,6 @@ void initialise_node_list(void) {
 void destroy_node_list(void) {
     int i;
     for (i = 0; i < after_last_node_index; i++) {
-        if (get_node(i)) remove_node(i); //note this disables and frees up memory, the node list file is only updated when saved
-
-
-        //UPDATE ALL THE PRINT STATEMENTS
-
+        if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory, the node list file is only updated when saved
     }
 }
