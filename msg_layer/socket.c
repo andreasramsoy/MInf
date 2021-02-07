@@ -10,7 +10,6 @@
 #include <linux/proc_fs.h>
 #include <linux/kthread.h>
 #include <popcorn/stat.h>
-#include "common.h"
 #include "ring_buffer.h"
 #include "node_controller.h"
 #define PORT 30467
@@ -497,11 +496,12 @@ out_release:
 
 static void __exit exit_kmsg_sock(void)
 {
+	int i;
+	
 	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
 
 	proc_remove(proc_entry);
 
-	int i;
 
 	if (sock_listen) sock_release(sock_listen);
 
@@ -529,6 +529,7 @@ static void __exit exit_kmsg_sock(void)
 static int __init init_kmsg_sock(void)
 {
 	int i, ret;
+	struct sock_handle *sh;
 
 	MSGPRINTK("Loading Popcorn messaging layer over TCP/IP...\n");
 
@@ -558,7 +559,7 @@ static int __init init_kmsg_sock(void)
 			End of to be replaced
 		*/
 
-		struct sock_handle *sh = get_node(i)->handle;
+		*sh = get_node(i)->handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
 		if (!sh->msg_q) {

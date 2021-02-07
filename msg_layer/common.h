@@ -20,6 +20,12 @@
 
 #include "config.h"
 
+//these are the available protocols
+#define NUMBER_OF_PROTOCOLS 2
+enum protocol_t {TCP, RDMA}; //update both this and the following line to add more protocols
+const char* protocol_strings[NUMBER_OF_PROTOCOLS] = {"TCP", "RDMA"}; //ensure that the strings are in the same order as above line
+#define DEFAULT_PROTOCOL TCP
+
 struct q_item {
 	struct pcn_kmsg_message *msg;
 	unsigned long flags;
@@ -87,14 +93,16 @@ MODULE_PARM_DESC(ip, "");
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
-	node_list* list = root_node_list;
+	int list_number;
+	int i;
+	struct node_list* list = root_node_list;
 	if (index >= node_list_length) goto node_doesnt_exist;
 	else {
 		//move to the appropriate list
 		//List number:       index / MAX_NUM_NODES_PER_LIST
 		//Index within list: index % MAX_NUM_NODES_PER_LIST
-		int list_number = index / MAX_NUM_NODES_PER_LIST;
-		for (int i = 0; i < list_number; i++) {
+		list_number = index / MAX_NUM_NODES_PER_LIST;
+		for (i = 0; i < list_number; i++) {
 			#ifdef CONFIG_POPCORN_CHECK_SANITY
 					BUG_ON(list->next_list == nullptr); //a list must have been removed without deleting the pointer or updating the length variable
 			#endif
@@ -112,9 +120,9 @@ struct message_node* get_node(int index) {
 				BUG_ON(false); //you should never call a node that isn't here
 		#endif
 
-		//need better solution for error handling
-		//maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
-		return node_list[0]; 
+	//need better solution for error handling
+	//maybe if it requests this node it shows that the node list is out-of-date so reload it and then try again
+	return node_list[0]; 
 }
 
 struct node_list* create_node_list(node_list *previous_list) { //do not use directly - add_node will use this automatically

@@ -3,17 +3,15 @@
 #include <linux/kernel.h>
 #include <stdbool.h>
 
+#include "common.h"
+
 
 #define LENGTH_OF_IPV4_ADDRESS_STRING 16 //"192.168.192.168\0" is max length
 #define MAX_NUMBER_OF_NODES 64
 #define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
 
-//these are the available protocols
-#define NUMBER_OF_PROTOCOLS 2
-enum protocol_t {TCP, RDMA}; //update both this and the following line to add more protocols
-const char* protocol_strings[NUMBER_OF_PROTOCOLS] = {"TCP", "RDMA"}; //ensure that the strings are in the same order as above line
-#define DEFAULT_PROTOCOL TCP
+
 
 int after_last_node_index;
 
@@ -21,31 +19,6 @@ struct q_item {
 	struct pcn_kmsg_message *msg;
 	unsigned long flags;
 	struct completion *done;
-};
-
-struct message_node {
-	uint32_t address;
-	bool enabled;
-	enum protocol_t protocol; //define acceptable protocols
-	struct sock_handle *handle;
-	struct pcn_kmsg_transport *transport;
-};
-
-/* Per-node handle for socket */
-struct sock_handle {
-	int nid;
-
-	/* Ring buffer for queueing outbound messages */
-	struct q_item *msg_q;
-	unsigned long q_head;
-	unsigned long q_tail;
-	spinlock_t q_lock;
-	struct semaphore q_empty;
-	struct semaphore q_full;
-
-	struct socket *sock;
-	struct task_struct *send_handler;
-	struct task_struct *recv_handler;
 };
 
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
@@ -61,7 +34,7 @@ bool set_transport_structure(struct message_node* node) {
 
 struct message_node *node_list[MAX_NUMBER_OF_NODES] = {0};
 
-struct message_node* get_node(int index) { ///////////////////////////////////////////function will need to be adjusted to whatever it is
+/*struct message_node* get_node(int index) { ///////////////////////////////////////////function will need to be adjusted to whatever it is
     if (index >= MAX_NUMBER_OF_NODES) {
         printk(KERN_ERR "The index %d is greater than the number of nodes %d (indexed from zero)", index, MAX_NUMBER_OF_NODES);
         return NULL;
@@ -71,7 +44,7 @@ struct message_node* get_node(int index) { /////////////////////////////////////
         return NULL;
     }
     return node_list[index];
-}
+}*/
 
 /**
  * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,

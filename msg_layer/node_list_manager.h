@@ -120,7 +120,7 @@ void node_update_protocol(int index, char* protocol) {
  * @param char[] address
  * @return int index index of the node with the given address
 */
-int node_find(char* address) {
+/*int node_find(char* address) {
     int found_at;
     int i;
     struct message_node* node;
@@ -137,7 +137,7 @@ int node_find(char* address) {
         }
     }
     return found_at; //if nothing was found then this will be -1
-}
+}*/
 
 /**
  * Reloads the node list to match that of the provided file. Tears down connections to all nodes, attempts to parse the file 
