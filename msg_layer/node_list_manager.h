@@ -19,7 +19,7 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 void node_get(int index) {
     struct message_node* node = get_node(index);
     //copy the desired output to the buffer
-    sprintf(output_buffer, "%s %s", address_to_string(node->address), protocol_to_string(node->protocol));
+    sprintf(output_buffer, "???.???.?.? %s", protocol_to_string(node->protocol));
 }
 
 /**
@@ -72,7 +72,7 @@ void node_remove(int index) {
  * @param int index the index of the node in the node list
  * @param char *address[] string that the result will be placed in
 */
-void node_get_address(int index, char address[LENGTH_OF_IPV4_ADDRESS_STRING]) {
+void node_get_address(int index, char address[INET_ADDRSTRLEN]) {
     if (!get_node(index)) printk(KERN_ERR "Failed to get the node address, the address variable has not been updated and so has it's previous value");
     else {
         uint32_t ip = get_node(index)->address;
@@ -109,6 +109,7 @@ void node_update_protocol(int index, char* protocol) {
         get_node(index)->protocol = string_to_protocol(protocol); //change the protocol
         if (enable_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
         else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
+    }
 }
 
 /**
@@ -156,7 +157,7 @@ void node_load(char* address) {
  * Gives the highest indexed node.
  * @return void however the output_buffer is filled with the highest index of a node that exists
 */
-int node_highest_index(void) {
+void node_highest_index(void) {
     sprintf(output_buffer, "%d", after_last_node_index - 1);
 }
 

@@ -497,6 +497,7 @@ out_release:
 static void __exit exit_kmsg_sock(void)
 {
 	int i;
+	struct sock_handle* sh;
 	
 	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
 
@@ -506,7 +507,7 @@ static void __exit exit_kmsg_sock(void)
 	if (sock_listen) sock_release(sock_listen);
 
 	for (i = 0; i < node_list_length; i++) {
-		struct sock_handle *sh = get_node(i)->handle;
+		sh = get_node(i)->handle;
 		if (sh->send_handler) {
 			kthread_stop(sh->send_handler);
 		} else {
@@ -521,7 +522,7 @@ static void __exit exit_kmsg_sock(void)
 	}
 	ring_buffer_destroy(&send_buffer);
 
-	node_list_destroy();
+	destroy_node_list_controller();
 
 	MSGPRINTK("Successfully unloaded module!\n");
 }
@@ -559,7 +560,7 @@ static int __init init_kmsg_sock(void)
 			End of to be replaced
 		*/
 
-		*sh = get_node(i)->handle;
+		sh = get_node(i)->handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
 		if (!sh->msg_q) {
