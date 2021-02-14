@@ -187,6 +187,7 @@ enum {
 	PCN_KMSG_FEATURE_RDMA = 1,
 };
 
+
 /**
  * Check the features that the transport layer provides. Return true iff all
  * features are supported.
