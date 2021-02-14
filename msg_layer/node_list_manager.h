@@ -22,7 +22,7 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 void node_get(int index) {
     struct message_node* node = get_node(index);
     //copy the desired output to the buffer
-    sprintf(output_buffer, "???.???.?.? %s", protocol_to_string(node->protocol));
+    sprintf(output_buffer, "???.???.?.? %s", protocol_to_string(node->transport));
 }
 
 /**
@@ -43,7 +43,7 @@ void node_exists(int index) {
 */
 void node_add(char* address_string, char* protocol_string) {
     //convert values that can be used in the popcorn messaging layer
-    enum protocol_t protocol = string_to_protocol(protocol_string);
+    struct pcn_kmsg_transport* protocol = string_to_protocol(protocol_string);
 
     uint32_t address = in_aton(address_string);
 
@@ -91,12 +91,8 @@ void node_get_address(int index, char address[INET_ADDRSTRLEN]) {
  * @return void however the output_buffer is filled with the protocol used as a string
 */
 char* node_get_protocol(int index) {
-    enum protocol_t protocol;
     if (!get_node(index)) return "Node does not exist";
-    protocol = get_node(index)->protocol;
-    if (protocol == TCP) return "TCP";
-    else if (protocol == RDMA) return "RDMA";
-    else return "Unknown protocol, has a new one been added?";
+    else return get_node(index)->transport->name;
 }
 
 /**
@@ -109,7 +105,7 @@ void node_update_protocol(int index, char* protocol) {
     if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         disable_node(index); //tear down existing connection
-        get_node(index)->protocol = string_to_protocol(protocol); //change the protocol
+        get_node(index)->transport = string_to_protocol(protocol); //change the protocol
         if (enable_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
         else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     }
