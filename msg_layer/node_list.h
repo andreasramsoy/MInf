@@ -1,3 +1,10 @@
+#ifndef __POPCORN_NODE_LIST_H__
+#define __POPCORN_NODE_LIST_H__
+
+
+//#define POPCORN_SOCK_ON
+//#DEFINE POPCORN_RDMA_ON
+
 /*
  * This specifies the structure of the node list and the basic functions
  * to interact with it
@@ -23,75 +30,16 @@
 #include <linux/inetdevice.h>
 #include <linux/netdevice.h>
 
+#include "message_node.h"
 
 #define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
-#define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
-//these are the available protocols
-#define NUMBER_OF_PROTOCOLS 2
-enum protocol_t {TCP, RDMA}; //update both this and the following line to add more protocols
-const char* protocol_strings[NUMBER_OF_PROTOCOLS] = {"TCP", "RDMA"}; //ensure that the strings are in the same order as above line
-#define DEFAULT_PROTOCOL TCP
-
-int node_list_length = 0;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
-int after_last_node_index;
+int my_nid;
 
-struct q_item {
-	struct pcn_kmsg_message *msg;
-	unsigned long flags;
-	struct completion *done;
-};
-
-struct node_list {
-	struct message_node* nodes[MAX_NUM_NODES_PER_LIST];
-	struct node_list* next_list;
-};
-
-/* Per-node handle for socket */
-struct sock_handle {
-	int nid;
-
-	/* Ring buffer for queueing outbound messages */
-	struct q_item *msg_q;
-	unsigned long q_head;
-	unsigned long q_tail;
-	spinlock_t q_lock;
-	struct semaphore q_empty;
-	struct semaphore q_full;
-
-	struct socket *sock;
-	struct task_struct *send_handler;
-	struct task_struct *recv_handler;
-};
-
-struct message_node {
-	uint32_t address;
-	bool enabled;
-	enum protocol_t protocol; //define acceptable protocols
-	struct sock_handle *handle;
-	struct pcn_kmsg_transport *transport;
-};
-
-bool set_transport_structure(struct message_node* node) {
-    return true; //////////////////////stub, will need to check protocol in the popcorn module
-}
-
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////  Need to add the node_list transport structure to the pcn_kmsg.c
-///////////////////////////  So that the transport structure is actually dynamic
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
-
+int after_last_node_index = 0;
 
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
@@ -101,7 +49,7 @@ struct message_node* get_node(int index) {
 	struct node_list* list = root_node_list;
 	
 	#ifdef CONFIG_POPCORN_CHECK_SANITY
-		BUG_ON(index >= node_list_length); //node doesn't exist
+		BUG_ON(index >= after_last_node_index); //node doesn't exist
 	#endif
 	
 	//move to the appropriate list
@@ -124,25 +72,37 @@ struct message_node* get_node(int index) {
 }
 
 /**
+ * Initialises handlers and queues
+ * @param int index of the node that is to be initialised
+ */
+bool setup_handlers(struct message_node* node) {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////need to set i
+
+}
+
+/**
  * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
  * etc. so that if the structure of the nodes change then only this function needs to be changed
  * @param uint32_t address the address of new node
  * @param protocol_t protocol the protocol that the new node should use
  * @return message_node* node pointer to the new node
 */
-struct message_node* create_node(uint32_t address_p, enum protocol_t protocol_p) {
+struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
     bool success;
 
     struct message_node* node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
-        printk(KERN_ERR "Could not create the node as a null pointer was returned");
+        printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
     }
     node->address = address_p;
-    node->protocol = protocol_p;
-    node->enabled = false; //blocks this node from being used until the node is added to the node list
 
-    success = set_transport_structure(node);
+    //transport structure
+    node->transport = transport;
+    if (node->transport == NULL) success = false; //this can be caused when the protocol is not in the protocol list
+
+    //handlers
+    success = success && setup_handlers(node);
 
     if (!success) {
         kfree(node);
@@ -164,23 +124,19 @@ int find_first_null_pointer(void) {
 
 //disable and disconnect
 bool disable_node(int index) {
-    get_node(index)->enabled = false;
-
-    //////////////////////////////////////tear down connections
-
-    return true;
+    struct message_node node = get_node(index);
+    return node->protocol_s->destroy_connection(node);
 }
 
 //enable and connect
 bool enable_node(int index) {
-    //uses the node list index to ensure that all nodes with connections are stored there and so tracked
-    bool success;
-
-    get_node(index)->enabled = false; //probably already set to false but want to block using connection 
-    success = true; //connections set this////////////////////////////////////////establish connections here
-    if (success) get_node(index)->enabled = true; //allows connections
-
-    return success;
+    struct message_node node = get_node(index);
+    if (index < _nid) {
+        return node->protocol_s->connect_to_server(node);
+    }
+    else {
+        return node->protocol_s->accept_client(node);
+    }
 }
 
 const char* protocol_to_string(enum protocol_t protocol) {
@@ -191,13 +147,17 @@ const char* protocol_to_string(enum protocol_t protocol) {
     return protocol_strings[protocol];
 }
 
-enum protocol_t string_to_protocol(char* protocol) {
-    int i = 0;
-    for (i = 0; i < NUMBER_OF_PROTOCOLS; i++) {
-        if (strcmp(protocol_strings[i], protocol) == 0) return i; //the integers are mapped to enums
+struct pcn_kmsg_transport* string_to_transport(char* protocol) {
+    struct transport_list* transport = transport_list_head;
+
+    while (transport->next != NULL) {
+        if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure; //the integers are mapped to enums
+        transport = transport->next;
     }
-    printk(KERN_ERR "The string did not match any of the protocols known. Defaulting to %s\n", protocol_strings[DEFAULT_PROTOCOL]);
-    return DEFAULT_PROTOCOL;
+
+    //exited so must have not found a suitable protocol
+    printk(KERN_ERR "The protocol provided did not match any that were loaded %s\n", protocol);
+    return NULL;
 }
 
 ///////////////stub for address translation
@@ -243,8 +203,8 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	int list_number;
 	struct node_list* list = root_node_list;
 	#ifdef CONFIG_POPCORN_CHECK_SANITY
-			if (node_list_length != 0) {
-				BUG_ON(get_node(node_list_length - 1) != NULL); //ensure that the previous node has not been used
+			if (after_last_node_index != 0) {
+				BUG_ON(get_node(after_last_node_index - 1) != NULL); //ensure that the previous node has not been used
 			}
 	#endif
 
@@ -266,8 +226,26 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
 	//add to that list
 	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
-	after_last_node_index = index; //this is used when looping through list
-	node_list_length++; //increment here because there are sanity checks that use this variable
+	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
+
+    node->index = index;
+
+    //initialise communications
+    if (!node->transport->is_initialised) {
+        if (node->transport->init_transport(node)) MSGPRINTK("Initialised transport for %s (this should only be done once)\n", node->tranport->name);
+        else {
+            MSGPRINTK("Failed to initialise tranport for %s\n", node->transport->name);
+            remove_node(index);
+            return -1; //could not be added
+        }
+    }
+    if (!node->transport->init_node(node)) { //start the communication
+        MSGPRINTK("Failed to initialise a node on the %s transport\n", node->transport->name);
+        remove_node(index);
+        return -1;
+    }
+
+    node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
 	return index;
 }
@@ -276,7 +254,14 @@ void remove_node(int index) {
     int i;
     int list_number;
     struct node_list* list;
-    disable_node(index); //disables and tears down connections
+    disable_node(index); //sets to the always fail transport
+
+    node->transport->kill_node(node);
+
+    if (node->transport->number_of_users <= 0) {
+        node->transport->exit_transport();
+        MSGPRINTK("No nodes are using %s as transport, removing this transport\n", node->transport->name);
+    }
 
     kfree(get_node(index)); //node has been disabled so cannot be used now
     
@@ -334,7 +319,7 @@ struct message_node* parse_node(char* node_string) {
         protocol[j - i] = '\0'; //finishes the string
     }
 
-    rtn = create_node(address_string_to_int(address), string_to_protocol(protocol));
+    rtn = create_node(address_string_to_int(address), string_to_transport(protocol));
 
     kfree(address);
     kfree(protocol);
@@ -347,7 +332,7 @@ bool get_node_list_from_file(const char * address) {
 
     if (fileptr == NULL) {
         MSGPRINTK("The node list file could not be opened and so the node list could not be found");
-        return false;
+        */return false;/*
     }
 
     char line[MAX_FILE_LINE_LENGTH];
@@ -365,9 +350,9 @@ bool get_node_list_from_file(const char * address) {
         else add_node(new_node);
     }
 
-    fclose(fileptr);*/
+    fclose(fileptr);
 
-    return true;
+    return true;*/
 }
 
 
@@ -395,8 +380,6 @@ bool __init identify_myself(void)
 	int i;
 	uint32_t my_ip;
 
-	//load_node_list(); //populated the node_list
-
 	my_ip = __get_host_ip();
 
 	for (i = 0; i < after_last_node_index; i++) {
@@ -408,18 +391,35 @@ bool __init identify_myself(void)
 		PCNPRINTK("%s %d: %d\n", me, i, get_node(i)->address);
 	}
 
+    if (after_last_node_index == 0) PCNPRINTK("No nodes in the list to display\n");
+
 	if (my_nid < 0) {
 		PCNPRINTK_ERR("My IP is not listed in the node configuration\n");
-		return false;
+		//return false; //if the IP is not listed then it should be added
 	}
 
 	return true;
 }
 
 void initialise_node_list(void) {
+
+    #ifdef POPCORN_SOCK_ON
+    init_sock(); //initialises all tcp stuff that needs to be done before the first node is added
+    #endif
+    #ifdef POPCORN_RDMA_ON
+    //init_rdma();
+    #endif
+
+    // add more protocols as needed, remember to include them as a header file and they should be of the same form as socket.h
+    // also add individual node initialisationns in the add_node, remove_node and destroy_node_list functions
+
+
+
     MSGPRINTK("Initialising existing node list...\n");
-    get_node_list_from_file(NODE_LIST_FILE_ADDRESS);
+    if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) MSGPRINTK("The node list file could not be loaded, empty node list is used instead\n"); //need to retreive from an existing file
     MSGPRINTK("Finished creating node list\n");
+
+    my_nid = identify_myself();
 }
 
 void destroy_node_list(void) {
@@ -427,4 +427,12 @@ void destroy_node_list(void) {
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory, the node list file is only updated when saved
     }
+
+    #ifdef POPCORN_SOCK_ON
+    destroy_sock(); //initialises all tcp stuff that needs to be done before the first node is added
+    #endif
+    #ifdef POPCORN_RDMA_ON
+    //destroy_rdma();
+    #endif
 }
+#endif

@@ -1,3 +1,6 @@
+#ifndef __POPCORN_NODE_LIST_MANAGER_H__
+#define __POPCORN_NODE_LIST_MANAGER_H__
+
 /*
     This file, the node_list_manager.h, is responsible for manipluating the
     node list specified in node_list.h
@@ -167,3 +170,4 @@ void node_highest_index(void) {
 void node_save(void) {
     save_to_file();
 }
+#endif
