@@ -195,11 +195,11 @@ enum {
 bool pcn_kmsg_has_features(unsigned int features);
 
 struct pcn_kmsg_transport {
-	uint64_t *name;
+	char *name;
 	unsigned long features;
 
-	bool is_initalised = False;
-	int number_of_users = 0; //number of nodes currently using this transport
+	bool is_initialised;
+	uint64_t number_of_users; //number of nodes currently using this transport
 	int (*init_transport)(void); //one time initialisation
 	int (*exit_transport)(void); //final destroying of the transport
 	bool (*init_node)(struct message_node*); //called for each node that joins
