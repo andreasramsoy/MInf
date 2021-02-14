@@ -569,7 +569,7 @@ static int __init init_sock(void)
 
 	my_nid = 0; //initialises to zero so popcorn can boot even if there is no node list
 	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
-	//pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent
+	pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent
 
 	if ((ret = ring_buffer_init(&send_buffer, "sock_send"))) goto out_exit;
 
@@ -586,7 +586,7 @@ static int __init init_sock(void)
 
 
 	node = get_node(my_nid);
-	if (node != NULL && node->protocol == TCP) broadcast_my_node_info(i); ////////////////////////////////////////////////
+	if (node != NULL && node->transport == transport_socket) broadcast_my_node_info(i); ////////////////////////////////////////////////
 
 	PCNPRINTK("Ready on TCP/IP\n");
 	peers_init();

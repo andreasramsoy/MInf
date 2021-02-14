@@ -4,6 +4,9 @@ PWD := $(shell pwd)
 include $(KERNELDIR)/.config
 endif
 
+obj-$(CONFIG_POPCORN_KMSG_INIT) += msg_init.o
+msg_init-y := msg_init.o ring_buffer.o
+
 obj-$(CONFIG_POPCORN_KMSG_SOCKET) += msg_socket.o
 msg_socket-y := socket.o ring_buffer.o
 

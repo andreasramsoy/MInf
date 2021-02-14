@@ -3,6 +3,10 @@
  * without being tied to a particular transfer protocol
  */
 
+#include "node_controller.h"
+#include "node_list_manager.h"
+#include "node_list.h"
+
 static void __exit exit_kmsg(void) {
 	MSGPRINTK("Exiting Popcorn messaging layer...\n");
 
