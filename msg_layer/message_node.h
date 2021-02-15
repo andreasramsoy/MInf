@@ -5,12 +5,23 @@
  * Header file to define all of the message node types so they can be used across popcorn
  */
 
+/** TODO: What is the optimum number of nodes? Generally, the higher the 
+ *  better but should there be some process in deciding this value?
+ */
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
  struct q_item {
 	struct pcn_kmsg_message *msg;
 	unsigned long flags;
 	struct completion *done;
+};
+
+struct message_node {
+    uint64_t index;
+    bool connected;
+	uint32_t address;
+	struct sock_handle *handle;
+	struct pcn_kmsg_transport *transport;
 };
 
 struct node_list {
@@ -35,11 +46,5 @@ struct sock_handle {
 	struct task_struct *recv_handler;
 };
 
-struct message_node {
-    uint64_t index;
-	uint32_t address;
-	struct sock_handle *handle;
-	struct pcn_kmsg_transport *transport;
-};
 
 #endif

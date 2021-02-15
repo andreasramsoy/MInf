@@ -22,6 +22,8 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 void node_get(int index) {
     struct message_node* node = get_node(index);
     //copy the desired output to the buffer
+    /** TODO: Find correct function to translate addresses
+     */
     sprintf(output_buffer, "???.???.?.? %s", protocol_to_string(node->transport));
 }
 

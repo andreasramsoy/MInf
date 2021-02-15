@@ -21,7 +21,10 @@ enum {
 	SEND_FLAG_POSTED = 0,
 };
 
-//static struct sock_handle sock_handles[MAX_NUM_NODES] = {}; //////////////////////////////////////
+static int __init init_sock(void);
+static void __exit exit_kmsg_sock(void);
+
+
 
 static struct socket *sock_listen = NULL;
 static struct ring_buffer send_buffer = {};
@@ -281,7 +284,7 @@ static int __show_peers(struct seq_file *seq, void *v)
 {	
 	int i;
 	char* myself = " ";	
-	for (i = 0; i < node_list_length; i++) 
+	for (i = 0; i < after_last_node_index; i++) 
 	{
 		if (i == my_nid) myself = "*";
 		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n", myself,
@@ -317,7 +320,7 @@ static int peers_init(void)
         return 0;
 }
 
-static struct task_struct * __init __sock_start_handler(struct message_node node, const char *type, int (*handler)(void *data))
+static struct task_struct * __init __sock_start_handler(struct message_node* node, const char *type, int (*handler)(void *data))
 {
 	char name[40];
 	struct task_struct *tsk;
@@ -339,7 +342,7 @@ static struct task_struct * __init __sock_start_handler(struct message_node node
 	return tsk;
 }
 
-static int __sock_start_handlers(struct message_node)
+static int __sock_start_handlers(struct message_node* node)
 {
 	struct task_struct *tsk_send, *tsk_recv;
 	tsk_send = __sock_start_handler(node, "send", send_handler);
@@ -419,7 +422,7 @@ static int __init __sock_accept_client(struct message_node* node)
 		}
 
 		/* Identify incoming peer nid */
-		for (i = 0; i < node_list_length; i++) {
+		for (i = 0; i < after_last_node; i++) {
 			if (addr.sin_addr.s_addr == node->address) {
 				found = true;
 			}
@@ -464,7 +467,7 @@ static int __init __sock_listen_to_connection(void)
 		goto out_release;
 	}
 
-	ret = kernel_listen(sock_listen, node_list_length);
+	ret = kernel_listen(sock_listen, after_last_node_index);
 	if (ret < 0) {
 		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
 		goto out_release;
@@ -485,7 +488,7 @@ out_release:
  */
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
-	sh = get_node(i)->handle;
+	sh = node->handle;
 	if (sh->send_handler) {
 		kthread_stop(sh->send_handler);
 	} else {
@@ -505,7 +508,7 @@ bool kill_node_sock(struct message_node* node) {
  */
 bool init_node_sock(struct message_node* node) {
 	if (node != NULL) {
-		node->transport = &transport_socket; //change from the initial nothing transport structure
+		node->transport = transport_socket; //change from the initial nothing transport structure
 
 		sh = node->handle;
 
@@ -515,7 +518,7 @@ bool init_node_sock(struct message_node* node) {
 			return false;
 		}
 
-		sh->nid = i;
+		sh->nid = node->index;
 		sh->q_head = 0;
 		sh->q_tail = 0;
 		spin_lock_init(&sh->q_lock);
@@ -547,8 +550,32 @@ bool init_node_sock(struct message_node* node) {
 	return false;
 }
 
+struct pcn_kmsg_transport transport_socket = {
+	.name = "socket",
+	.features = 0,
+
+	.is_initialised = false;
+	.number_of_users = 0;
+	.init_transport = init_sock,
+	.exit_transport = exit_sock,
+	.init_node = init_node_sock,
+	.kill_node = kill_node_sock,
+	.connect = __sock_connect_to_server,
+	.accept = __sock_accept_client
+
+	.get = sock_kmsg_get,
+	.put = sock_kmsg_put,
+	.stat = sock_kmsg_stat,
+
+	.send = sock_kmsg_send,
+	.post = sock_kmsg_post,
+	.done = sock_kmsg_done,
+};
+
 static void __exit exit_kmsg_sock(void)
 {
+	struct transport_list* trans_list;
+	transport_socket.is_initialised = false;
 	proc_remove(proc_entry);
 
 	if (sock_listen) sock_release(sock_listen);
@@ -591,29 +618,11 @@ static int __init init_sock(void)
 	PCNPRINTK("Ready on TCP/IP\n");
 	peers_init();
 	
+	transport_socket.is_initialised = true;
+	
 	return 0;
 
 out_exit:
 	exit_sock();
 	return ret;
 }
-
-struct pcn_kmsg_transport transport_socket = {
-	.name = "socket",
-	.features = 0,
-
-	.init_transport = init_sock,
-	.exit_transport = exit_sock,
-	.init_node = init_node_sock,
-	.kill_node = kill_node_sock,
-	.connect = __sock_connect_to_server,
-	.accept = __sock_accept_client
-
-	.get = sock_kmsg_get,
-	.put = sock_kmsg_put,
-	.stat = sock_kmsg_stat,
-
-	.send = sock_kmsg_send,
-	.post = sock_kmsg_post,
-	.done = sock_kmsg_done,
-};

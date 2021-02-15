@@ -98,6 +98,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
 
+    node->connected = false;
+
     //transport structure
     node->transport = transport;
     if (node->transport == NULL) success = false; //this can be caused when the protocol is not in the protocol list
@@ -122,21 +124,16 @@ int find_first_null_pointer(void) {
 
 //disable and disconnect
 bool disable_node(int index) {
-    //struct message_node* node = get_node(index);
-    //return node->protocol_s->destroy_connection(node);
-    return true;
+    struct message_node* node = get_node(index);
+    node->connected = !(node->transport->kill_node(node)); //destroys the connection
+    return node->connected;
 }
 
 //enable and connect
 bool enable_node(int index) {
-    /*struct message_node* node = get_node(index);
-    if (index < _nid) {
-        return node->protocol_s->connect_to_server(node);
-    }
-    else {
-        return node->protocol_s->accept_client(node);
-    }*/
-    return true;
+    struct message_node* node = get_node(index);
+    node->connected = node->transport->init_node(node); //destroys the connection
+    return node->connected;
 }
 
 const char* protocol_to_string(struct pcn_kmsg_transport* transport) {
@@ -405,19 +402,71 @@ bool __init identify_myself(void)
 	return true;
 }
 
+void add_protocol(struct pcn_kmsg_transport* transport_item) {
+    struct transport_list* trans_list;
+    if (transport_list_head->transport_structure = NULL) {
+        transport_list_head->transport_structure = transport_item;
+    }
+	else {
+		trans_list = transport_list_head;
+		while (trans_list->next != NULL) {
+			trans_list = trans_list->next;
+		}
+		new_trans_list = kalloc(sizeof(struct transport_list), GFP_KERNEL);
+		trans_list->next = new_trans_list;
+		new_trans_list->transport_stucture = transport_item;
+		new_trans_list->next = NULL;
+	}
+}
+
+void remove_protocol(struct pcn_kmsg_transport* transport_item) {
+    if (transport_list_head->transport_structure == NULL && transport_list_head->next == NULL) {
+        //only member of list
+		transport_list_head->transport_stucture = NULL;
+	}
+	else if (transport_list_head->transport_structure == NULL) {
+		//this is the first transport structure but there are others
+		transport_list_head->transport_structure = transport_list_head->next->transport_structure;
+		trans_list = transport_list_head->next;
+		transport_list_head->next = trans_list->next; //hop over
+		kfree(trans_list);
+	}
+	else if (tranport_list_head->next == transport_structure) {
+		//edge case of being second in list
+        trans_list = transport_list_head->next->next; //this may be null but doesn't matter
+		kfree(transport_list_head->next);
+		transport_list_head->next = trans_list;
+	}
+	else {
+		trans_list = transport_list_head;
+		while (trans_list->next->next != NULL && trans_list->next->transport_structure != transport_socket) {
+			trans_list = trans_list->next;
+		}
+		if (trans_list->next->transport_structure == transport_socket) {
+			//the next node is the one to be removed
+			new_list = trans_list->next;
+			trans_list->next = trans_list->next->next; //hop over
+			kfree(new_list);
+		}
+		else {
+			printk(KERN_ERR "Failed to remove the %s transport from the transport list, it should be present\n", transport_socket.name);
+		}
+	}
+}
+
 void initialise_node_list(void) {
 
     after_last_node_index = 0;
 
     #ifdef POPCORN_SOCK_ON
-    transport_list_head->transport_structure = transport_sock; //initialises all tcp stuff that needs to be done before the first node is added
+    add_protocol(transport_sock); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     //init_rdma();
     #endif
 
-    // add more protocols as needed, remember to include them as a header file and they should be of the same form as socket.h
-    // also add individual node initialisationns in the add_node, remove_node and destroy_node_list functions
+    // add more protocols as needed, they will need to be removed when exitting too, they should be included
+    // as a header file implementing the pcn_kmsg_transport as an interface
 
 
 
@@ -435,10 +484,13 @@ void destroy_node_list(void) {
     }
 
     #ifdef POPCORN_SOCK_ON
-    destroy_sock(); //initialises all tcp stuff that needs to be done before the first node is added
+    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     //destroy_rdma();
     #endif
+
+    //add more protocols as needed
+
 }
 #endif
