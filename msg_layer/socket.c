@@ -22,7 +22,8 @@ enum {
 };
 
 static int __init init_sock(void);
-static void __exit exit_kmsg_sock(void);
+static void __exit exit_sock(void);
+bool init_node_sock(struct message_node* node);
 
 
 
@@ -325,7 +326,7 @@ static struct task_struct * __init __sock_start_handler(struct message_node* nod
 	char name[40];
 	struct task_struct *tsk;
 
-	sprintf(name, "pcn_%s_%d", type, node->index);
+	sprintf(name, "pcn_%s_%lld", type, node->index);
 	tsk = kthread_run(handler, node->handle, name);
 	if (IS_ERR(tsk)) {
 		printk(KERN_ERR "Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
@@ -360,7 +361,7 @@ static int __sock_start_handlers(struct message_node* node)
 	return 0;
 }
 
-static int __init __sock_connect_to_server(struct message_node node)
+static int __init __sock_connect_to_server(struct message_node* node)
 {
 	int ret;
 	struct sockaddr_in addr;
@@ -422,7 +423,7 @@ static int __init __sock_accept_client(struct message_node* node)
 		}
 
 		/* Identify incoming peer nid */
-		for (i = 0; i < after_last_node; i++) {
+		for (i = 0; i < after_last_node_index; i++) {
 			if (addr.sin_addr.s_addr == node->address) {
 				found = true;
 			}
@@ -500,15 +501,39 @@ bool kill_node_sock(struct message_node* node) {
 	if (sh->sock) {
 		sock_release(sh->sock);
 	}
+	return true;
 }
+
+extern struct pcn_kmsg_transport transport_socket = {
+	.name = "socket",
+	.features = 0,
+
+	.is_initialised = false,
+	.number_of_users = 0,
+	.init_transport = init_sock,
+	.exit_transport = exit_sock,
+	.init_node = init_node_sock,
+	.kill_node = kill_node_sock,
+	.connect = __sock_connect_to_server,
+	.accept = __sock_accept_client
+
+	.get = sock_kmsg_get,
+	.put = sock_kmsg_put,
+	.stat = sock_kmsg_stat,
+
+	.send = sock_kmsg_send,
+	.post = sock_kmsg_post,
+	.done = sock_kmsg_done,
+};
 
 /**
  * Function to start communications with a node
  * @param struct message_node* node to be added
  */
 bool init_node_sock(struct message_node* node) {
+	struct sock_handle* sh;
 	if (node != NULL) {
-		node->transport = transport_socket; //change from the initial nothing transport structure
+		node->transport = &transport_socket; //change from the initial nothing transport structure
 
 		sh = node->handle;
 
@@ -534,7 +559,7 @@ bool init_node_sock(struct message_node* node) {
 			}
 		}
 		else if (node->index < my_nid) {
-			if (__accept_client(node)) {
+			if (__sock_accept_client(node)) {
 				set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
 				return true;
 			}
@@ -543,38 +568,14 @@ bool init_node_sock(struct message_node* node) {
 			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
 			return true;
 		}
-		if ((ret = )) return false;
-		set_popcorn_node_online(i, true); /////////////////////////////////////////////////this should be in the main .c file
+		set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
 
 	}
 	return false;
 }
 
-struct pcn_kmsg_transport transport_socket = {
-	.name = "socket",
-	.features = 0,
-
-	.is_initialised = false;
-	.number_of_users = 0;
-	.init_transport = init_sock,
-	.exit_transport = exit_sock,
-	.init_node = init_node_sock,
-	.kill_node = kill_node_sock,
-	.connect = __sock_connect_to_server,
-	.accept = __sock_accept_client
-
-	.get = sock_kmsg_get,
-	.put = sock_kmsg_put,
-	.stat = sock_kmsg_stat,
-
-	.send = sock_kmsg_send,
-	.post = sock_kmsg_post,
-	.done = sock_kmsg_done,
-};
-
-static void __exit exit_kmsg_sock(void)
+static void __exit exit_sock(void)
 {
-	struct transport_list* trans_list;
 	transport_socket.is_initialised = false;
 	proc_remove(proc_entry);
 
@@ -587,9 +588,7 @@ static void __exit exit_kmsg_sock(void)
 
 static int __init init_sock(void)
 {
-	int i, ret;
-	struct sock_handle *sh;
-	struct message_node node;
+	int ret;
 	MSGPRINTK("Loading Popcorn messaging layer over TCP/IP...\n");
 
 	initialise_node_list();
@@ -600,20 +599,12 @@ static int __init init_sock(void)
 
 	if ((ret = ring_buffer_init(&send_buffer, "sock_send"))) goto out_exit;
 
-	if ((ret = __listen_to_connection())) return ret;
+	if ((ret = __sock_listen_to_connection())) return ret;
 
 	/* Wait for a while so that nodes are ready to listen to connections */
 	msleep(100);
-
-	set_popcorn_node_online(my_nid, true); //////////////////////////////////////////////////////////////////
-
-	for (i = my_nid + 1; i < after_last_node_index; i++) {
-		node = get_node(i);
-	}
-
-
-	node = get_node(my_nid);
-	if (node != NULL && node->transport == transport_socket) broadcast_my_node_info(i); ////////////////////////////////////////////////
+	
+	broadcast_my_node_info(my_nid); ////////////////////////////////////////////////
 
 	PCNPRINTK("Ready on TCP/IP\n");
 	peers_init();

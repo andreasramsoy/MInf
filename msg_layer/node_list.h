@@ -32,10 +32,6 @@
 
 #include "message_node.h"
 
-#ifdef POPCORN_SOCK_ON
-#include "socket.h"
-#endif
-
 #define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
 
@@ -192,7 +188,7 @@ struct node_list* create_node_list(void) {
 void remove_node(int index) {
     int i;
     int list_number;
-    struct message_node node = get_node(index);
+    struct message_node* node = get_node(index);
     struct node_list* list;
     disable_node(index); //sets to the always fail transport
 
@@ -269,7 +265,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     //initialise communications
     if (!node->transport->is_initialised) {
-        if (node->transport->init_transport(node)) MSGPRINTK("Initialised transport for %s (this should only be done once)\n", node->tranport->name);
+        if (node->transport->init_transport()) MSGPRINTK("Initialised transport for %s (this should only be done once)\n", node->tranport->name);
         else {
             MSGPRINTK("Failed to initialise tranport for %s\n", node->transport->name);
             remove_node(index);
@@ -404,7 +400,8 @@ bool __init identify_myself(void)
 
 void add_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
-    if (transport_list_head->transport_structure = NULL) {
+    struct transport_list* new_trans_list;
+    if (transport_list_head->transport_structure == NULL) {
         transport_list_head->transport_structure = transport_item;
     }
 	else {
@@ -412,17 +409,19 @@ void add_protocol(struct pcn_kmsg_transport* transport_item) {
 		while (trans_list->next != NULL) {
 			trans_list = trans_list->next;
 		}
-		new_trans_list = kalloc(sizeof(struct transport_list), GFP_KERNEL);
+		new_trans_list = kmalloc(sizeof(struct transport_list), GFP_KERNEL);
 		trans_list->next = new_trans_list;
-		new_trans_list->transport_stucture = transport_item;
+		new_trans_list->transport_structure = transport_item;
 		new_trans_list->next = NULL;
 	}
 }
 
 void remove_protocol(struct pcn_kmsg_transport* transport_item) {
+    struct transport_list* trans_list;
+    struct transport_list* new_list;
     if (transport_list_head->transport_structure == NULL && transport_list_head->next == NULL) {
         //only member of list
-		transport_list_head->transport_stucture = NULL;
+		transport_list_head->transport_structure = NULL;
 	}
 	else if (transport_list_head->transport_structure == NULL) {
 		//this is the first transport structure but there are others
@@ -431,7 +430,7 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 		transport_list_head->next = trans_list->next; //hop over
 		kfree(trans_list);
 	}
-	else if (tranport_list_head->next == transport_structure) {
+	else if (transport_list_head->next == transport_item) {
 		//edge case of being second in list
         trans_list = transport_list_head->next->next; //this may be null but doesn't matter
 		kfree(transport_list_head->next);
@@ -439,17 +438,17 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 	}
 	else {
 		trans_list = transport_list_head;
-		while (trans_list->next->next != NULL && trans_list->next->transport_structure != transport_socket) {
+		while (trans_list->next->next != NULL && trans_list->next->transport_structure != transport_item) {
 			trans_list = trans_list->next;
 		}
-		if (trans_list->next->transport_structure == transport_socket) {
+		if (trans_list->next->transport_structure == transport_item) {
 			//the next node is the one to be removed
 			new_list = trans_list->next;
 			trans_list->next = trans_list->next->next; //hop over
 			kfree(new_list);
 		}
 		else {
-			printk(KERN_ERR "Failed to remove the %s transport from the transport list, it should be present\n", transport_socket.name);
+			printk(KERN_ERR "Failed to remove the %s transport from the transport list, it should be present\n", transport_item.name);
 		}
 	}
 }

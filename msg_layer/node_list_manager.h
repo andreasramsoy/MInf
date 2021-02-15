@@ -45,7 +45,7 @@ void node_exists(int index) {
 */
 void node_add(char* address_string, char* protocol_string) {
     //convert values that can be used in the popcorn messaging layer
-    struct pcn_kmsg_transport* protocol = string_to_protocol(protocol_string);
+    struct pcn_kmsg_transport* protocol = string_to_transport(protocol_string);
 
     uint32_t address = in_aton(address_string);
 
@@ -107,7 +107,7 @@ void node_update_protocol(int index, char* protocol) {
     if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         disable_node(index); //tear down existing connection
-        get_node(index)->transport = string_to_protocol(protocol); //change the protocol
+        get_node(index)->transport = string_to_transport(protocol); //change the protocol
         if (enable_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
         else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     }
