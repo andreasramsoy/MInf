@@ -498,16 +498,6 @@ bool initialise_node_list(void) {
     struct message_node* myself;
     after_last_node_index = 0;
 
-    #ifdef POPCORN_SOCK_ON
-    add_protocol(transport_sock); //initialises all tcp stuff that needs to be done before the first node is added
-    #endif
-    #ifdef POPCORN_RDMA_ON
-    //init_rdma();
-    #endif
-
-    // add more protocols as needed, they will need to be removed when exitting too, they should be included
-    // as a header file implementing the pcn_kmsg_transport as an interface
-
     if (transport_list_head->structure == NULL) {
 			printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
             destroy_node_list(); //destroy and exit
@@ -534,15 +524,5 @@ void destroy_node_list(void) {
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory, the node list file is only updated when saved
     }
-
-    #ifdef POPCORN_SOCK_ON
-    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
-    #endif
-    #ifdef POPCORN_RDMA_ON
-    //destroy_rdma();
-    #endif
-
-    //add more protocols as needed
-
 }
 #endif

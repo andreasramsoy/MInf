@@ -3,9 +3,14 @@
  * without being tied to a particular transfer protocol
  */
 
+#define POPCORN_SOCK_ON
 
 #include <popcorn/node_list.h>
 #include "node_list_manager.h"
+
+#ifdef POPCORN_SOCK_ON
+#include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
+#endif
 
 static struct proc_dir_entry *nodes_controller;
 
@@ -108,6 +113,16 @@ void destroy_node_list_controller(void) {
 static void __exit exit_kmsg(void) {
 	MSGPRINTK("Exiting Popcorn messaging layer...\n");
 
+    #ifdef POPCORN_SOCK_ON
+    add_protocol(transport_sock); //initialises all tcp stuff that needs to be done before the first node is added
+    #endif
+    #ifdef POPCORN_RDMA_ON
+    //init_rdma();
+    #endif
+
+    // add more protocols as needed, they will need to be removed when exitting too, they should be included
+    // as a header file implementing the pcn_kmsg_transport as an interface
+
 	MSGPRINTK("Popcorn messaging layer: destroying node list controller\n");
 	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
 
@@ -116,6 +131,15 @@ static void __exit exit_kmsg(void) {
 
 	MSGPRINTK("Popcorn messaging layer: destroying node list\n");
     destroy_node_list()
+
+    #ifdef POPCORN_SOCK_ON
+    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+    #endif
+    #ifdef POPCORN_RDMA_ON
+    //destroy_rdma();
+    #endif
+
+    //add more protocols as needed
 
 	MSGPRINTK("Popcorn messaging layer has been unloaded\n");
 }
