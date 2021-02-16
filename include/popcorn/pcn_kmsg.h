@@ -10,6 +10,7 @@
 
 #include <linux/types.h>
 #include <linux/seq_file.h>
+#include <popcorn/node_list.h> //allows access to the nodes' transport structure
 
 /* Enumerate message types */
 enum pcn_kmsg_type {
@@ -222,6 +223,9 @@ struct pcn_kmsg_transport {
 	int (*rdma_read)(int, void *, dma_addr_t, size_t, u32);
 };
 
-void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr);
+/**
+ * TOTO: Remove following line (ensure that nothing breaks from doing first)
+ */
+//void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr);
 
 #endif /* __POPCORN_PCN_KMSG_H__ */

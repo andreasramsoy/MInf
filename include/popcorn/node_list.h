@@ -30,10 +30,49 @@
 #include <linux/inetdevice.h>
 #include <linux/netdevice.h>
 
-#include "message_node.h"
-
 #define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
+
+/** TODO: What is the optimum number of nodes? Generally, the higher the 
+ *  better but should there be some process in deciding this value?
+ */
+#define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
+
+ struct q_item {
+	struct pcn_kmsg_message *msg;
+	unsigned long flags;
+	struct completion *done;
+};
+
+struct message_node {
+    uint64_t index;
+    bool connected;
+	uint32_t address;
+	struct sock_handle *handle;
+	struct pcn_kmsg_transport *transport;
+};
+
+struct node_list {
+	struct message_node* nodes[MAX_NUM_NODES_PER_LIST];
+	struct node_list* next_list;
+};
+
+/* Per-node handle for socket */
+struct sock_handle {
+	int nid;
+
+	/* Ring buffer for queueing outbound messages */
+	struct q_item *msg_q;
+	unsigned long q_head;
+	unsigned long q_tail;
+	spinlock_t q_lock;
+	struct semaphore q_empty;
+	struct semaphore q_full;
+
+	struct socket *sock;
+	struct task_struct *send_handler;
+	struct task_struct *recv_handler;
+};
 
 struct transport_list { //used to store all of the protocols
 	struct pcn_kmsg_transport* transport_structure;
@@ -82,7 +121,7 @@ struct message_node* get_node(int index) {
  * etc. so that if the structure of the nodes change then only this function needs to be changed
  * @param uint32_t address the address of new node
  * @param protocol_t protocol the protocol that the new node should use
- * @return message_node* node pointer to the new node
+ * @return message_node* node pointer to the new node, NULL if it could not be created
 */
 struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
     bool success;
@@ -98,7 +137,10 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
 
     //transport structure
     node->transport = transport;
-    if (node->transport == NULL) success = false; //this can be caused when the protocol is not in the protocol list
+    if (node->transport == NULL) {
+        success = false; //this can be caused when the protocol is not in the protocol list
+        printk(KERN_ERR "The transport protocol cannot be NULL");
+    }
 
     if (!success) {
         kfree(node);
@@ -235,11 +277,6 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	int i;
 	int list_number;
 	struct node_list* list = root_node_list;
-	#ifdef CONFIG_POPCORN_CHECK_SANITY
-			if (after_last_node_index != 0) {
-				BUG_ON(get_node(after_last_node_index - 1) != NULL); //ensure that the previous node has not been used
-			}
-	#endif
 
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
@@ -247,11 +284,9 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	index = find_first_null_pointer(); //first free space (may be on a list that needs creating)
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
-		#ifdef CONFIG_POPCORN_CHECK_SANITY
-				BUG_ON(list->next_list == NULL); //a list must have been removed without deleting the pointer or updating the length variable
-		#endif
 		if (list->next_list == NULL) {
 			list->next_list = create_node_list();
+		    list = list->next_list; //move to the new list
 			break; //this ensures that a list can only be added once
 		}
 		list = list->next_list; //move to next list
@@ -265,7 +300,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     //initialise communications
     if (!node->transport->is_initialised) {
-        if (node->transport->init_transport()) MSGPRINTK("Initialised transport for %s (this should only be done once)\n", node->tranport->name);
+        if (node->transport->init_transport()) MSGPRINTK("Initialised transport for %s (ensure this is only done once for each protocol)\n", node->tranport->name);
         else {
             MSGPRINTK("Failed to initialise tranport for %s\n", node->transport->name);
             remove_node(index);
@@ -376,16 +411,20 @@ bool __init identify_myself(void)
 {
 	int i;
 	uint32_t my_ip;
+    struct message_node* node;
 
 	my_ip = __get_host_ip();
 
 	for (i = 0; i < after_last_node_index; i++) {
-		char *me = " ";
-		if (get_node(i) != NULL && my_ip == get_node(i)->address) {
-			my_nid = i;
-			me = "*";
-		}
-		PCNPRINTK("%s %d: %d\n", me, i, get_node(i)->address);
+        node = get_node(i);
+        if (node != NULL) {
+            char *me = " ";
+            if (my_ip == node->address) {
+                my_nid = i;
+                me = "*";
+            }
+            PCNPRINTK("%s %d: %d\n", me, i, node->address);
+        }
 	}
 
     if (after_last_node_index == 0) PCNPRINTK("No nodes in the list to display\n");
@@ -402,9 +441,11 @@ void add_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
     struct transport_list* new_trans_list;
     if (transport_list_head->transport_structure == NULL) {
+        //empty list
         transport_list_head->transport_structure = transport_item;
     }
 	else {
+        //non-empty list, go to end and append
 		trans_list = transport_list_head;
 		while (trans_list->next != NULL) {
 			trans_list = trans_list->next;
@@ -453,8 +494,8 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 	}
 }
 
-void initialise_node_list(void) {
-
+bool initialise_node_list(void) {
+    struct message_node* myself;
     after_last_node_index = 0;
 
     #ifdef POPCORN_SOCK_ON
@@ -467,13 +508,25 @@ void initialise_node_list(void) {
     // add more protocols as needed, they will need to be removed when exitting too, they should be included
     // as a header file implementing the pcn_kmsg_transport as an interface
 
+    if (transport_list_head->structure == NULL) {
+			printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
+            destroy_node_list(); //destroy and exit
+            return false;
+    }
+    else {
+        MSGPRINTK("Initialising existing node list...\n");
+        if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) {
+            MSGPRINTK("The node list file could not be loaded, this node will be added to an empty list\n"); //need to retreive from an existing file
+            myself = create_node(__get_host_ip(), transport_list_head->structure); //create a node with own address and the first transport structure as default
+            if (!add_node(myself)) {
+                destroy_node_list();
+                return false;
+            }
+        }
+        MSGPRINTK("Finished creating node list\n");
 
-
-    MSGPRINTK("Initialising existing node list...\n");
-    if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) MSGPRINTK("The node list file could not be loaded, empty node list is used instead\n"); //need to retreive from an existing file
-    MSGPRINTK("Finished creating node list\n");
-
-    my_nid = identify_myself();
+        my_nid = identify_myself();
+    }
 }
 
 void destroy_node_list(void) {

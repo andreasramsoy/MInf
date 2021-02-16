@@ -6,7 +6,7 @@
     node list specified in node_list.h
 */
 
-#include "node_list.h"
+#include <popcorn/node_list.h>
 
 #define COMMAND_BUFFER_SIZE 200 //unlikely to come close to this for adjusting popcorn nodes
 #define BOOL_TRUE_RETURN_STRING "1"
@@ -46,15 +46,19 @@ void node_exists(int index) {
 void node_add(char* address_string, char* protocol_string) {
     //convert values that can be used in the popcorn messaging layer
     struct pcn_kmsg_transport* protocol = string_to_transport(protocol_string);
-
-    uint32_t address = in_aton(address_string);
-
-    //using the values create a node and add it to the list
-    struct message_node* node = create_node(address, protocol);
-    if (node != NULL) {
-        sprintf(output_buffer, "%d", add_node(node));
+    if (protocol == NULL) {
+        strcpy(output_buffer, "-1 WRONG_PROTOCOL");
     }
-    else strcpy(output_buffer, "-1");
+    else {
+        uint32_t address = in_aton(address_string);
+
+        //using the values create a node and add it to the list
+        struct message_node* node = create_node(address, protocol);
+        if (node != NULL) {
+            sprintf(output_buffer, "%d", add_node(node));
+        }
+        else strcpy(output_buffer, "-1 COULD_NOT_CREATE_NODE");
+    }
 }
 
 /**
