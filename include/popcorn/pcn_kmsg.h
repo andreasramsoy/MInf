@@ -226,6 +226,6 @@ struct pcn_kmsg_transport {
 /**
  * TOTO: Remove following line (ensure that nothing breaks from doing first)
  */
-//void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr);
+void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr);
 
 #endif /* __POPCORN_PCN_KMSG_H__ */

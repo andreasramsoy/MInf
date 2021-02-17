@@ -22,14 +22,14 @@ static struct pcn_kmsg_transport *transport = NULL;
 /**
  * TODO: Remove folling function (ensure that nothing breaks from removing it first)
  */
-/*void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr)
+void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr)
 {
 	if (transport && tr) {
 		printk(KERN_ERR "Replace hot transport at your own risk.\n");
 	}
 	transport = tr;
 }
-EXPORT_SYMBOL(pcn_kmsg_set_transport);*/
+EXPORT_SYMBOL(pcn_kmsg_set_transport);
 
 int pcn_kmsg_register_callback(enum pcn_kmsg_type type, pcn_kmsg_cbftn callback)
 {
