@@ -13,6 +13,7 @@
 #include <popcorn/debug.h>
 #include <popcorn/stat.h>
 #include <popcorn/bundle.h>
+#include <popcorn/node_list.h> //to access the node list
 
 static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
 

@@ -10,7 +10,7 @@
 
 #include <linux/types.h>
 #include <linux/seq_file.h>
-#include <popcorn/node_list.h> //allows access to the nodes' transport structure
+#include <popcorn/node_structs.h>
 
 /* Enumerate message types */
 enum pcn_kmsg_type {
