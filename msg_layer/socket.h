@@ -11,7 +11,6 @@
 #include <linux/kthread.h>
 #include <popcorn/stat.h>
 #include "ring_buffer.h"
-#include "node_controller.h"
 #define PORT 30467
 #define MAX_SEND_DEPTH	1024
 #define NIPQUAD(addr) ((unsigned char *)&addr)[0],((unsigned char *)&addr)[1],((unsigned char *)&addr)[2],((unsigned char *)&addr)[3]
