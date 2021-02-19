@@ -111,7 +111,7 @@ void destroy_node_list_controller(void) {
 
 
 static void __exit exit_kmsg(void) {
-	MSGPRINTK("Exiting Popcorn messaging layer...\n");
+	printk(KERN_INFO "Exiting Popcorn messaging layer...\n");
 
     #ifdef POPCORN_SOCK_ON
     add_protocol(transport_sock); //initialises all tcp stuff that needs to be done before the first node is added
@@ -123,13 +123,13 @@ static void __exit exit_kmsg(void) {
     // add more protocols as needed, they will need to be removed when exitting too, they should be included
     // as a header file implementing the pcn_kmsg_transport as an interface
 
-	MSGPRINTK("Popcorn messaging layer: destroying node list controller\n");
+	printk(KERN_INFO "Popcorn messaging layer: destroying node list controller\n");
 	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
 
-	MSGPRINTK("Popcorn messaging layer: removing peers proc\n");
+	printk(KERN_INFO "Popcorn messaging layer: removing peers proc\n");
 	proc_remove(proc_entry);
 
-	MSGPRINTK("Popcorn messaging layer: destroying node list\n");
+	printk(KERN_INFO "Popcorn messaging layer: destroying node list\n");
     destroy_node_list()
 
     #ifdef POPCORN_SOCK_ON
@@ -141,23 +141,23 @@ static void __exit exit_kmsg(void) {
 
     //add more protocols as needed
 
-	MSGPRINTK("Popcorn messaging layer has been unloaded\n");
+	printk(KERN_INFO "Popcorn messaging layer has been unloaded\n");
 }
 
 static int __init init_kmsg(void) {
-	MSGPRINTK("Loading Popcorn messaging layer...\n");
+	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
-	MSGPRINTK("Popcorn messaging layer: initialising node list\n");
+	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
 	if (!initialise_node_list()) goto exit_message_layer;
 
 	/**
 	 * TODO: Remove peers proc - this will be replaced by the popcorn-nodes proc but is useful to
 	 * test that they both give same result, defined for socket
 	 */
-	MSGPRINTK("Popcorn messaging layer: initialising peers proc\n");
+	printk(KERN_INFO "Popcorn messaging layer: initialising peers proc\n");
 	peers_init();
 	
-	MSGPRINTK("Popcorn messaging layer: initialising node list controller\n");
+	printk(KERN_INFO "Popcorn messaging layer: initialising node list controller\n");
 	initialise_node_list_controller(); //allow user to change nodes
 
     return 0;
