@@ -3,10 +3,21 @@
  * without being tied to a particular transfer protocol
  */
 
+//protocols
 #define POPCORN_SOCK_ON
 
+
+
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
 #include <popcorn/node_list.h>
+
 #include "node_list_manager.h"
+
+MODULE_INFO(intree, "Y");
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 
 #ifdef POPCORN_SOCK_ON
 #include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
@@ -168,5 +179,3 @@ static int __init init_kmsg(void) {
 
 module_init(init_kmsg);
 module_exit(exit_kmsg);
-MODULE_INFO(intree, "Y");
-MODULE_LICENSE("GPL");
