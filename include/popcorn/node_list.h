@@ -19,7 +19,6 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <stdbool.h>
 #include <popcorn/node_structs.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/bundle.h>
@@ -424,7 +423,7 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 		transport_list_head->next = trans_list->next; //hop over
 		kfree(trans_list);
 	}
-	else if (transport_list_head->next->structure == transport_item) {
+	else if (transport_list_head->next->transport_structure == transport_item) {
 		//edge case of being second in list
         	trans_list = transport_list_head->next->next; //this may be null but doesn't matter
 		kfree(transport_list_head->next);
