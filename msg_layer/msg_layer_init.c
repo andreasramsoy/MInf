@@ -12,6 +12,8 @@
 #include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
 #endif
 
+MODULE_LICENSE("GPL");
+
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
@@ -168,4 +170,3 @@ static int __init init_kmsg(void) {
 
 module_init(init_kmsg);
 module_exit(exit_kmsg);
-MODULE_LICENSE("GPL");
