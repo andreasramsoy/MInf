@@ -140,7 +140,7 @@ static void __exit exit_kmsg(void) {
 	//proc_remove(proc_entry);
 
 	printk(KERN_INFO "Popcorn messaging layer: destroying node list\n");
-    destroy_node_list()
+    destroy_node_list();
 
     #ifdef POPCORN_SOCK_ON
     remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
