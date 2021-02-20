@@ -503,7 +503,7 @@ bool kill_node_sock(struct message_node* node) {
 	return true;
 }
 
-extern struct pcn_kmsg_transport transport_socket = {
+struct pcn_kmsg_transport transport_socket = {
 	.name = "socket",
 	.features = 0,
 
@@ -516,7 +516,7 @@ extern struct pcn_kmsg_transport transport_socket = {
 	.connect = __sock_connect_to_server,
 	.accept = __sock_accept_client
 
-	.get = sock_kmsg_get,
+	//.get = sock_kmsg_get,
 	.put = sock_kmsg_put,
 	.stat = sock_kmsg_stat,
 
@@ -573,7 +573,7 @@ bool init_node_sock(struct message_node* node) {
 	return false;
 }
 
-static void __exit exit_sock(void)
+static int __exit exit_sock(void)
 {
 	transport_socket.is_initialised = false;
 	proc_remove(proc_entry);
@@ -583,6 +583,8 @@ static void __exit exit_sock(void)
 	ring_buffer_destroy(&send_buffer);
 
 	MSGPRINTK("Successfully unloaded module!\n");
+
+	return 0;
 }
 
 static int __init init_sock(void)
