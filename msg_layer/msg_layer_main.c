@@ -120,7 +120,7 @@ void destroy_node_list_controller(void) {
 }
 
 */
-static void __exit exit_kmsg(void) {
+static int __exit exit_kmsg(void) {
 	printk(KERN_INFO "Exiting Popcorn messaging layer...\n");
 
     #ifdef POPCORN_SOCK_ON
@@ -152,6 +152,8 @@ static void __exit exit_kmsg(void) {
     //add more protocols as needed
 
 	printk(KERN_INFO "Popcorn messaging layer has been unloaded\n");
+
+    return 0;
 }
 
 static int __init init_kmsg(void) {
