@@ -155,6 +155,7 @@ static void __exit exit_kmsg(void) {
 }
 
 static int __init init_kmsg(void) {
+    printk(KERN_ERR "Hello world!");
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
