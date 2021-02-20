@@ -174,7 +174,7 @@ static int __init init_kmsg(void) {
     return 0;
 
 	exit_message_layer:
-		exit_ksmg();
+		exit_kmsg();
 }
 
 module_init(init_kmsg);
