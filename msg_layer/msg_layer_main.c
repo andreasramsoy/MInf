@@ -21,7 +21,7 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 #ifdef POPCORN_SOCK_ON
 #include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
 #endif
-/*
+
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
@@ -119,7 +119,6 @@ void destroy_node_list_controller(void) {
     proc_remove(nodes_controller);
 }
 
-*/
 static void __exit exit_kmsg(void) {
 	printk(KERN_INFO "Exiting Popcorn messaging layer...\n");
 
@@ -142,12 +141,12 @@ static void __exit exit_kmsg(void) {
 	printk(KERN_INFO "Popcorn messaging layer: destroying node list\n");
     destroy_node_list();
 
-    #ifdef POPCORN_SOCK_ON
+    /*#ifdef POPCORN_SOCK_ON
     remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     destroy_rdma();
-    #endif
+    #endif*/
 
     //add more protocols as needed
 
@@ -159,6 +158,13 @@ static int __init init_kmsg(void) {
 
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
 	if (!initialise_node_list()) goto exit_message_layer;
+
+    /*#ifdef POPCORN_SOCK_ON
+    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+    #endif
+    #ifdef POPCORN_RDMA_ON
+    destroy_rdma();
+    #endif*/
 
 	/**
 	 * TODO: Remove peers proc - this will be replaced by the popcorn-nodes proc but is useful to
