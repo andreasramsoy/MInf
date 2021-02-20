@@ -14,7 +14,6 @@
 
 #include "node_list_manager.h"*/
 
-//MODULE_INFO(intree, "Y");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 /*
