@@ -10,17 +10,17 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
-/*#include <popcorn/node_list.h>
+#include <popcorn/node_list.h>
 
-#include "node_list_manager.h"*/
+#include "node_list_manager.h"
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Messaging layer of the popcorn system");
-/*
+
 #ifdef POPCORN_SOCK_ON
 #include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
 #endif
-
+/*
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
