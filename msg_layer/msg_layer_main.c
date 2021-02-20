@@ -144,7 +144,7 @@ static void __exit exit_kmsg(void) {
 
 	printk(KERN_INFO "Removing message layer protocols\n");
     #ifdef POPCORN_SOCK_ON
-    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+    remove_protocol(&transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     destroy_rdma();
@@ -160,7 +160,7 @@ static int __init init_kmsg(void) {
 
 	printk(KERN_INFO "Adding protocols for messaging layer\n");
     #ifdef POPCORN_SOCK_ON
-    add_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+    add_protocol(&transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     add_rdma();

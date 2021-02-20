@@ -457,7 +457,7 @@ bool initialise_node_list(void) {
     struct message_node* myself;
     after_last_node_index = 0;
 
-    if (transport_list_head->transport_structure == NULL) {
+    if (transport_list_head == NULL || transport_list_head->transport_structure == NULL) {
             printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
             destroy_node_list(); //destroy and exit
             return false;
