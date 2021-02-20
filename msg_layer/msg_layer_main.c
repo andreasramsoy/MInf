@@ -12,6 +12,7 @@
 #include <linux/init.h>
 #include <popcorn/node_list.h>
 
+#include "ring_buffer.h"
 #include "node_list_manager.h"
 
 MODULE_LICENSE("GPL");
