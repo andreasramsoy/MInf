@@ -392,8 +392,9 @@ bool __init identify_myself(void)
 void add_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
     struct transport_list* new_trans_list;
-    if (transport_list_head->transport_structure == NULL) {
+    if (transport_list_head == NULL) {
         //empty list
+        transport_list_head = kmalloc(sizeof(struct pcn_kmsg_transport*), GFP_KERNEL);
         transport_list_head->transport_structure = transport_item;
     }
 	else {
@@ -412,9 +413,13 @@ void add_protocol(struct pcn_kmsg_transport* transport_item) {
 void remove_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
     struct transport_list* new_list;
-    if (transport_list_head->transport_structure == NULL && transport_list_head->next == NULL) {
+
+    if (transport_list_head == NULL) {
+        printk(KERN_ERR "More protocols were attempted to be removed than there were in the transport list");
+    }
+    else if (transport_list_head->transport_structure == NULL && transport_list_head->next == NULL) {
         //only member of list
-		transport_list_head->transport_structure = NULL;
+        free(transport_list_head);
 	}
 	else if (transport_list_head->transport_structure == NULL) {
 		//this is the first transport structure but there are others
