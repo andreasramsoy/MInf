@@ -7,7 +7,7 @@ endif
 #obj-$(CONFIG_POPCORN_KMSG) += msg_init.o
 #msg_init-y := msg_init.o ring_buffer.o
 
-obj-$(CONFIG_POPCORN_KMSG) += msg_layer_main.o #msg_socket.o
+obj-$(CONFIG_POPCORN_KMSG_INIT) += msg_layer_main.o #msg_socket.o
 msg_layer-y := msg_layer_main.o #ring_buffer.o
 
 obj-$(CONFIG_POPCORN_KMSG_RDMA) += msg_rdma.o
