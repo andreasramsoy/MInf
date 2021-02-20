@@ -14,7 +14,7 @@
 
 #include "node_list_manager.h"*/
 
-MODULE_INFO(intree, "Y");
+//MODULE_INFO(intree, "Y");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 /*
@@ -155,7 +155,6 @@ static void __exit exit_kmsg(void) {
 }
 
 static int __init init_kmsg(void) {
-    printk(KERN_ERR "Hello world!");
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
