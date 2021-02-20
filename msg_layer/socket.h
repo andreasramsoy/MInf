@@ -21,7 +21,7 @@ enum {
 };
 
 static int __init init_sock(void);
-static void __exit exit_sock(void);
+static int __exit exit_sock(void);
 bool init_node_sock(struct message_node* node);
 
 
@@ -514,9 +514,9 @@ struct pcn_kmsg_transport transport_socket = {
 	.init_node = init_node_sock,
 	.kill_node = kill_node_sock,
 	.connect = __sock_connect_to_server,
-	.accept = __sock_accept_client
+	.accept = __sock_accept_client,
 
-	//.get = sock_kmsg_get,
+	.get = sock_kmsg_get,
 	.put = sock_kmsg_put,
 	.stat = sock_kmsg_stat,
 
