@@ -141,12 +141,14 @@ static void __exit exit_kmsg(void) {
 	printk(KERN_INFO "Popcorn messaging layer: destroying node list\n");
     destroy_node_list();
 
-    /*#ifdef POPCORN_SOCK_ON
+
+	printk(KERN_INFO "Removing message layer protocols\n");
+    #ifdef POPCORN_SOCK_ON
     remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
     destroy_rdma();
-    #endif*/
+    #endif
 
     //add more protocols as needed
 
@@ -156,15 +158,16 @@ static void __exit exit_kmsg(void) {
 static int __init init_kmsg(void) {
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
-	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
-	if (!initialise_node_list()) goto exit_message_layer;
-
-    /*#ifdef POPCORN_SOCK_ON
-    remove_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+	printk(KERN_INFO "Adding protocols for messaging layer\n");
+    #ifdef POPCORN_SOCK_ON
+    add_protocol(transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
     #endif
     #ifdef POPCORN_RDMA_ON
-    destroy_rdma();
-    #endif*/
+    add_rdma();
+    #endif
+
+	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
+	if (!initialise_node_list()) goto exit_message_layer;
 
 	/**
 	 * TODO: Remove peers proc - this will be replaced by the popcorn-nodes proc but is useful to
@@ -180,6 +183,7 @@ static int __init init_kmsg(void) {
 
 	exit_message_layer:
 		exit_kmsg();
+        return 1;
 }
 
 module_init(init_kmsg);
