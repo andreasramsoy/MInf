@@ -76,7 +76,14 @@ struct message_node* get_node(int index) {
  * @return message_node* node pointer to the new node, NULL if it could not be created
 */
 struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
-    bool success;
+    bool successful = true;
+
+    if (transport != NULL) {
+        printk(KERN_DEBUG "Creating node with address %d and protocol %s\n", address_p, transport->name);
+    }
+    else {
+        printk(KERN_DEBUG "Creating node with address %d but no protocol was given\n", address_p);
+    }
 
     struct message_node* node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
@@ -90,13 +97,13 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     //transport structure
     node->transport = transport;
     if (node->transport == NULL) {
-        success = false; //this can be caused when the protocol is not in the protocol list
-        printk(KERN_ERR "The transport protocol cannot be NULL");
+        successful = false; //this can be caused when the protocol is not in the protocol list
+        printk(KERN_ERR "The transport protocol cannot be NULL\n");
     }
 
-    if (!success) {
+    if (!successful) {
         kfree(node);
-        printk(KERN_ERR "Failed to create the node");
+        printk(KERN_ERR "Failed to create the node\n");
         return NULL;
     }
 
@@ -165,7 +172,7 @@ void save_to_file(void) {
     for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
         if (node != NULL) {
-            fMSGPRINTK(fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->protocol));
+            fprintk(KERN_DEBUG fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->protocol));
         }
     }
 
@@ -175,7 +182,7 @@ void save_to_file(void) {
 
 struct node_list* create_node_list(void) {
 	struct node_list* ret = kmalloc(sizeof(struct node_list), GFP_KERNEL);
-	MSGPRINTK("A new node list was added\n");
+	printk(KERN_DEBUG "A new node list was added\n");
 	return ret;
 }
 
@@ -192,7 +199,7 @@ void remove_node(int index) {
 
     if (node->transport->number_of_users <= 0) {
         node->transport->exit_transport();
-        MSGPRINTK("No nodes are using %s as transport, removing this transport\n", node->transport->name);
+        printk(KERN_DEBUG "No nodes are using %s as transport, removing this transport\n", node->transport->name);
     }
 
     kfree(get_node(index)); //node has been disabled so cannot be used now
@@ -206,14 +213,12 @@ void remove_node(int index) {
 
     list_number = index / MAX_NUM_NODES_PER_LIST;
     for (i = 0; i < list_number; i++) {
-	#ifdef CONFIG_POPCORN_CHECK_SANITY
-		BUG_ON(list->next_list == NULL); //a list must have been removed without deleting the pointer or updating the length variable
-	#endif
-	if (list->next_list == NULL) {
-		list->next_list = create_node_list();
-		break; //this ensures that a list can only be added once
-	}
-	list = list->next_list; //move to next list
+        if (list->next_list == NULL) {
+            printk(KERN_ERR "Trying to access next list but it does not exist\n");
+        }
+        else {
+	        list = list->next_list; //move to next list
+        }
     }
     
     list->nodes[index % MAX_NUM_NODES_PER_LIST] = NULL;
@@ -230,6 +235,13 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	int list_number;
 	struct node_list* list = root_node_list;
 
+    if (node == NULL) {
+        printk(KERN_ERR "Trying to add a NULL node\n");
+        return -1;
+    }
+
+    printk(KERN_DEBUG "Adding new node %d\n", node->address);
+
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
@@ -237,6 +249,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
 		if (list->next_list == NULL) {
+            printk(KERN_DEBUG "End of node list reached - adding new list of nodes\n");
 			list->next_list = create_node_list();
 		    list = list->next_list; //move to the new list
 			break; //this ensures that a list can only be added once
@@ -252,15 +265,15 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     //initialise communications
     if (!node->transport->is_initialised) {
-        if (node->transport->init_transport()) MSGPRINTK("Initialised transport for %s (ensure this is only done once for each protocol)\n", node->tranport->name);
+        if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->tranport->name);
         else {
-            MSGPRINTK("Failed to initialise tranport for %s\n", node->transport->name);
+            printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
             remove_node(index);
             return -1; //could not be added
         }
     }
     if (!node->transport->init_node(node)) { //start the communication
-        MSGPRINTK("Failed to initialise a node on the %s transport\n", node->transport->name);
+        printk(KERN_DEBUG "Failed to initialise a node on the %s transport\n", node->transport->name);
         remove_node(index);
         return -1;
     }
@@ -284,7 +297,7 @@ struct message_node* parse_node(char* node_string) {
     i = 0;
     while (i < MAX_FILE_LINE_LENGTH && node_string[i] != '\0' && node_string[i] != ',') i++;
     if (i >= MAX_FILE_LINE_LENGTH) {
-        MSGPRINTK("The address was malformed in the node list file\n");
+        printk(KERN_DEBUG "The address was malformed in the node list file\n");
         return NULL;
     }
     else {
@@ -295,7 +308,7 @@ struct message_node* parse_node(char* node_string) {
     j = i + 1; //move past the comma
     while (j < MAX_FILE_LINE_LENGTH && node_string[j] != '\n' &&node_string[j] != '\0' && node_string[j] != ',') j++;
     if (j >= MAX_FILE_LINE_LENGTH) {
-        MSGPRINTK("The protocol was malformed in the node list file\n");
+        printk(KERN_DEBUG "The protocol was malformed in the node list file\n");
         return NULL;
     }
     else {
@@ -315,7 +328,7 @@ bool get_node_list_from_file(const char * address) {
     /*FILE * fileptr = fopen(address, "r");
 
     if (fileptr == NULL) {
-        MSGPRINTK("The node list file could not be opened and so the node list could not be found");
+        printk(KERN_DEBUG "The node list file could not be opened and so the node list could not be found");
         */return false;/*
     }
 
@@ -324,7 +337,7 @@ bool get_node_list_from_file(const char * address) {
     while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr)) {
         new_node = parse_node(line);
         if (new_node == NULL) { //process each node line by line
-            MSGPRINTK("Failed to parse node line: %s\n", line);
+            printk(KERN_DEBUG "Failed to parse node line: %s\n", line);
 
             //should the function revert? Returns false so doesn't try any more after this one
 
@@ -379,10 +392,10 @@ bool __init identify_myself(void)
         }
 	}
 
-    if (after_last_node_index == 0) PCNPRINTK("No nodes in the list to display\n");
+    if (after_last_node_index == 0) printk(KERN_DEBUG "No nodes in the list to display\n");
 
 	if (my_nid < 0) {
-		PCNPRINTK_ERR("My IP is not listed in the node configuration\n");
+		printk(KERN_ERR "My IP is not listed in the node configuration\n");
 		//return false; //if the IP is not listed then it should be added
 	}
 
@@ -484,16 +497,22 @@ bool initialise_node_list(void) {
             return false;
     }
     else {
-        MSGPRINTK("Initialising existing node list...\n");
+        printk(KERN_DEBUG "Initialising existing node list...\n");
         if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) {
-            MSGPRINTK("The node list file could not be loaded, this node will be added to an empty list\n"); //need to retreive from an existing file
+            printk(KERN_DEBUG "The node list file could not be loaded, this node will be added to an empty list\n"); //need to retreive from an existing file
             myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            if (myself == NULL) {
+                printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
+                return false;
+            }
+            
             if (!add_node(myself)) {
+                printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
                 destroy_node_list();
                 return false;
             }
         }
-        MSGPRINTK("Finished creating node list\n");
+        printk(KERN_DEBUG "Finished creating node list\n");
 
         my_nid = identify_myself();
     }
