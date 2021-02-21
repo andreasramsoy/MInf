@@ -488,6 +488,12 @@ out_release:
  */
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
+
+	if (node->index == my_nid) {
+		printk(KERN_INFO "Deinitialising myself (skipping connections)\n");
+		return true;
+	}
+
 	sh = node->handle;
 	if (sh->send_handler) {
 		kthread_stop(sh->send_handler);
@@ -532,6 +538,12 @@ struct pcn_kmsg_transport transport_socket = {
 bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
 	printk(KERN_DEBUG "Initialising node for socket\n");
+
+	if (node->index == my_nid) {
+		printk(KERN_INFO "Initialising myself (skipping connections)\n");
+		return true;
+	}
+
 	if (node != NULL) {
 		node->handle = kmalloc(sizeof(struct sock_handle), GFP_KERNEL);
 		if (node->handle == NULL) {
@@ -597,6 +609,8 @@ static int __init init_sock(void)
 {
 	int ret;
 	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
+
+
 
 	my_nid = 0; //initialises to zero so popcorn can boot even if there is no node list
 	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
