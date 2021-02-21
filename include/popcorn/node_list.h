@@ -46,6 +46,11 @@ struct message_node* get_node(int index) {
 	struct node_list* list = root_node_list;
 	
     printk(KERN_DEBUG "Getting the node %d\n", index);
+
+    if (list == NULL) {
+        printk(KERN_DEBUG "Fetching a list when there is no node lists (this happens when there are no nodes\n");
+        return NULL;
+    }
 	
 	//move to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
@@ -119,6 +124,10 @@ int find_first_null_pointer(void) {
 //disable and disconnect
 bool disable_node(int index) {
     struct message_node* node = get_node(index);
+    printk(KERN_DEBUG "Disabling node %d\n", index);
+    if (node == NULL) {
+        printk(KERN_DEBUG "Cannot disable a node that is NULL");
+    }
     node->connected = !(node->transport->kill_node(node)); //destroys the connection
     return node->connected;
 }
@@ -126,6 +135,10 @@ bool disable_node(int index) {
 //enable and connect
 bool enable_node(int index) {
     struct message_node* node = get_node(index);
+    printk(KERN_DEBUG "Enabling node %d\n", index);
+    if (node == NULL) {
+        printk(KERN_DEBUG "Cannot Enable a node that is NULL");
+    }
     node->connected = node->transport->init_node(node); //destroys the connection
     return node->connected;
 }
