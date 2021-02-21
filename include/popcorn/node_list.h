@@ -54,7 +54,7 @@ struct message_node* get_node(int index) {
 	for (i = 0; i < list_number; i++) {
         if (list->next_list == NULL) {
             printk(KERN_INFO "The node trying to be fetched does not exist (or even the node list it is supposed to be on)\n");
-            return -1;
+            return NULL;
         }
 		list = list->next_list; //move to next list
 	}
@@ -311,7 +311,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
         }
     }
 
-    enable_node(node); //start communications
+    enable_node(index); //start communications
 
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
