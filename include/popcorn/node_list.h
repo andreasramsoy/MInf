@@ -137,8 +137,8 @@ bool disable_node(int index) {
 bool enable_node(int index) {
     struct message_node* node = get_node(index);
     printk(KERN_DEBUG "Enabling node %d\n", index);
-    if (node == NULL) {
-        printk(KERN_DEBUG "Cannot Enable a node that is NULL");
+    if (node == NULL || node->transport == NULL) {
+        printk(KERN_DEBUG "Node cannot be enabled when it is NULL or doesn't have transport");
     }
     node->connected = node->transport->init_node(node); //destroys the connection
     return node->connected;
@@ -344,6 +344,8 @@ int add_node(struct message_node* node) { //function for adding a single node to
     enable_node(index); //start communications
 
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
+
+    printk(KERN_DEBUG "Successfully added node");
 
 	return index;
 }

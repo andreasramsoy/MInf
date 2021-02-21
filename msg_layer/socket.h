@@ -531,9 +531,13 @@ struct pcn_kmsg_transport transport_socket = {
  */
 bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
+	printk(KERN_DEBUG "Initialising node for socket\n");
 	if (node != NULL) {
-		node->transport = &transport_socket; //change from the initial nothing transport structure
-
+		node->handle = kmalloc(sizeof(struct sock_handle), GFP_KERNEL);
+		if (node->handle == NULL) {
+			printk(KERN_ERR "Could not create handle\n");
+			return false;
+		}
 		sh = node->handle;
 
 		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
@@ -549,6 +553,8 @@ bool init_node_sock(struct message_node* node) {
 
 		sema_init(&sh->q_empty, 0);
 		sema_init(&sh->q_full, MAX_SEND_DEPTH);
+
+		printk(KERN_DEBUG "Node initialised, registering the node");
 
 		if (node->index > my_nid) {
 			//you are earlier in the list so you start the connection
