@@ -429,31 +429,32 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* new_list;
 
     if (transport_list_head == NULL) {
-        printk(KERN_ERR "More protocols were attempted to be removed than there were in the transport list");
+        printk(KERN_ERR "More protocols were attempted to be removed than there were in the transport list\n");
     }
-    else if (transport_list_head->transport_structure == NULL && transport_list_head->next == NULL) {
-        //only member of list
-        free(transport_list_head);
-	}
-	else if (transport_list_head->transport_structure == NULL) {
-		//this is the first transport structure but there are others
-		transport_list_head->transport_structure = transport_list_head->next->transport_structure;
-		trans_list = transport_list_head->next;
-		transport_list_head->next = trans_list->next; //hop over
-		kfree(trans_list);
-	}
-	else if (transport_list_head->next->transport_structure == transport_item) {
-		//edge case of being second in list
-        	trans_list = transport_list_head->next->next; //this may be null but doesn't matter
-		kfree(transport_list_head->next);
-		transport_list_head->next = trans_list;
+    else if (transport_list_head->transport_structure == NULL && transport_list_head->transport_structure == transport_item) {
+        if (transport_list_head->next == NULL) {
+            printk(KERN_DEBUG "The transport list head was removed\n");
+            //only member of list
+            free(transport_list_head);
+            transport_list_head = NULL;
+        }
+        else {
+            printk(KERN_DEBUG "The transport list head was removed and replaced with the next item in the transport list\n");
+            //this is the first transport structure but there are others
+            transport_list_head->transport_structure = transport_list_head->next->transport_structure;
+            trans_list = transport_list_head->next;
+            kfree(trans_list);
+            transport_list_head = trans_list; //hop over
+        }
 	}
 	else {
+        printk(KERN_DEBUG "Traversing transport list to remove item\n");
 		trans_list = transport_list_head;
-		while (trans_list->next->next != NULL && trans_list->next->transport_structure != transport_item) {
+		while (trans_list->next != NULL && trans_list->next->transport_structure != transport_item) {
 			trans_list = trans_list->next;
 		}
 		if (trans_list->next->transport_structure == transport_item) {
+            printk(KERN_DEBUG "Removing the transport list item\n");
 			//the next node is the one to be removed
 			new_list = trans_list->next;
 			trans_list->next = trans_list->next->next; //hop over
