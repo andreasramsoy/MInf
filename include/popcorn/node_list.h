@@ -183,7 +183,12 @@ void save_to_file(void) {
 
 struct node_list* create_node_list(void) {
 	struct node_list* ret = kmalloc(sizeof(struct node_list), GFP_KERNEL);
-	printk(KERN_DEBUG "A new node list was added\n");
+    if (ret == NULL) {
+        printk(KERN_ERR "Could not create new node list\n");
+    }
+    else {
+	    printk(KERN_DEBUG "A new node list was added\n");
+    }
 	return ret;
 }
 
@@ -247,6 +252,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
 	index = find_first_null_pointer(); //first free space (may be on a list that needs creating)
+    printk(KERN_DEBUG "Searching for position %d\n", index);
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
 		if (list->next_list == NULL) {
@@ -257,6 +263,12 @@ int add_node(struct message_node* node) { //function for adding a single node to
 		}
 		list = list->next_list; //move to next list
 	}
+
+    if (index == 0) {
+        printk(KERN_DEBUG "First item, adding first node list\n");
+        root_node_list = create_node_list();
+        if (root_node_list == NULL) return -1;
+    }
 
 	//add to that list
 	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
