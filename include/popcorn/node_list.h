@@ -290,6 +290,11 @@ int add_node(struct message_node* node) { //function for adding a single node to
 		if (list->next_list == NULL) {
             printk(KERN_DEBUG "End of node list reached - adding new list of nodes\n");
 			list->next_list = create_node_list();
+            if (list->next_list == NULL) {
+                printk(KERN_ERR "Did not create the list, cannot add node\n");
+                kfree(node);
+                return -1;
+            }
 		    list = list->next_list; //move to the new list
 			break; //this ensures that a list can only be added once
 		}
@@ -299,7 +304,12 @@ int add_node(struct message_node* node) { //function for adding a single node to
     if (index == 0) {
         printk(KERN_DEBUG "First item, adding first node list\n");
         root_node_list = create_node_list();
-        if (root_node_list == NULL) return -1;
+        if (root_node_list == NULL) {
+            printk(KERN_ERR "Did not create the list, cannot add node\n");
+            kfree(node);
+            return -1;
+        }
+        list = root_node_list; //need to set this again because it will have been initialised to NULL
     }
 
 	//add to that list
@@ -313,6 +323,8 @@ int add_node(struct message_node* node) { //function for adding a single node to
         remove_node(index);
         return -1;
     }
+
+    printk(KERN_DEBUG "Initialising communications for node\n");
 
     //initialise communications
     if (!node->transport->is_initialised) {
