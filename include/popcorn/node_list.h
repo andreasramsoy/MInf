@@ -415,6 +415,7 @@ bool get_node_list_from_file(const char * address) {
 
 static uint32_t __init __get_host_ip(void)
 {
+    printk(KERN_DEBUG "Getting host ip\n");
 	struct net_device *d;
 	for_each_netdev(&init_net, d) {
 		struct in_ifaddr *ifaddr;
@@ -434,6 +435,7 @@ static uint32_t __init __get_host_ip(void)
 
 bool __init identify_myself(void)
 {
+    printk(KERN_DEBUG "Identifying this node in node list\n");
 	int i;
 	uint32_t my_ip;
     struct message_node* node;
@@ -560,7 +562,11 @@ bool initialise_node_list(void) {
         printk(KERN_DEBUG "Initialising existing node list...\n");
         if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) {
             printk(KERN_DEBUG "The node list file could not be loaded, this node will be added to an empty list\n"); //need to retreive from an existing file
-            myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            /**
+             * TODO: Add getting the host ip
+             */
+            myself = create_node(1, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            //myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             if (myself == NULL) {
                 printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
                 return false;
