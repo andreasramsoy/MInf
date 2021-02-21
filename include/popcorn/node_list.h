@@ -349,7 +349,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
-    printk(KERN_DEBUG "Successfully added node\n");
+    printk(KERN_DEBUG "Successfully added node at index %d\n", index);
 
 	return index;
 }
