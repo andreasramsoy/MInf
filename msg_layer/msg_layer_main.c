@@ -158,13 +158,13 @@ static void __exit exit_kmsg(void) {
 static int __init init_kmsg(void) {
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
-	printk(KERN_INFO "Adding protocols for messaging layer\n");
+	printk(KERN_INFO "Popcorn messaging layer: Adding protocols for messaging layer\n");
     #ifdef POPCORN_SOCK_ON
-    add_protocol(&transport_socket); //initialises all tcp stuff that needs to be done before the first node is added
+    if (add_protocol(&transport_socket)) goto exit_message_layer; //initialises all tcp stuff that needs to be done before the first node is added
     #endif
-    #ifdef POPCORN_RDMA_ON
+    /*#ifdef POPCORN_RDMA_ON
     add_rdma();
-    #endif
+    #endif*/
 
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list\n");
 	if (!initialise_node_list()) goto exit_message_layer;

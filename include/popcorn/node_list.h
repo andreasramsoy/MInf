@@ -389,25 +389,39 @@ bool __init identify_myself(void)
 	return true;
 }
 
-void add_protocol(struct pcn_kmsg_transport* transport_item) {
+int add_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
     struct transport_list* new_trans_list;
     if (transport_list_head == NULL) {
         //empty list
+        printk(KERN_DEBUG "Transport list is empty, updating list head\n");
         transport_list_head = kmalloc(sizeof(struct pcn_kmsg_transport*), GFP_KERNEL);
+        if (transport_list_head == NULL) {
+            printk(KERN_DEBUG "Could not create new transport list item for list head\n");
+            return 1;
+        }
         transport_list_head->transport_structure = transport_item;
+        transport_list_head->next = NULL;
     }
 	else {
         //non-empty list, go to end and append
+        printk(KERN_DEBUG "Moving to end of transport list\n");
 		trans_list = transport_list_head;
 		while (trans_list->next != NULL) {
 			trans_list = trans_list->next;
+            printk(KERN_DEBUG "Moved to next item in list\n");
 		}
+        printk(KERN_DEBUG "Adding new item to transport list\n");
 		new_trans_list = kmalloc(sizeof(struct transport_list), GFP_KERNEL);
+        if (new_trans_list == NULL) {
+            printk(KERN_DEBUG "Could not create new transport list item\n");
+            return 1;
+        }
 		trans_list->next = new_trans_list;
 		new_trans_list->transport_structure = transport_item;
 		new_trans_list->next = NULL;
 	}
+    return 0;
 }
 
 void remove_protocol(struct pcn_kmsg_transport* transport_item) {
