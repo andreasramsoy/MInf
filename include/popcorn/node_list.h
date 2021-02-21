@@ -45,26 +45,22 @@ struct message_node* get_node(int index) {
 	int i;
 	struct node_list* list = root_node_list;
 	
-	#ifdef CONFIG_POPCORN_CHECK_SANITY
-		BUG_ON(index >= after_last_node_index); //node doesn't exist
-	#endif
+    printk(KERN_DEBUG "Getting the node %d\n", index);
 	
 	//move to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
-		#ifdef CONFIG_POPCORN_CHECK_SANITY
-				BUG_ON(list->next_list == NULL); //a list must have been removed without deleting the pointer or updating the length variable
-		#endif
+        if (list->next_list == NULL) {
+            printk(KERN_INFO "The node trying to be fetched does not exist (or even the node list it is supposed to be on)\n");
+            return -1;
+        }
 		list = list->next_list; //move to next list
 	}
 	
 	//should be on correct list now just directly return the node
-	
-	#ifdef CONFIG_POPCORN_CHECK_SANITY
-		BUG_ON(list->nodes[index % MAX_NUM_NODES_PER_LIST] == NULL); //a list must have been removed without deleting the pointer or updating the length variable
-	#endif
+
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
 }
 
@@ -195,8 +191,10 @@ struct node_list* create_node_list(void) {
 void remove_node(int index) {
     int i;
     int list_number;
-    struct message_node* node = get_node(index);
+    bool no_nodes;
     struct node_list* list;
+    struct node_list* prev_list;
+    struct message_node* node = get_node(index);
     disable_node(index); //sets to the always fail transport
 
     node->transport->number_of_users--;
@@ -217,17 +215,38 @@ void remove_node(int index) {
         after_last_node_index = i + 1;
     }
 
+    //go to the list that contains it to remove it
     list_number = index / MAX_NUM_NODES_PER_LIST;
     for (i = 0; i < list_number; i++) {
         if (list->next_list == NULL) {
             printk(KERN_ERR "Trying to access next list but it does not exist\n");
         }
         else {
+            prev_list = list;
 	        list = list->next_list; //move to next list
         }
     }
-    
+    printk(KERN_DEBUG "Removing node from list\n");
     list->nodes[index % MAX_NUM_NODES_PER_LIST] = NULL;
+
+
+    printk(KERN_DEBUG "Removing excess node lists\n");
+    no_nodes = true;
+    for (i = 0; i < MAX_NUM_NODES_PER_LIST; i++) {
+        if (list->nodes[i] != NULL) {
+            no_nodes = false;
+            break;
+        }
+    }
+    if (no_nodes) {
+        printk(KERN_DEBUG "This node list is empty, removing it\n");
+        if (prev_list != NULL) {
+            //not the first list
+            prev_list = list->next_list; //jump over list
+        }
+        printk(KERN_DEBUG "Removing the item from list\n");
+        kfree(list);
+    }
 }
 
 /**
@@ -276,6 +295,12 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     node->index = index;
 
+    if (node->transport == NULL) {
+        printk(KERN_ERR "The transport of the node cannot be NULL\n");
+        remove_node(index);
+        return -1;
+    }
+
     //initialise communications
     if (!node->transport->is_initialised) {
         if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
@@ -285,11 +310,8 @@ int add_node(struct message_node* node) { //function for adding a single node to
             return -1; //could not be added
         }
     }
-    if (!node->transport->init_node(node)) { //start the communication
-        printk(KERN_DEBUG "Failed to initialise a node on the %s transport\n", node->transport->name);
-        remove_node(index);
-        return -1;
-    }
+
+    enable_node(node); //start communications
 
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
