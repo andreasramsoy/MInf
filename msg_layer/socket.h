@@ -592,8 +592,6 @@ static int __init init_sock(void)
 	int ret;
 	MSGPRINTK("Loading Popcorn messaging layer over TCP/IP...\n");
 
-	initialise_node_list();
-
 	my_nid = 0; //initialises to zero so popcorn can boot even if there is no node list
 	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
 	pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent

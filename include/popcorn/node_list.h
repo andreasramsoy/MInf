@@ -327,7 +327,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
     printk(KERN_DEBUG "Initialising communications for node\n");
 
     //initialise communications
-    if (!node->transport->is_initialised) {
+    if (!(node->transport->is_initialised)) {
         if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
         else {
             printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
