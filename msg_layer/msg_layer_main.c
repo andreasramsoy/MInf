@@ -183,7 +183,7 @@ static int __init init_kmsg(void) {
 
 	exit_message_layer:
 		exit_kmsg();
-        return 1;
+        return -1;
 }
 
 module_init(init_kmsg);
