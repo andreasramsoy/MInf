@@ -341,11 +341,15 @@ int add_node(struct message_node* node) { //function for adding a single node to
         }
     }
 
-    enable_node(index); //start communications
+    if (!enable_node(index)) {
+        printk(KERN_ERR "Could not enable node\n");
+        remove_node(index);
+        return -1;
+    }
 
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
-    printk(KERN_DEBUG "Successfully added node");
+    printk(KERN_DEBUG "Successfully added node\n");
 
 	return index;
 }
@@ -513,7 +517,7 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
     if (transport_list_head == NULL) {
         printk(KERN_ERR "More protocols were attempted to be removed than there were in the transport list\n");
     }
-    else if (transport_list_head->transport_structure == NULL && transport_list_head->transport_structure == transport_item) {
+    else if (transport_list_head->transport_structure == transport_item) {
         if (transport_list_head->next == NULL) {
             printk(KERN_DEBUG "The transport list head was removed\n");
             //only member of list
@@ -572,14 +576,14 @@ bool initialise_node_list(void) {
             /**
              * TODO: Add getting the host ip
              */
-            myself = create_node(1, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            myself = create_node(167772679, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             //myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             if (myself == NULL) {
                 printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
                 return false;
             }
             
-            if (!add_node(myself)) {
+            if (add_node(myself) != -1) {
                 printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
                 destroy_node_list();
                 return false;
