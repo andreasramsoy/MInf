@@ -125,8 +125,9 @@ int find_first_null_pointer(void) {
 bool disable_node(int index) {
     struct message_node* node = get_node(index);
     printk(KERN_DEBUG "Disabling node %d\n", index);
-    if (node == NULL) {
-        printk(KERN_DEBUG "Cannot disable a node that is NULL");
+    if (node == NULL || node->transport == NULL) {
+        printk(KERN_DEBUG "Either node is NULL or it does not have transport");
+        return false;
     }
     node->connected = !(node->transport->kill_node(node)); //destroys the connection
     return node->connected;
@@ -219,7 +220,7 @@ void remove_node(int index) {
         printk(KERN_DEBUG "No nodes are using %s as transport, removing this transport\n", node->transport->name);
     }
 
-    kfree(get_node(index)); //node has been disabled so cannot be used now
+    printk(KERN_DEBUG "Updating the after last node index\n");
     
     //update the last node index
     i = index;
@@ -227,6 +228,8 @@ void remove_node(int index) {
         while (i > 0 && get_node(i) != NULL) i--; //roll back until you file a node
         after_last_node_index = i + 1;
     }
+
+    printk(KERN_DEBUG "Navigating through list to remove node\n");
 
     //go to the list that contains it to remove it
     list_number = index / MAX_NUM_NODES_PER_LIST;
@@ -260,6 +263,8 @@ void remove_node(int index) {
         printk(KERN_DEBUG "Removing the item from list\n");
         kfree(list);
     }
+
+    kfree(node); //node has been disabled so cannot be used now
 }
 
 /**
@@ -328,7 +333,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     //initialise communications
     if (!(node->transport->is_initialised)) {
-        if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
+        if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
         else {
             printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
             remove_node(index);
@@ -415,8 +420,8 @@ bool get_node_list_from_file(const char * address) {
 
 static uint32_t __init __get_host_ip(void)
 {
-    printk(KERN_DEBUG "Getting host ip\n");
 	struct net_device *d;
+    printk(KERN_DEBUG "Getting host ip\n");
 	for_each_netdev(&init_net, d) {
 		struct in_ifaddr *ifaddr;
 
@@ -435,10 +440,10 @@ static uint32_t __init __get_host_ip(void)
 
 bool __init identify_myself(void)
 {
-    printk(KERN_DEBUG "Identifying this node in node list\n");
 	int i;
 	uint32_t my_ip;
     struct message_node* node;
+    printk(KERN_DEBUG "Identifying this node in node list\n");
 
 	my_ip = __get_host_ip();
 

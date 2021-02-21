@@ -53,7 +53,7 @@ static int ksock_recv(struct socket *sock, char *buf, size_t len)
 static int recv_handler(void* arg0)
 {
 	struct sock_handle *sh = arg0;
-	MSGPRINTK("RECV handler for %d is ready\n", sh->nid);
+	printk(KERN_INFO "RECV handler for %d is ready\n", sh->nid);
 
 	while (!kthread_should_stop()) {
 		int len;
@@ -180,7 +180,7 @@ static int deq_send(struct sock_handle *sh)
 	while (remaining > 0) {
 		int sent = ksock_send(sh->sock, p, remaining);
 		if (sent < 0) {
-			MSGPRINTK("send interrupted, %d\n", sent);
+			printk(KERN_INFO "send interrupted, %d\n", sent);
 			io_schedule();
 			continue;
 		}
@@ -199,7 +199,7 @@ static int deq_send(struct sock_handle *sh)
 static int send_handler(void* arg0)
 {
 	struct sock_handle *sh = arg0;
-	MSGPRINTK("SEND handler for %d is ready\n", sh->nid);
+	printk(KERN_INFO "SEND handler for %d is ready\n", sh->nid);
 
 	while (!kthread_should_stop()) {
 		deq_send(sh);
@@ -368,7 +368,7 @@ static int __init __sock_connect_to_server(struct message_node* node)
 
 	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
 	if (ret < 0) {
-		MSGPRINTK("Failed to create socket, %d\n", ret);
+		printk(KERN_INFO "Failed to create socket, %d\n", ret);
 		return ret;
 	}
 
@@ -376,11 +376,11 @@ static int __init __sock_connect_to_server(struct message_node* node)
 	addr.sin_port = htons(PORT);
 	addr.sin_addr.s_addr = node->address;
 
-	MSGPRINTK("Connecting to %pI4\n", node->address);
+	printk(KERN_INFO "Connecting to %pI4\n", node->address);
 	do {
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
-			MSGPRINTK("Failed to connect the socket %d. Attempt again!!\n", ret);
+			printk(KERN_INFO "Failed to connect the socket %d. Attempt again!!\n", ret);
 			msleep(1000);
 		}
 	} while (ret < 0);
@@ -406,13 +406,13 @@ static int __init __sock_accept_client(struct message_node* node)
 	do {
 		ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
 		if (ret < 0) {
-			MSGPRINTK("Failed to create socket, %d\n", ret);
+			printk(KERN_INFO "Failed to create socket, %d\n", ret);
 			return ret;
 		}
 
 		ret = kernel_accept(sock_listen, &sock, 0);
 		if (ret < 0) {
-			MSGPRINTK("Failed to accept, %d\n", ret);
+			printk(KERN_INFO "Failed to accept, %d\n", ret);
 			goto out_release;
 		}
 
@@ -473,7 +473,7 @@ static int __init __sock_listen_to_connection(void)
 		goto out_release;
 	}
 
-	MSGPRINTK("Ready to accept incoming connections\n");
+	printk(KERN_INFO "Ready to accept incoming connections\n");
 	return 0;
 
 out_release:
@@ -582,7 +582,7 @@ static int __exit exit_sock(void)
 
 	ring_buffer_destroy(&send_buffer);
 
-	MSGPRINTK("Successfully unloaded module!\n");
+	printk(KERN_INFO "Successfully unloaded module!\n");
 
 	return 0;
 }
@@ -590,7 +590,7 @@ static int __exit exit_sock(void)
 static int __init init_sock(void)
 {
 	int ret;
-	MSGPRINTK("Loading Popcorn messaging layer over TCP/IP...\n");
+	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
 
 	my_nid = 0; //initialises to zero so popcorn can boot even if there is no node list
 	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
@@ -605,7 +605,7 @@ static int __init init_sock(void)
 	
 	broadcast_my_node_info(my_nid); ////////////////////////////////////////////////
 
-	PCNPRINTK("Ready on TCP/IP\n");
+	printk(KERN_INFO "Ready on TCP/IP\n");
 	peers_init();
 	
 	transport_socket.is_initialised = true;
