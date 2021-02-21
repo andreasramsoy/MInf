@@ -435,7 +435,7 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
         if (transport_list_head->next == NULL) {
             printk(KERN_DEBUG "The transport list head was removed\n");
             //only member of list
-            free(transport_list_head);
+            kfree(transport_list_head);
             transport_list_head = NULL;
         }
         else {
@@ -469,7 +469,8 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 void destroy_node_list(void) {
     int i;
     for (i = 0; i < after_last_node_index; i++) {
-        if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory, the node list file is only updated when saved
+        if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory
+        //note that the node list file is only updated when saved (so if someone messes up connections they can just not save and then reboot)
     }
 }
 
