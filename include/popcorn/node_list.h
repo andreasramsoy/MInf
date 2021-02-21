@@ -76,6 +76,7 @@ struct message_node* get_node(int index) {
  * @return message_node* node pointer to the new node, NULL if it could not be created
 */
 struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
+    struct message_node* node;
     bool successful = true;
 
     if (transport != NULL) {
@@ -85,7 +86,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_DEBUG "Creating node with address %d but no protocol was given\n", address_p);
     }
 
-    struct message_node* node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
+    node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
@@ -265,7 +266,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 
     //initialise communications
     if (!node->transport->is_initialised) {
-        if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->tranport->name);
+        if (node->transport->init_transport()) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
         else {
             printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
             remove_node(index);
