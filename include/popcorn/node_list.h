@@ -583,11 +583,12 @@ bool initialise_node_list(void) {
                 return false;
             }
             
-            if (add_node(myself) > -1) {
+            if (add_node(myself) < 0) {
                 printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
                 destroy_node_list();
                 return false;
             }
+            else printk(KERN_DEBUG "Added myself to node list\n");
         }
         printk(KERN_DEBUG "Finished creating node list\n");
 
