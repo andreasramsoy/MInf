@@ -113,10 +113,12 @@ static struct file_operations command_channel =
 void initialise_node_list_controller(void) {
     strcpy(output_buffer, ""); //ensure that it is initialised to being empty
     nodes_controller = proc_create("popcorn_nodes", 0660, NULL, &command_channel);
+    printk(KERN_INFO "Node list controller proc created");
 }
 
 void destroy_node_list_controller(void) {
     proc_remove(nodes_controller);
+    printk(KERN_INFO "Node list controller proc removed");
 }
 
 static void __exit exit_kmsg(void) {

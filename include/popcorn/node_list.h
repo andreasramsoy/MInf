@@ -206,8 +206,8 @@ void remove_node(int index) {
     int i;
     int list_number;
     bool no_nodes;
-    struct node_list* list;
     struct node_list* prev_list;
+    struct node_list* list = root_node_list;
     struct message_node* node = get_node(index);
     disable_node(index); //sets to the always fail transport
 
