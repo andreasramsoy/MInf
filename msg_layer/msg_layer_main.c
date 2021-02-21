@@ -133,7 +133,7 @@ static void __exit exit_kmsg(void) {
     // as a header file implementing the pcn_kmsg_transport as an interface
 
 	printk(KERN_INFO "Popcorn messaging layer: destroying node list controller\n");
-	//destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
+	destroy_node_list_controller(); //call first to avoid user changing node list while destroying it
 
 	printk(KERN_INFO "Popcorn messaging layer: removing peers proc\n");
 	//proc_remove(proc_entry);
@@ -177,7 +177,7 @@ static int __init init_kmsg(void) {
 	//peers_init();
 	
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list controller\n");
-	//initialise_node_list_controller(); //allow user to change nodes
+	initialise_node_list_controller(); //allow user to change nodes
 
     return 0;
 
