@@ -22,6 +22,11 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 #include "socket.h" //initialises all tcp stuff that needs to be done before the first node is added
 #endif
 
+/**
+ * TODO: Populate help text
+ */
+#define COMMAND_HELP_TEXT "Placeholder for help text - note it cannot go over the max buffer size"
+
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
@@ -40,6 +45,10 @@ int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
 void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
     printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
     strcpy(output_buffer, "ERROR");
+}
+
+void show_help() {
+    strcpy(output_buffer, COMMAND_HELP_TEXT);
 }
 
 static ssize_t parse_commands(struct file *file, const char __user *usr_buff, size_t length, loff_t *position) {
@@ -69,6 +78,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     switch (number_of_parameters) {
         case 1:
             if (strcmp("save", buffer) == 0) node_save();
+            if (strcmp("help", buffer) == 0) show_help();
             else if (strcmp("highest", buffer) == 0) node_highest_index();
             else parse_error(number_of_parameters, buffer);
             break;
@@ -105,6 +115,8 @@ static ssize_t give_output(struct file *file, const char __user *usr_buff, size_
 	if(*position > 0 || length < COMMAND_BUFFER_SIZE) return 0;
 
 	buffer_size = sprintf(buffer,"%s",output_buffer);
+
+    strcpy(output_buffer, ""); //reset the output buffer so the same information cannot be recieved twice
 	
 	if(copy_to_user(usr_buff, buffer, buffer_size)) return -EFAULT;
 

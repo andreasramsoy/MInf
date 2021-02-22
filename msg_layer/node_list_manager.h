@@ -25,8 +25,14 @@ void node_get(int index) {
     //copy the desired output to the buffer
     /** TODO: Find correct function to translate addresses so IPv6 change is easier
      */
-    ip = node->address;
-    sprintf(output_buffer, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
+    if (node == NULL) {
+        sprintf(output_buffer, "NULL");
+    }
+    else {
+        ip = node->address;
+        printk(KERN_DEBUG "Node get has been called\n");
+        sprintf(output_buffer, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
+    }
 }
 
 /**
