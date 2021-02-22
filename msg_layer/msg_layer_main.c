@@ -25,12 +25,15 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
+    printk(KERN_DEBUG "Counting number of parameters\n");
     int count = 1; //count the first parameter each space is a subsequent one
     int i = 0;
     while (i < COMMAND_BUFFER_SIZE && buffer[i] != '\0') {
         //loop to end of string
         if (buffer[i] == ' ') count++;
+        i++;
     }
+    printk(KERN_DEBUG "Finished count\n");
     return count;
 }
 
@@ -85,7 +88,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
    }
 
    printk(KERN_DEBUG "Resetting position\n");
-   
+
 
     //update position
     new_position = strlen(buffer);
