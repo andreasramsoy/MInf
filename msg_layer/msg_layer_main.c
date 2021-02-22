@@ -55,6 +55,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     char buffer[COMMAND_BUFFER_SIZE];
     int number_of_parameters;
     int index;
+    int i;
     char* protocol;
     char* file_address;
     char* address;
@@ -67,6 +68,14 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
         return -EFAULT;
     }
     //the buffer now contains the inputted command
+
+    printk(KERN_DEBUG "Trimming user input\n");
+    for (i = 0; i < COMMAND_BUFFER_SIZE; i++) {
+        if (!isalpha(buffer[i]) && !isdigit(buffer[i]) && buffer[i] != '.' && buffer[i] != ':' && buffer[i] != ' ') {
+            buffer[i] = '\0'; //cut the string early so that line returns and other things are not considered
+            break;
+        }
+    }
 
     printk(KERN_DEBUG "Input from the user: %s\n", buffer);
 
@@ -83,7 +92,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else parse_error(number_of_parameters, buffer);
             break;
         case 2:
-            printk(KERN_DEBUG "Getting: %d", sscanf(buffer, "get %d", &index));
+            printk(KERN_DEBUG "Getting: %d", sscanf(buffer, "get %d", &index)); //////////////////////////////////for debugging
             if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) get_node(index);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
