@@ -22,9 +22,9 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 void node_get(int index) {
     struct message_node* node = get_node(index);
     //copy the desired output to the buffer
-    /** TODO: Find correct function to translate addresses
+    /** TODO: Find correct function to translate addresses so IPv6 change is easier
      */
-    sprintf(output_buffer, "???.???.?.? %s", protocol_to_string(node->transport));
+    sprintf(output_buffer, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
 }
 
 /**
@@ -48,17 +48,22 @@ void node_add(char* address_string, char* protocol_string) {
     struct pcn_kmsg_transport* protocol = string_to_transport(protocol_string);
     if (protocol == NULL) {
         strcpy(output_buffer, "-1 WRONG_PROTOCOL");
+        printk(KERN_DEBUG "Wrong protocols in node add\n");
     }
     else {
+        printk(KERN_DEBUG "Checked protocol, now adding address\n");
         uint32_t address = in_aton(address_string);
 
         //using the values create a node and add it to the list
         struct message_node* node = create_node(address, protocol);
+        printk(KERN_DEBUG "Created the node\n");
         if (node != NULL) {
+            printk(KERN_DEBUG "Ready to add node\n");
             sprintf(output_buffer, "%d", add_node(node));
         }
         else strcpy(output_buffer, "-1 COULD_NOT_CREATE_NODE");
     }
+    printk(KERN_DEBUG "Done adding node\n");
 }
 
 /**

@@ -263,8 +263,6 @@ void remove_node(int index) {
         printk(KERN_DEBUG "Removing the item from list\n");
         kfree(list);
     }
-
-    kfree(node); //node has been disabled so cannot be used now
 }
 
 /**
@@ -297,7 +295,6 @@ int add_node(struct message_node* node) { //function for adding a single node to
 			list->next_list = create_node_list();
             if (list->next_list == NULL) {
                 printk(KERN_ERR "Did not create the list, cannot add node\n");
-                kfree(node);
                 return -1;
             }
 		    list = list->next_list; //move to the new list
@@ -311,7 +308,6 @@ int add_node(struct message_node* node) { //function for adding a single node to
         root_node_list = create_node_list();
         if (root_node_list == NULL) {
             printk(KERN_ERR "Did not create the list, cannot add node\n");
-            kfree(node);
             return -1;
         }
         list = root_node_list; //need to set this again because it will have been initialised to NULL
@@ -554,8 +550,13 @@ void remove_protocol(struct pcn_kmsg_transport* transport_item) {
 
 void destroy_node_list(void) {
     int i;
+    struct message_node* node;
     for (i = 0; i < after_last_node_index; i++) {
-        if (get_node(i)) remove_node(i); //note this disables, tears down connections and frees up memory
+        node = get_node(i)
+        if (node != NULL) {
+            remove_node(i); //note this disables, tears down connections
+            kfree(node); //frees up memory
+        }
         //note that the node list file is only updated when saved (so if someone messes up connections they can just not save and then reboot)
     }
 }
@@ -585,6 +586,7 @@ bool initialise_node_list(void) {
             
             if (add_node(myself) < 0) {
                 printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
+                kfree(myself); //couldn't add so remove it
                 destroy_node_list();
                 return false;
             }
