@@ -35,7 +35,7 @@ int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
 }
 
 void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
-    printk(KERN_ERR "Popcorn node command parse error: %d paramets, string is \"%s\"\n", number_of_parameters, buffer);
+    printk(KERN_ERR "Popcorn node command parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
     strcpy(output_buffer, "ERROR");
 }
 
@@ -56,10 +56,12 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     }
     //the buffer now contains the inputted command
 
-    printk(KERN_DEBUG "Input from the user: %s", buffer);
+    printk(KERN_DEBUG "Input from the user: %s\n", buffer);
 
     //handle input
     number_of_parameters = count_parameters(buffer);
+
+    printk(KERN_DEBUG "%d paramters were given\n", number_of_parameters);
 
     switch (number_of_parameters) {
         case 1:
@@ -82,6 +84,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             parse_error(number_of_parameters, buffer);
    }
 
+   printk(KERN_DEBUG "Resetting position\n");
 
     //update position
     new_position = strlen(buffer);
@@ -115,12 +118,12 @@ static struct file_operations command_channel =
 void initialise_node_list_controller(void) {
     strcpy(output_buffer, ""); //ensure that it is initialised to being empty
     nodes_controller = proc_create("popcorn_nodes", 0660, NULL, &command_channel);
-    printk(KERN_INFO "Node list controller proc created");
+    printk(KERN_INFO "Node list controller proc created\n");
 }
 
 void destroy_node_list_controller(void) {
     proc_remove(nodes_controller);
-    printk(KERN_INFO "Node list controller proc removed");
+    printk(KERN_INFO "Node list controller proc removed\n");
 }
 
 static void __exit exit_kmsg(void) {
