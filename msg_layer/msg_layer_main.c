@@ -85,6 +85,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
    }
 
    printk(KERN_DEBUG "Resetting position\n");
+   
 
     //update position
     new_position = strlen(buffer);
