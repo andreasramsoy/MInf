@@ -56,6 +56,8 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     }
     //the buffer now contains the inputted command
 
+    printk(KERN_DEBUG "Input from the user: %s", buffer);
+
     //handle input
     number_of_parameters = count_parameters(buffer);
 
