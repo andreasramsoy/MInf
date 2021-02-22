@@ -552,7 +552,7 @@ void destroy_node_list(void) {
     int i;
     struct message_node* node;
     for (i = 0; i < after_last_node_index; i++) {
-        node = get_node(i)
+        node = get_node(i);
         if (node != NULL) {
             remove_node(i); //note this disables, tears down connections
             kfree(node); //frees up memory
