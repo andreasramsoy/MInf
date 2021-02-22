@@ -47,6 +47,8 @@ void node_exists(int index) {
 */
 void node_add(char* address_string, char* protocol_string) {
     //convert values that can be used in the popcorn messaging layer
+    uint32_t address;
+    struct message_node* node;
     struct pcn_kmsg_transport* protocol = string_to_transport(protocol_string);
     if (protocol == NULL) {
         strcpy(output_buffer, "-1 WRONG_PROTOCOL");
@@ -54,10 +56,10 @@ void node_add(char* address_string, char* protocol_string) {
     }
     else {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
-        uint32_t address = in_aton(address_string);
+        address = in_aton(address_string);
 
         //using the values create a node and add it to the list
-        struct message_node* node = create_node(address, protocol);
+        node = create_node(address, protocol);
         printk(KERN_DEBUG "Created the node\n");
         if (node != NULL) {
             printk(KERN_DEBUG "Ready to add node\n");

@@ -38,7 +38,7 @@ int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
 }
 
 void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
-    printk(KERN_ERR "Popcorn node command parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
+    printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
     strcpy(output_buffer, "ERROR");
 }
 
@@ -64,7 +64,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     //handle input
     number_of_parameters = count_parameters(buffer);
 
-    printk(KERN_DEBUG "%d paramters were given\n", number_of_parameters);
+    printk(KERN_DEBUG "%d parameters were given\n", number_of_parameters);
 
     switch (number_of_parameters) {
         case 1:
@@ -73,6 +73,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else parse_error(number_of_parameters, buffer);
             break;
         case 2:
+            printk(KERN_DEBUG "Getting: %d", sscanf(buffer, "get %d", &index));
             if (sscanf(buffer, "get %d", &index) == number_of_parameters) get_node(index);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters) node_update_protocol(index, protocol);
