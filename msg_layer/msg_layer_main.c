@@ -47,7 +47,7 @@ void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
     strcpy(output_buffer, "ERROR");
 }
 
-void show_help() {
+void show_help(void) {
     strcpy(output_buffer, COMMAND_HELP_TEXT);
 }
 
