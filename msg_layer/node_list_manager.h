@@ -21,8 +21,9 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 */
 void node_get(int index) {
     int ip;
-    struct message_node* node = get_node(index);
-    printk(KERN_DEBUG "Calling node_get\n");
+    struct message_node* node;
+    printk(KERN_DEBUG "node_get called\n");
+    node = get_node(index);
     //copy the desired output to the buffer
     /** TODO: Find correct function to translate addresses so IPv6 change is easier */
     if (node == NULL) {
@@ -42,6 +43,7 @@ void node_get(int index) {
  * @return void however the output_buffer is filled with bool exists true if there is a node (path to the node is not null)
 */
 void node_exists(int index) {
+    printk(KERN_DEBUG "node_exists called\n");
     if (get_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
     else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
 }
@@ -56,7 +58,10 @@ void node_add(char* address_string, char* protocol_string) {
     //convert values that can be used in the popcorn messaging layer
     uint32_t address;
     struct message_node* node;
-    struct pcn_kmsg_transport* protocol = string_to_transport(protocol_string);
+    struct pcn_kmsg_transport* protocol;
+
+    printk(KERN_DEBUG "node_add called\n");
+    protocol = string_to_transport(protocol_string);
     if (protocol == NULL) {
         strcpy(output_buffer, "-1 WRONG_PROTOCOL");
         printk(KERN_DEBUG "Wrong protocols in node add\n");
@@ -85,6 +90,7 @@ void node_add(char* address_string, char* protocol_string) {
  * @return void however the output_buffer is filled with true if successful false if not
 */
 void node_remove(int index) {
+    printk(KERN_DEBUG "node_remove called\n");
     if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         remove_node(index);
@@ -98,6 +104,7 @@ void node_remove(int index) {
  * @param char *address[] string that the result will be placed in
 */
 void node_get_address(int index, char address[INET_ADDRSTRLEN]) {
+    printk(KERN_DEBUG "node_get_address called\n");
     if (!get_node(index)) printk(KERN_ERR "Failed to get the node address, the address variable has not been updated and so has it's previous value");
     else {
         uint32_t ip = get_node(index)->address;
@@ -113,6 +120,7 @@ void node_get_address(int index, char address[INET_ADDRSTRLEN]) {
  * @return void however the output_buffer is filled with the protocol used as a string
 */
 char* node_get_protocol(int index) {
+    printk(KERN_DEBUG "node_get_protocol called\n");
     if (!get_node(index)) return "Node does not exist";
     else return get_node(index)->transport->name;
 }
@@ -124,6 +132,7 @@ char* node_get_protocol(int index) {
  * @return void however the output_buffer is filled with bool success
 */
 void node_update_protocol(int index, char* protocol) {
+    printk(KERN_DEBUG "node_update_protocol called\n");
     if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
     else {
         disable_node(index); //tear down existing connection
@@ -145,7 +154,10 @@ void node_update_protocol(int index, char* protocol) {
     int found_at;
     int i;
     struct message_node* node;
-    uint32_t search_term = address_string_to_int(address);
+    uint32_t search_term;
+
+    printk(KERN_DEBUG "node_find called\n");
+    search_term = address_string_to_int(address);
 
     found_at = -1;
 
@@ -170,6 +182,7 @@ void node_update_protocol(int index, char* protocol) {
  * @return void however the output_buffer is filled with bool success
 */
 void node_load(char* address) {
+    printk(KERN_DEBUG "node_load called\n");
     //load the connections
     /////////////////////////////////////load_list(address);
 }
@@ -179,6 +192,7 @@ void node_load(char* address) {
  * @return void however the output_buffer is filled with the highest index of a node that exists
 */
 void node_highest_index(void) {
+    printk(KERN_DEBUG "node_highest_index\n");
     sprintf(output_buffer, "%d", after_last_node_index - 1);
 }
 
@@ -186,6 +200,7 @@ void node_highest_index(void) {
  * Saves the current configuration so that when booting occurs this is the configuration
 */
 void node_save(void) {
+    printk(KERN_DEBUG "node_save called\n");
     save_to_file();
 }
 #endif
