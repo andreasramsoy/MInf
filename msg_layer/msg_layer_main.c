@@ -56,6 +56,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     int number_of_parameters;
     int index;
     int i;
+    char c;
     char* protocol;
     char* file_address;
     char* address;
@@ -71,7 +72,8 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
 
     printk(KERN_DEBUG "Trimming user input\n");
     for (i = 0; i < COMMAND_BUFFER_SIZE; i++) {
-        if (!isalpha(buffer[i]) && !isdigit(buffer[i]) && buffer[i] != '.' && buffer[i] != ':' && buffer[i] != ' ') {
+        c = buffer[i];
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == ':' || c == ' ') {
             buffer[i] = '\0'; //cut the string early so that line returns and other things are not considered
             break;
         }
