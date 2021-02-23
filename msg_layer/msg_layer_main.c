@@ -83,7 +83,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
         }
     }
 
-    printk(KERN_DEBUG "Input from the user: %s\n", buffer);
+    printk(KERN_DEBUG "Input from the user: \"%s\"\n", buffer);
 
     //handle input
     number_of_parameters = count_parameters(buffer);

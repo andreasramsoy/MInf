@@ -22,18 +22,17 @@ char output_buffer[COMMAND_BUFFER_SIZE];
 void node_get(int index) {
     int ip;
     struct message_node* node = get_node(index);
-    printk(KERN_DEBUG "Getting the node\n");
+    printk(KERN_DEBUG "Calling node_get\n");
     //copy the desired output to the buffer
-    /** TODO: Find correct function to translate addresses so IPv6 change is easier
-     */
+    /** TODO: Find correct function to translate addresses so IPv6 change is easier */
     if (node == NULL) {
         printk(KERN_DEBUG "Node could not be found so NULL is being returned\n");
-        sprintf(output_buffer, "NULL");
+        snprintf(output_buffer, COMMAND_BUFFER_SIZE, "NULL");
     }
     else {
-        ip = node->address;
         printk(KERN_DEBUG "Node get has been called\n");
-        sprintf(output_buffer, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
+        ip = node->address;
+        snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
     }
 }
 
