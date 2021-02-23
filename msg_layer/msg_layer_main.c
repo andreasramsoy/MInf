@@ -99,7 +99,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             break;
         case 2:
             printk(KERN_DEBUG "Getting: %d", sscanf(buffer, "get %d", &index)); //////////////////////////////////for debugging
-            if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) get_node(index);
+            if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) node_get(index);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
             else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
