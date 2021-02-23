@@ -70,11 +70,15 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     }
     //the buffer now contains the inputted command
 
+    new_position = strlen(buffer);
+
     printk(KERN_DEBUG "Trimming user input\n");
     for (i = 0; i < COMMAND_BUFFER_SIZE; i++) {
         c = buffer[i];
-        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == ':' || c == ' ') {
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == ':' || c == ' ')) {
+            //when it's not a letter, number, ., :, or space
             buffer[i] = '\0'; //cut the string early so that line returns and other things are not considered
+            printk(KERN_DEBUG "Position the string was terminiated at: %d", i);
             break;
         }
     }
@@ -113,7 +117,6 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
 
 
     //update position
-    new_position = strlen(buffer);
     *position = new_position;
     return new_position;
 }
