@@ -106,7 +106,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             break;
         case 3:
             printk(KERN_DEBUG "Getting here\n"); //////////////////////////////////for debugging
-            printk(KERN_DEBUG "Getting here %d\n"sscanf(buffer, "add %s %s", &address, &protocol)); //////////////////////////////////for debugging
+            printk(KERN_DEBUG "Getting here %d\n", sscanf(buffer, "add %s %s", &address, &protocol)); //////////////////////////////////for debugging
             if (sscanf(buffer, "add %s %s", &address, &protocol) == number_of_parameters - 1) node_add(address, protocol);
             else parse_error(number_of_parameters, buffer);
             break;
