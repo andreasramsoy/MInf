@@ -157,6 +157,8 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
 
     printk(KERN_DEBUG "string_to_transport called\n");
     transport = transport_list_head;
+    printk(KERN_DEBUG "string_to_transport called pointer %p\n", transport->transport_structure);
+    printk(KERN_DEBUG "string_to_transport called string  %s\n", transport->transport_structure->name);
 
     if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
 
