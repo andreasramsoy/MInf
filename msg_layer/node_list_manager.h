@@ -62,9 +62,10 @@ void node_add(char* address_string, char* protocol_string) {
 
     printk(KERN_DEBUG "node_add called\n");
     protocol = string_to_transport(protocol_string);
+    printk(KERN_DEBUG "node_add called 2\n");
     if (protocol == NULL) {
-        strcpy(output_buffer, "-1 WRONG_PROTOCOL");
         printk(KERN_DEBUG "Wrong protocols in node add\n");
+        strcpy(output_buffer, "-1 WRONG_PROTOCOL");
     }
     else {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");

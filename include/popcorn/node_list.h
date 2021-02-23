@@ -153,11 +153,18 @@ char* protocol_to_string(struct pcn_kmsg_transport* transport) {
 }
 
 struct pcn_kmsg_transport* string_to_transport(char* protocol) {
-    struct transport_list* transport = transport_list_head;
+    struct transport_list* transport;
 
+    printk(KERN_DEBUG "string_to_transport called\n");
+    transport = transport_list_head;
+
+    if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
+
+    printk(KERN_DEBUG "string_to_transport called 2\n");
     while (transport->next != NULL) {
-        if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure; //the integers are mapped to enums
+        printk(KERN_DEBUG "string_to_transport called in loop\n");
         transport = transport->next;
+        if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
     }
 
     //exited so must have not found a suitable protocol
