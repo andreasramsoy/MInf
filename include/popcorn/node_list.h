@@ -159,9 +159,13 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
     transport = transport_list_head;
     printk(KERN_DEBUG "string_to_transport called pointer %p\n", transport->transport_structure);
     printk(KERN_DEBUG "string_to_transport called string  %s\n", transport->transport_structure->name);
+    printk(KERN_DEBUG "string_to_transport called comflse %d\n", strcmp("socket", "socket"));
     printk(KERN_DEBUG "string_to_transport called compare %d\n", strcmp(transport->transport_structure->name, protocol));
 
-    if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
+    if (strcmp(transport->transport_structure->name, protocol) == 0) {
+        printk(KERN_DEBUG "string_to_transport called 1.5\n");
+        return transport->transport_structure;
+    }
 
     printk(KERN_DEBUG "string_to_transport called 2\n");
     while (transport->next != NULL) {
