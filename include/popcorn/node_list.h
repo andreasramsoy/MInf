@@ -63,6 +63,8 @@ struct message_node* get_node(int index) {
         }
 		list = list->next_list; //move to next list
 	}
+
+    printk(KERN_DEBUG "On correct list, getting node\n");
 	
 	//should be on correct list now just directly return the node
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
@@ -228,10 +230,14 @@ void remove_node(int index) {
     struct node_list* list = root_node_list;
     struct message_node* node = get_node(index);
     disable_node(index); //sets to the always fail transport
+    printk(KERN_DEBUG "Node has been disabled\n");
 
-    node->transport->number_of_users--;
     
     node->transport->kill_node(node);
+
+    node->transport->number_of_users--;
+
+    printk(KERN_DEBUG "Connections have been killed for this node\n");
 
     if (node->transport->number_of_users <= 0) {
         node->transport->exit_transport();

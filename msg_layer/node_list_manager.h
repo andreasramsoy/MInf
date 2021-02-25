@@ -37,7 +37,7 @@ void node_get(int index) {
     else {
         printk(KERN_DEBUG "Node get has been called\n");
         ip = node->address;
-        snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d.%d.%d.%d %s", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF, (ip >> 8) & 0xFF, ip & 0xFF, protocol_to_string(node->transport));
+        snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d.%d.%d.%d %s", ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF, protocol_to_string(node->transport));
     }
 }
 

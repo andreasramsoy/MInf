@@ -493,6 +493,9 @@ bool kill_node_sock(struct message_node* node) {
 		printk(KERN_INFO "Deinitialising myself (skipping connections)\n");
 		return true;
 	}
+	else {
+		printk(KERN_INFO "Deinitialising myself node %d\n", node->index);
+	}
 
 	sh = node->handle;
 	if (sh->send_handler) {
