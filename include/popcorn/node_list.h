@@ -232,16 +232,18 @@ void remove_node(int index) {
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
-    
-    node->transport->kill_node(node);
+    if (node->is_initialised) {
+        printk(KERN_DEBUG "Killing connections for this node\n");
+        node->transport->kill_node(node);
 
-    node->transport->number_of_users--;
+        node->transport->number_of_users--;
 
-    printk(KERN_DEBUG "Connections have been killed for this node\n");
+        printk(KERN_DEBUG "Connections have been killed for this node\n");
 
-    if (node->transport->number_of_users <= 0) {
-        node->transport->exit_transport();
-        printk(KERN_DEBUG "No nodes are using %s as transport, removing this transport\n", node->transport->name);
+        if (node->transport->number_of_users <= 0) {
+            node->transport->exit_transport();
+            printk(KERN_DEBUG "No nodes are using %s as transport, removing this transport\n", node->transport->name);
+        }
     }
 
     printk(KERN_DEBUG "Updating the after last node index\n");
