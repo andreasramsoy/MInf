@@ -8,6 +8,10 @@
 
 #include <popcorn/node_list.h>
 
+/*
+ * Note that sscanfs have a max size of 200 (cannot use #define variable for them)
+ * Update them to ensure safe from buffer overflows
+ */
 #define COMMAND_BUFFER_SIZE 200 //unlikely to come close to this for adjusting popcorn nodes
 #define BOOL_TRUE_RETURN_STRING "1"
 #define BOOL_FALSE_RETURN_STRING "0"
