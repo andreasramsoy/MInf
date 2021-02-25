@@ -31,8 +31,10 @@ static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
     printk(KERN_DEBUG "Counting number of parameters\n");
-    int count = 1; //count the first parameter each space is a subsequent one
-    int i = 0;
+    int count;
+    int i;
+    count = 1; //count the first parameter each space is a subsequent one
+    i = 0;
     while (i < COMMAND_BUFFER_SIZE && buffer[i] != '\0') {
         //loop to end of string
         if (buffer[i] == ' ') count++;
@@ -107,7 +109,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
         case 3:
             printk(KERN_DEBUG "Getting here\n"); //////////////////////////////////for debugging
             //printk(KERN_DEBUG "Getting here %d\n", sscanf(buffer, "add %s %s", &address, &protocol)); //////////////////////////////////for debugging
-            if (sscanf(buffer, "add %s %s", &address, &protocol) == number_of_parameters - 1) node_add(address, protocol);
+            if (sscanf(buffer, "add %s %s", address, protocol) == number_of_parameters - 1) node_add(address, protocol);
             else parse_error(number_of_parameters, buffer);
             break;
         default:
