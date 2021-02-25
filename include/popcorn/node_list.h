@@ -65,7 +65,6 @@ struct message_node* get_node(int index) {
 	}
 	
 	//should be on correct list now just directly return the node
-
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
 }
 
@@ -145,6 +144,7 @@ bool enable_node(int index) {
 }
 
 char* protocol_to_string(struct pcn_kmsg_transport* transport) {
+    printk(KERN_DEBUG "protocol_to_string called");
     if (transport == NULL) {
         printk(KERN_ERR "The protocol was invalid");
         return "INVALID";
@@ -206,14 +206,18 @@ void save_to_file(void) {
 }
 
 struct node_list* create_node_list(void) {
-	struct node_list* ret = kmalloc(sizeof(struct node_list), GFP_KERNEL);
-    if (ret == NULL) {
+    int i;
+	struct node_list* new_list = kmalloc(sizeof(struct node_list), GFP_KERNEL);
+    if (new_list == NULL) {
         printk(KERN_ERR "Could not create new node list\n");
     }
     else {
 	    printk(KERN_DEBUG "A new node list was added\n");
     }
-	return ret;
+    for (i = 0; i < MAX_NUM_NODES_PER_LIST; i++) {
+        new_list->nodes[i] = NULL; //initialise to NULL so that get_node can just return NULL
+    }
+	return new_list;
 }
 
 void remove_node(int index) {
