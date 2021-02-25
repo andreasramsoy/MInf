@@ -232,7 +232,7 @@ void remove_node(int index) {
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
-    if (node->is_initialised) {
+    if (node->transport->is_initialised) {
         printk(KERN_DEBUG "Killing connections for this node\n");
         node->transport->kill_node(node);
 
