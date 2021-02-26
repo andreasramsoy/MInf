@@ -250,7 +250,7 @@ void remove_node(int index) {
     
     //update the last node index
     i = index;
-    if (index + 1 == after_last_node_index) {
+    if (index == after_last_node_index || index + 1 == after_last_node_index) {
         while (i > 0 && get_node(i) != NULL) i--; //roll back until you file a node
         after_last_node_index = i + 1;
     }

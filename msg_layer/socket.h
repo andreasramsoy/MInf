@@ -467,6 +467,9 @@ static int __init __sock_listen_to_connection(void)
 		goto out_release;
 	}
 
+	/**
+	 * TODO: Check the after last node index for this function
+	 */
 	ret = kernel_listen(sock_listen, after_last_node_index);
 	if (ret < 0) {
 		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
@@ -600,10 +603,11 @@ static int __exit exit_sock(void)
 	proc_remove(proc_entry);
 
 	if (sock_listen) sock_release(sock_listen);
+	sock_listen = NULL;
 
 	ring_buffer_destroy(&send_buffer);
 
-	printk(KERN_INFO "Successfully unloaded module!\n");
+	printk(KERN_INFO "Successfully unloaded TCP/IP transport\n");
 
 	return 0;
 }
@@ -615,7 +619,7 @@ static int __init init_sock(void)
 
 
 
-	my_nid = 0; //initialises to zero so popcorn can boot even if there is no node list
+	my_nid = -1;
 	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
 	pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent
 
