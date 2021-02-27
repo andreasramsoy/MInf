@@ -10,10 +10,10 @@
 //check with Antonio and Karim what they think about this idea before updating rest of code
 
 struct pcn_kmsg_transport {
-	.name = "always-fail-transport",
+	.name = "always_fail",
 	features = 0;
 
-	.is_initalised = tue;
+	.is_initalised = true;
 	int number_of_users = 0; //number of nodes currently using this transport
 	int (*init_transport)(void); //one time initialisation
 	int (*exit_transport)(void); //final destroying of the transport
@@ -38,5 +38,9 @@ struct pcn_kmsg_transport {
 	int (*rdma_read)(int, void *, dma_addr_t, size_t, u32);
     #endif
 };
+
+static int __init init_always_fail(void) {
+	
+}
 
 #endif

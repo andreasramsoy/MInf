@@ -494,10 +494,11 @@ bool kill_node_sock(struct message_node* node) {
 
 	if (node->index == my_nid) {
 		printk(KERN_INFO "Deinitialising myself (skipping connections)\n");
+		set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
 		return true;
 	}
 	else {
-		printk(KERN_INFO "Deinitialising myself node %d\n", node->index);
+		printk(KERN_INFO "Deinitialising node %d\n", node->index);
 	}
 
 	sh = node->handle;
@@ -512,6 +513,7 @@ bool kill_node_sock(struct message_node* node) {
 	if (sh->sock) {
 		sock_release(sh->sock);
 	}
+	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
 	return true;
 }
 

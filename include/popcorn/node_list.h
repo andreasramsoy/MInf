@@ -185,25 +185,25 @@ uint32_t address_string_to_int(char* address) {
     return in_aton(address);
 }
 
-void save_to_file(void) {
+bool save_to_file(void) {
     struct message_node* node;
     FILE *fileptr = fopen(NODE_LIST_FILE_ADDRESS, "w");
 
     if (fileptr == NULL) {
         printk(KERN_ERR "The node list file could not be opened and so could not be saved");
-        return;
+        return false;
     }
 
     int i;
     for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
-        if (node != NULL) {
+        if (node) {
             fprintk(KERN_DEBUG fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->transport->name));
         }
     }
 
     fclose(fileptr);
-    return;
+    return true;
 }
 
 struct node_list* create_node_list(void) {
@@ -417,31 +417,44 @@ struct message_node* parse_node(char* node_string) {
 }
 
 bool get_node_list_from_file(const char * address) {
-    FILE * fileptr = fopen(address, "r");
+    char line[MAX_FILE_LINE_LENGTH];
+    struct message_node* new_node;
+    struct message_node* node;
+    FILE * fileptr;
+    int i;
 
-    if (fileptr == NULL) {
-        printk(KERN_DEBUG "The node list file could not be opened");
+    printk(KERN_DEBUG "Removing previous nodes from node list\n");
+    for (i = 0; i < after_last_node_index; i++) {
+        node = get_node(i);
+        if (node) {
+            remove(i);
+            kfree(node);
+        }
+    }
+    
+    fileptr = fopen(address, "r");
+
+    if (fileptr == NULL && strcmp(NODE_LIST_FILE_ADDRESS, address) != 0) {
+        printk(KERN_DEBUG "The node list file could not be opened\n");
+        printk(KERN_DEBUG "Attempting to revert to previously saved node list\n");
+        return get_node_list_from_file(NODE_LIST_FILE_ADDRESS);
+    }
+    else if (fileptr == NULL) {
+        printk(KERN_DEBUG "The default node list file could not be opened\n");
         return false;
     }
 
-    char line[MAX_FILE_LINE_LENGTH];
-    struct message_node* new_node;
     while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr)) {
         new_node = parse_node(line);
         if (new_node == NULL) { //process each node line by line
             printk(KERN_DEBUG "Failed to parse node line: %s\n", line);
-
-            //should the function revert? Returns false so doesn't try any more after this one
-
-            return false;
-
         }
         else if (add_node(new_node) >= 0) {
-            printk(KERN_INFO "Failed to add the node to the node list");
+            printk(KERN_INFO "Failed to add the node to the node list\n");
             kfree(new_node);
         }
         else {
-            printk(KERN_DEBUG "Successfully added the new node");
+            printk(KERN_DEBUG "Successfully added the new node\n");
         }
     }
 

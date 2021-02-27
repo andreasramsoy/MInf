@@ -81,7 +81,7 @@ void node_add(char* address_string, char* protocol_string) {
         printk(KERN_DEBUG "Created the node\n");
         if (node != NULL) {
             printk(KERN_DEBUG "Ready to add node\n");
-            sprintf(output_buffer, "%d", add_node(node));
+            snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node));
         }
         else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
     }
@@ -116,7 +116,7 @@ void node_get_address(int index, char address[INET_ADDRSTRLEN]) {
         uint32_t ip = get_node(index)->address;
 
         //convert to string then return in the string passed by reference
-        sprintf(address, "%u.%u.%u.%u", ip & 0xFF, (ip>>8) & 0xFF, (ip>>16) & 0xFF, (ip>>24) & 0xFF);
+        snprintf(address, COMMAND_BUFFER_SIZE, "%u.%u.%u.%u", ip & 0xFF, (ip>>8) & 0xFF, (ip>>16) & 0xFF, (ip>>24) & 0xFF);
     }
 }
 
@@ -190,7 +190,7 @@ void node_update_protocol(int index, char* protocol) {
 void node_load(char* address) {
     printk(KERN_DEBUG "node_load called\n");
     //load the connections
-    /////////////////////////////////////load_list(address);
+    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", get_node_list_from_file(address));
 }
 
 /**
@@ -199,7 +199,7 @@ void node_load(char* address) {
 */
 void node_highest_index(void) {
     printk(KERN_DEBUG "node_highest_index\n");
-    sprintf(output_buffer, "%d", after_last_node_index - 1);
+    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", after_last_node_index - 1);
 }
 
 /**
@@ -207,6 +207,6 @@ void node_highest_index(void) {
 */
 void node_save(void) {
     printk(KERN_DEBUG "node_save called\n");
-    save_to_file();
+    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", save_to_file());
 }
 #endif
