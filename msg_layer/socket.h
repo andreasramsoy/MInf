@@ -545,7 +545,9 @@ struct pcn_kmsg_transport transport_socket = {
  */
 bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
+
 	printk(KERN_DEBUG "Initialising node %d for socket\n", node->index);
+	printk(KERN_DEBUG "my_nid is %d\n", my_nid);
 
 	if (node->index == my_nid) {
 		printk(KERN_INFO "Initialising myself (skipping connections)\n");
@@ -621,10 +623,8 @@ static int __init init_sock(void)
 	int ret;
 	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
 
-
-
-	my_nid = -1;
-	if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
+	//my_nid = -1;
+	//if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
 	pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent
 
 	if ((ret = ring_buffer_init(&send_buffer, "sock_send"))) goto out_exit;
