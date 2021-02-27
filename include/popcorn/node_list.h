@@ -138,7 +138,7 @@ bool disable_node(int index) {
 bool enable_node(int index) {
     struct message_node* node;
     printk(KERN_DEBUG "Enabling node %d\n", index);
-    
+
     node = get_node(index);
     if (node == NULL || node->transport == NULL) {
         printk(KERN_DEBUG "Node cannot be enabled when it is NULL or doesn't have transport");
@@ -353,10 +353,12 @@ int add_node(struct message_node* node) { //function for adding a single node to
     }
 
     printk(KERN_DEBUG "Initialising communications for node\n");
-    printk(KERN_DEBUG "Transport for the node initialised? %d\n", node->transport->is_initialised);
+    printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
+    printk(KERN_DEBUG "Transport for the node initialised ptr %p\n", node->transport->init_transport());
 
     //initialise communications
     if (!(node->transport->is_initialised)) {
+        printk(KERN_DEBUG "add_node here 1\n");
         if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
         else {
             printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
