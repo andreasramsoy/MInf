@@ -20,8 +20,8 @@ enum {
 	SEND_FLAG_POSTED = 0,
 };
 
-static int __init init_sock(void);
-static int __exit exit_sock(void);
+static int init_sock(void);
+static int exit_sock(void);
 bool init_node_sock(struct message_node* node);
 
 
@@ -320,7 +320,7 @@ static int peers_init(void)
         return 0;
 }
 
-static struct task_struct * __init __sock_start_handler(struct message_node* node, const char *type, int (*handler)(void *data))
+static struct task_struct * __sock_start_handler(struct message_node* node, const char *type, int (*handler)(void *data))
 {
 	char name[40];
 	struct task_struct *tsk;
@@ -360,7 +360,7 @@ static int __sock_start_handlers(struct message_node* node)
 	return 0;
 }
 
-static int __init __sock_connect_to_server(struct message_node* node)
+static int __sock_connect_to_server(struct message_node* node)
 {
 	int ret;
 	struct sockaddr_in addr;
@@ -393,7 +393,7 @@ static int __init __sock_connect_to_server(struct message_node* node)
 	return 0;
 }
 
-static int __init __sock_accept_client(struct message_node* node)
+static int __sock_accept_client(struct message_node* node)
 {
 	int i;
 	int ret;
@@ -446,7 +446,7 @@ out_release:
 	return ret;
 }
 
-static int __init __sock_listen_to_connection(void)
+static int __sock_listen_to_connection(void)
 {
 	int ret;
 	struct sockaddr_in addr;
