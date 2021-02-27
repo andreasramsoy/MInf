@@ -30,7 +30,7 @@
 #include <linux/inetdevice.h>
 #include <linux/netdevice.h>
 
-#define NODE_LIST_FILE_ADDRESS "node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
+#define NODE_LIST_FILE_ADDRESS "/node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
 #define MAX_FILE_LINE_LENGTH 2048
 
 struct transport_list* transport_list_head;
@@ -181,13 +181,12 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
     return NULL;
 }
 
-///////////////stub for address translation
-uint32_t address_string_to_int(char* address) { //////////////////////////////////remove this function and replace 
+uint32_t address_string_to_int(char* address) {
     return in_aton(address);
 }
 
 void save_to_file(void) {
-    /*struct message_node* node;
+    struct message_node* node;
     FILE *fileptr = fopen(NODE_LIST_FILE_ADDRESS, "w");
 
     if (fileptr == NULL) {
@@ -199,11 +198,11 @@ void save_to_file(void) {
     for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
         if (node != NULL) {
-            fprintk(KERN_DEBUG fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->protocol));
+            fprintk(KERN_DEBUG fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->transport->name));
         }
     }
 
-    fclose(fileptr);*/
+    fclose(fileptr);
     return;
 }
 
@@ -418,11 +417,11 @@ struct message_node* parse_node(char* node_string) {
 }
 
 bool get_node_list_from_file(const char * address) {
-    /*FILE * fileptr = fopen(address, "r");
+    FILE * fileptr = fopen(address, "r");
 
     if (fileptr == NULL) {
-        printk(KERN_DEBUG "The node list file could not be opened and so the node list could not be found");
-        */return false;/*
+        printk(KERN_DEBUG "The node list file could not be opened");
+        return false;
     }
 
     char line[MAX_FILE_LINE_LENGTH];
@@ -437,12 +436,18 @@ bool get_node_list_from_file(const char * address) {
             return false;
 
         }
-        else add_node(new_node);
+        else if (add_node(new_node) >= 0) {
+            printk(KERN_INFO "Failed to add the node to the node list");
+            kfree(new_node);
+        }
+        else {
+            printk(KERN_DEBUG "Successfully added the new node");
+        }
     }
 
     fclose(fileptr);
 
-    return true;*/
+    return true;
 }
 
 
@@ -603,7 +608,7 @@ bool initialise_node_list(void) {
             /**
              * TODO: Add getting the host ip
              */
-            myself = create_node(167772679, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            myself = create_node(my_ip, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             //myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             if (myself == NULL) {
                 printk(KERN_ERR "Failed to create node for myself, cannot continue\n");

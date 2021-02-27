@@ -547,6 +547,7 @@ bool init_node_sock(struct message_node* node) {
 
 	if (node->index == my_nid) {
 		printk(KERN_INFO "Initialising myself (skipping connections)\n");
+		set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
 		return true;
 	}
 
@@ -572,7 +573,7 @@ bool init_node_sock(struct message_node* node) {
 		sema_init(&sh->q_empty, 0);
 		sema_init(&sh->q_full, MAX_SEND_DEPTH);
 
-		printk(KERN_DEBUG "Node initialised, registering the node");
+		printk(KERN_DEBUG "Node initialised, estabilishing connection...");
 
 		if (node->index > my_nid) {
 			//you are earlier in the list so you start the connection

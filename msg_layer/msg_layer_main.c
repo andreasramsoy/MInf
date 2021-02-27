@@ -84,6 +84,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             break;
         }
     }
+    buffer[i] = '\0'; //in case of where there is no null character and the buffer is full
 
     printk(KERN_DEBUG "Input from the user: \"%100s\"\n", buffer);
 
@@ -92,24 +93,30 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
 
     printk(KERN_DEBUG "%d parameters were given\n", number_of_parameters);
 
+    /**
+     * Note that the length of the buffer has been checked and there must be a
+     * NULL character at the end, this means that sscanf should be safe from 
+     * buffer overflows
+     */
+
     switch (number_of_parameters) {
         case 1:
-            if (strcmp("save", buffer) == 0) node_save();
-            if (strcmp("help", buffer) == 0) show_help();
-            else if (strcmp("highest", buffer) == 0) node_highest_index();
+            if (strncmp("save", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_save();
+            if (strncmp("help", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) show_help();
+            else if (strncmp("highest", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_highest_index();
             else parse_error(number_of_parameters, buffer);
             break;
         case 2:
             if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) node_get(index);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
-            else if (sscanf(buffer, "update %d %200s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
-            else if (sscanf(buffer, "load %200s", file_address) == number_of_parameters - 1) node_load(file_address);
+            else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
+            else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
             else parse_error(number_of_parameters, buffer);
             break;
         case 3:
             printk(KERN_DEBUG "Getting here\n"); //////////////////////////////////for debugging
             //printk(KERN_DEBUG "Getting here %d\n", sscanf(buffer, "add %s %s", &address, &protocol)); //////////////////////////////////for debugging
-            if (sscanf(buffer, "add %200s %100s", address, protocol) == number_of_parameters - 1) node_add(address, protocol);
+            if (sscanf(buffer, "add %s %s", address, protocol) == number_of_parameters - 1) node_add(address, protocol);
             else parse_error(number_of_parameters, buffer);
             break;
         default:
@@ -131,7 +138,7 @@ static ssize_t give_output(struct file *file, const char __user *usr_buff, size_
     
 	if(*position > 0 || length < COMMAND_BUFFER_SIZE) return 0;
 
-	buffer_size = sprintf(buffer,"%s",output_buffer);
+	buffer_size = snprintf(buffer, COMMAND_BUFFER_SIZE, "%s", output_buffer);
 
     strcpy(output_buffer, ""); //reset the output buffer so the same information cannot be recieved twice
 	

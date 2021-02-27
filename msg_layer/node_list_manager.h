@@ -46,11 +46,12 @@ void node_get(int index) {
  * @param int index of the node that it is checking
  * @return void however the output_buffer is filled with bool exists true if there is a node (path to the node is not null)
 */
-void node_exists(int index) {
+//////////This function is not needed, just call node_get()?
+/*void node_exists(int index) {
     printk(KERN_DEBUG "node_exists called\n");
-    if (get_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
-    else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
-}
+    if (get_node(index)) strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+    else strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
+}*/
 
 /**
  * Adds a new node to the node list.
@@ -69,7 +70,7 @@ void node_add(char* address_string, char* protocol_string) {
     printk(KERN_DEBUG "node_add called 2\n");
     if (protocol == NULL) {
         printk(KERN_DEBUG "Wrong protocols in node add\n");
-        strcpy(output_buffer, "-1 WRONG_PROTOCOL");
+        strncpy(output_buffer, "-1 WRONG_PROTOCOL", sizeof(output_buffer));
     }
     else {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
@@ -82,7 +83,7 @@ void node_add(char* address_string, char* protocol_string) {
             printk(KERN_DEBUG "Ready to add node\n");
             sprintf(output_buffer, "%d", add_node(node));
         }
-        else strcpy(output_buffer, "-1 COULD_NOT_CREATE_NODE");
+        else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
     }
     printk(KERN_DEBUG "Done adding node\n");
 }
@@ -96,10 +97,10 @@ void node_add(char* address_string, char* protocol_string) {
 */
 void node_remove(int index) {
     printk(KERN_DEBUG "node_remove called\n");
-    if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
+    if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         remove_node(index);
-        strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
+        strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
     }
 }
 
@@ -138,12 +139,12 @@ char* node_get_protocol(int index) {
 */
 void node_update_protocol(int index, char* protocol) {
     printk(KERN_DEBUG "node_update_protocol called\n");
-    if (!get_node(index)) strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
+    if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         disable_node(index); //tear down existing connection
         get_node(index)->transport = string_to_transport(protocol); //change the protocol
-        if (enable_node(index)) strcpy(output_buffer, BOOL_TRUE_RETURN_STRING);
-        else strcpy(output_buffer, BOOL_FALSE_RETURN_STRING);
+        if (enable_node(index)) strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+        else strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     }
 }
 
