@@ -417,7 +417,7 @@ struct message_node* parse_node(char* node_string) {
 }
 
 bool get_node_list_from_file(const char * address) {
-    char line[MAX_FILE_LINE_LENGTH];
+    /*char line[MAX_FILE_LINE_LENGTH];
     struct message_node* new_node;
     struct message_node* node;
     FILE * fileptr;
@@ -427,7 +427,7 @@ bool get_node_list_from_file(const char * address) {
     for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
         if (node) {
-            remove(i);
+            remove_node(i);
             kfree(node);
         }
     }
@@ -441,7 +441,7 @@ bool get_node_list_from_file(const char * address) {
     }
     else if (fileptr == NULL) {
         printk(KERN_DEBUG "The default node list file could not be opened\n");
-        return false;
+        */return false;/*
     }
 
     while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr)) {
@@ -460,7 +460,7 @@ bool get_node_list_from_file(const char * address) {
 
     fclose(fileptr);
 
-    return true;
+    return true;*/
 }
 
 
@@ -621,7 +621,7 @@ bool initialise_node_list(void) {
             /**
              * TODO: Add getting the host ip
              */
-            myself = create_node(my_ip, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
+            myself = create_node(1, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             //myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
             if (myself == NULL) {
                 printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
@@ -638,7 +638,9 @@ bool initialise_node_list(void) {
         }
         printk(KERN_DEBUG "Finished creating node list\n");
 
-        my_nid = identify_myself();
+        if (my_nid == -1) {
+            my_nid = identify_myself();
+        }
     }
     return true;
 }
