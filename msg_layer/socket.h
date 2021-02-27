@@ -545,7 +545,7 @@ struct pcn_kmsg_transport transport_socket = {
  */
 bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
-	printk(KERN_DEBUG "Initialising node for socket\n");
+	printk(KERN_DEBUG "Initialising node %d for socket\n", node->index);
 
 	if (node->index == my_nid) {
 		printk(KERN_INFO "Initialising myself (skipping connections)\n");
@@ -553,51 +553,52 @@ bool init_node_sock(struct message_node* node) {
 		return true;
 	}
 
-	if (node != NULL) {
-		node->handle = kmalloc(sizeof(struct sock_handle), GFP_KERNEL);
-		if (node->handle == NULL) {
-			printk(KERN_ERR "Could not create handle\n");
-			return false;
-		}
-		sh = node->handle;
+	if (node == NULL) {
+		printk(KERN_DEBUG "NULL node cannot be initialised\n");
+		return false;
+	}
 
-		sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
-		if (!sh->msg_q) {
-			printk(KERN_ERR "There was not enough memory for the message node struct for the new node to be created\n");
-			return false;
-		}
+	node->handle = kmalloc(sizeof(struct sock_handle), GFP_KERNEL);
+	if (node->handle == NULL) {
+		printk(KERN_ERR "Could not create handle\n");
+		return false;
+	}
+	sh = node->handle;
 
-		sh->nid = node->index;
-		sh->q_head = 0;
-		sh->q_tail = 0;
-		spin_lock_init(&sh->q_lock);
+	sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
+	if (!sh->msg_q) {
+		printk(KERN_ERR "There was not enough memory for the message node struct for the new node to be created\n");
+		return false;
+	}
 
-		sema_init(&sh->q_empty, 0);
-		sema_init(&sh->q_full, MAX_SEND_DEPTH);
+	sh->nid = node->index;
+	sh->q_head = 0;
+	sh->q_tail = 0;
+	spin_lock_init(&sh->q_lock);
 
-		printk(KERN_DEBUG "Node initialised, estabilishing connection...");
+	sema_init(&sh->q_empty, 0);
+	sema_init(&sh->q_full, MAX_SEND_DEPTH);
 
-		if (node->index > my_nid) {
-			//you are earlier in the list so you start the connection
-			if (__sock_connect_to_server(node)) {
-				set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-				return true;
-			}
-		}
-		else if (node->index < my_nid) {
-			if (__sock_accept_client(node)) {
-				set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-				return true;
-			}
-		}
-		else {
+	printk(KERN_DEBUG "Node initialised, estabilishing connection...");
+
+	if (node->index > my_nid) {
+		//you are earlier in the list so you start the connection
+		if (__sock_connect_to_server(node)) {
 			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
 			return true;
 		}
-		set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
-
 	}
-	return false;
+	else if (node->index < my_nid) {
+		if (__sock_accept_client(node)) {
+			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
+			return true;
+		}
+	}
+	else {
+		set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
+		return true;
+	}
+	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
 }
 
 static int __exit exit_sock(void)
