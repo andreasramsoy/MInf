@@ -601,6 +601,7 @@ bool init_node_sock(struct message_node* node) {
 		return true;
 	}
 	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
+	return false;
 }
 
 static int __exit exit_sock(void)
