@@ -186,7 +186,7 @@ uint32_t address_string_to_int(char* address) {
 }
 
 bool save_to_file(void) {
-    struct message_node* node;
+    /*struct message_node* node;
     FILE *fileptr = fopen(NODE_LIST_FILE_ADDRESS, "w");
 
     if (fileptr == NULL) {
@@ -202,7 +202,7 @@ bool save_to_file(void) {
         }
     }
 
-    fclose(fileptr);
+    fclose(fileptr);*/
     return true;
 }
 
