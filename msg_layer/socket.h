@@ -635,7 +635,7 @@ static int init_sock(void)
 	/* Wait for a while so that nodes are ready to listen to connections */
 	msleep(100);
 	
-	broadcast_my_node_info(my_nid); ////////////////////////////////////////////////
+	//broadcast_my_node_info(my_nid); ////////////////////////////////////////////////
 
 	printk(KERN_INFO "Ready on TCP/IP\n");
 	peers_init();
