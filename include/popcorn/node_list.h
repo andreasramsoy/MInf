@@ -627,8 +627,8 @@ bool initialise_node_list(void) {
                 printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
                 return false;
             }
-            
-            if (add_node(myself) < 0) {
+            my_nid = add_node(myself);
+            if (my_nid < 0) {
                 printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
                 kfree(myself); //couldn't add so remove it
                 destroy_node_list();
