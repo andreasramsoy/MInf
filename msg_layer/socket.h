@@ -604,7 +604,7 @@ bool init_node_sock(struct message_node* node) {
 	return false;
 }
 
-static int __exit exit_sock(void)
+static int exit_sock(void)
 {
 	transport_socket.is_initialised = false;
 	proc_remove(proc_entry);
@@ -619,7 +619,7 @@ static int __exit exit_sock(void)
 	return 0;
 }
 
-static int __init init_sock(void)
+static int init_sock(void)
 {
 	int ret;
 	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
