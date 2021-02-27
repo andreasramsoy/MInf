@@ -13,8 +13,8 @@
  * Update them to ensure safe from buffer overflows
  */
 #define COMMAND_BUFFER_SIZE 200 //unlikely to come close to this for adjusting popcorn nodes
-#define BOOL_TRUE_RETURN_STRING "1"
-#define BOOL_FALSE_RETURN_STRING "0"
+#define BOOL_TRUE_RETURN_STRING "1" //////////////////////////////////////////////////////////////
+#define BOOL_FALSE_RETURN_STRING "0" /////////////////////////////////////////////////////////////
 
 char output_buffer[COMMAND_BUFFER_SIZE];
 

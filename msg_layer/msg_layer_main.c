@@ -48,11 +48,11 @@ int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
 
 void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
     printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
-    strcpy(output_buffer, "ERROR");
+    strncpy(output_buffer, "ERROR", COMMAND_BUFFER_SIZE);
 }
 
 void show_help(void) {
-    strcpy(output_buffer, COMMAND_HELP_TEXT);
+    strncpy(output_buffer, COMMAND_HELP_TEXT, COMMAND_BUFFER_SIZE);
 }
 
 static ssize_t parse_commands(struct file *file, const char __user *usr_buff, size_t length, loff_t *position) {
@@ -142,7 +142,7 @@ static ssize_t give_output(struct file *file, const char __user *usr_buff, size_
 
 	buffer_size = snprintf(buffer, COMMAND_BUFFER_SIZE, "%s", output_buffer);
 
-    strcpy(output_buffer, ""); //reset the output buffer so the same information cannot be recieved twice
+    strncpy(output_buffer, "", COMMAND_BUFFER_SIZE); //reset the output buffer so the same information cannot be recieved twice
 	
 	if(copy_to_user(usr_buff, buffer, buffer_size)) return -EFAULT;
 
@@ -159,7 +159,7 @@ static struct file_operations command_channel =
 
 
 void initialise_node_list_controller(void) {
-    strcpy(output_buffer, ""); //ensure that it is initialised to being empty
+    strncpy(output_buffer, "", COMMAND_BUFFER_SIZE); //ensure that it is initialised to being empty
     nodes_controller = proc_create("popcorn_nodes", 0660, NULL, &command_channel);
     printk(KERN_INFO "Node list controller proc created\n");
 }

@@ -163,7 +163,7 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
     transport = transport_list_head;
     printk(KERN_DEBUG "string_to_transport called pointer %p\n", transport->transport_structure);
     printk(KERN_DEBUG "string_to_transport called string  %s\n", transport->transport_structure->name);
-    printk(KERN_DEBUG "string_to_transport called comflse %d\n", strcmp("socket", "socket"));
+    printk(KERN_DEBUG "string_to_transport called comflse %d\n", strcmp("socket", "socket");
     printk(KERN_DEBUG "string_to_transport called compare %d\n", strcmp(transport->transport_structure->name, protocol));
 
     if (strcmp(transport->transport_structure->name, protocol) == 0) {
@@ -353,7 +353,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
     }
 
     printk(KERN_DEBUG "Initialising communications for node\n");
-    printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
+    printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport.is_initialised);
     printk(KERN_DEBUG "Transport for the node initialised ptr %p\n", node->transport->init_transport());
 
     //initialise communications
@@ -554,6 +554,7 @@ int add_protocol(struct pcn_kmsg_transport* transport_item) {
 		new_trans_list->transport_structure = transport_item;
 		new_trans_list->next = NULL;
 	}
+    transport_item->is_initialised = false; //ensure not initialised at first
     return 0;
 }
 
