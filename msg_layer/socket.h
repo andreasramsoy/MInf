@@ -366,15 +366,21 @@ static int __sock_connect_to_server(struct message_node* node)
 	struct sockaddr_in addr;
 	struct socket *sock;
 
+	printk(KERN_DEBUG "sock_connect_to_server called\n");
+
 	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
 	if (ret < 0) {
 		printk(KERN_INFO "Failed to create socket, %d\n", ret);
 		return ret;
 	}
 
+	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
+
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT);
 	addr.sin_addr.s_addr = node->address;
+
+	printk(KERN_DEBUG "sock_connect_to_server called 3\n");
 
 	printk(KERN_INFO "Connecting to %pI4\n", node->address);
 	do {
