@@ -291,17 +291,20 @@ void remove_node(int index) {
 bool is_myself(struct message_node* node)
 {
 	struct net_device *d;
+    uint32_t addr;
+    struct in_ifaddr *ifaddr;
+
     printk(KERN_DEBUG "Checking if this node is myself\n");
     if (!node) {
         printk(KERN_INFO "Cannot check a NULL node\n");
         return false;
     }
 	for_each_netdev(&init_net, d) {
-		struct in_ifaddr *ifaddr;
+        printk(KERN_DEBUG "Checking if this node is myself 2\n");
 
 		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
-			int i;
-			uint32_t addr = ifaddr->ifa_local;
+            printk(KERN_DEBUG "Checking if this node is myself 3\n");
+			addr = ifaddr->ifa_local;
             printk(KERN_DEBUG "My address is: %d.%d.%d.%d %s\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
             if (addr == node->address) {
                 return true;
