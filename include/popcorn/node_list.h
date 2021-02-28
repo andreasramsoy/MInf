@@ -288,6 +288,30 @@ void remove_node(int index) {
     }
 }
 
+bool is_myself(struct message_node* node)
+{
+	struct net_device *d;
+    printk(KERN_DEBUG "Checking if this node is myself\n");
+    if (!node) {
+        printk(KERN_INFO "Cannot check a NULL node");
+        return false;
+    }
+	for_each_netdev(&init_net, d) {
+		struct in_ifaddr *ifaddr;
+
+		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
+			int i;
+			uint32_t addr = ifaddr->ifa_local;
+			for (i = 0; i < after_last_node_index; i++) {
+				if (addr == node->address) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 /**
  * Takes a node and adds it to the node list.
  * @param message_node* node the node that will be added to the list
@@ -469,30 +493,6 @@ bool get_node_list_from_file(const char * address) {
     fclose(fileptr);
 
     return true;*/
-}
-
-bool is_myself(message_node* node)
-{
-	struct net_device *d;
-    printk(KERN_DEBUG "Checking if this node is myself\n");
-    if (!node) {
-        printk(KERN_INFO "Cannot check a NULL node");
-        return false;
-    }
-	for_each_netdev(&init_net, d) {
-		struct in_ifaddr *ifaddr;
-
-		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
-			int i;
-			uint32_t addr = ifaddr->ifa_local;
-			for (i = 0; i < after_last_node_index; i++) {
-				if (addr == node->address) {
-					return true;
-				}
-			}
-		}
-	}
-	return false;
 }
 
 uint32_t __init __get_host_ip(void)
