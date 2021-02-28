@@ -293,7 +293,7 @@ bool is_myself(struct message_node* node)
 	struct net_device *d;
     printk(KERN_DEBUG "Checking if this node is myself\n");
     if (!node) {
-        printk(KERN_INFO "Cannot check a NULL node");
+        printk(KERN_INFO "Cannot check a NULL node\n");
         return false;
     }
 	for_each_netdev(&init_net, d) {
@@ -302,11 +302,10 @@ bool is_myself(struct message_node* node)
 		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
 			int i;
 			uint32_t addr = ifaddr->ifa_local;
-			for (i = 0; i < after_last_node_index; i++) {
-				if (addr == node->address) {
-					return true;
-				}
-			}
+            printk(KERN_DEBUG "My address is: %d.%d.%d.%d %s\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
+            if (addr == node->address) {
+                return true;
+            }
 		}
 	}
 	return false;
@@ -377,6 +376,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
     printk(KERN_DEBUG "Transport for the node name?    %s\n", node->transport->name);
 
     if (!is_myself(node)) {
+        printk(KERN_DEBUG "This node is not myself, initialising connection...\n");
         //initialise communications
         if (!(node->transport->is_initialised)) {
             printk(KERN_DEBUG "This transport has not been initialised before\n");
