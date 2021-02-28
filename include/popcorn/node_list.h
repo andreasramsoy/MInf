@@ -306,7 +306,7 @@ bool is_myself(struct message_node* node)
             if (!addr) printk(KERN_DEBUG "This is NULL but it should have been checked\n");
 			addr = ifaddr->ifa_local;
             printk(KERN_DEBUG "Checking if this node is myself 4\n");
-            printk(KERN_DEBUG "My address is: %d.%d.%d.%d %s\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
+            printk(KERN_DEBUG "My address is: %d.%d.%d.%d\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
             if (addr == node->address) {
                 return true;
             }
