@@ -352,26 +352,31 @@ int add_node(struct message_node* node) { //function for adding a single node to
     printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
     printk(KERN_DEBUG "Transport for the node name?    %s\n", node->transport->name);
 
-    //initialise communications
-    if (!(node->transport->is_initialised)) {
-        printk(KERN_DEBUG "This transport has not been initialised before\n");
-        if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
-        else {
-            printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
-            remove_node(index);
-            return -1; //could not be added
+    if (!is_myself(node)) {
+        //initialise communications
+        if (!(node->transport->is_initialised)) {
+            printk(KERN_DEBUG "This transport has not been initialised before\n");
+            if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
+            else {
+                printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
+                remove_node(index);
+                return -1; //could not be added
+            }
         }
-    }
-    printk(KERN_DEBUG "Transport initialised\n");
+        printk(KERN_DEBUG "Transport initialised\n");
 
-    if (!enable_node(index)) {
-        printk(KERN_ERR "Could not enable node\n");
-        remove_node(index);
-        return -1;
-    }
-    printk(KERN_DEBUG "Node enabled\n");
+        if (!enable_node(index)) {
+            printk(KERN_ERR "Could not enable node\n");
+            remove_node(index);
+            return -1;
+        }
+        printk(KERN_DEBUG "Node enabled\n");
 
-    node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
+        node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
+    }
+    else {
+        printk(KERN_DEBUG "This node is myself, skipping initialising connection");
+    }
 
     printk(KERN_DEBUG "Successfully added node at index %d\n", index);
 
@@ -466,8 +471,31 @@ bool get_node_list_from_file(const char * address) {
     return true;*/
 }
 
+bool is_myself(message_node* node)
+{
+	struct net_device *d;
+    printk(KERN_DEBUG "Checking if this node is myself\n");
+    if (!node) {
+        printk(KERN_INFO "Cannot check a NULL node");
+        return false;
+    }
+	for_each_netdev(&init_net, d) {
+		struct in_ifaddr *ifaddr;
 
-static uint32_t __init __get_host_ip(void)
+		for (ifaddr = d->ip_ptr->ifa_list; ifaddr; ifaddr = ifaddr->ifa_next) {
+			int i;
+			uint32_t addr = ifaddr->ifa_local;
+			for (i = 0; i < after_last_node_index; i++) {
+				if (addr == node->address) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+uint32_t __init __get_host_ip(void)
 {
 	struct net_device *d;
     printk(KERN_DEBUG "Getting host ip\n");
