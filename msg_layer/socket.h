@@ -498,14 +498,7 @@ out_release:
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
 
-	if (node->index == my_nid) {
-		printk(KERN_INFO "Deinitialising myself (skipping connections)\n");
-		set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
-		return true;
-	}
-	else {
-		printk(KERN_INFO "Deinitialising node %d\n", node->index);
-	}
+	printk(KERN_INFO "Deinitialising node %d\n", node->index);
 
 	sh = node->handle;
 	if (sh->send_handler) {
@@ -553,13 +546,6 @@ bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
 
 	printk(KERN_DEBUG "Initialising node %d for socket\n", node->index);
-	printk(KERN_DEBUG "my_nid is %d\n", my_nid);
-
-	if (node->index == my_nid) {
-		printk(KERN_INFO "Initialising myself (skipping connections)\n");
-		set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-		return true;
-	}
 
 	if (node == NULL) {
 		printk(KERN_DEBUG "NULL node cannot be initialised\n");

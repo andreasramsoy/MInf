@@ -229,7 +229,7 @@ void remove_node(int index) {
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
-    if (node->transport->is_initialised) {
+    if (!is_myself(node)) {
         printk(KERN_DEBUG "Killing connections for this node\n");
         node->transport->kill_node(node);
 
@@ -519,7 +519,7 @@ uint32_t __init __get_host_ip(void)
 	return -1;
 }
 
-bool __init identify_myself(void)
+/*bool __init identify_myself(void)
 {
 	int i;
 	uint32_t my_ip;
@@ -538,7 +538,7 @@ bool __init identify_myself(void)
             }
             PCNPRINTK("%s %d: %d\n", me, i, node->address);
         }
-	}
+	}*/
 
     if (after_last_node_index == 0) printk(KERN_DEBUG "No nodes in the list to display\n");
 
@@ -644,6 +644,7 @@ void destroy_node_list(void) {
 bool initialise_node_list(void) {
     struct message_node* myself;
     after_last_node_index = 0;
+    my_nid = -1;
 
     if (transport_list_head == NULL || transport_list_head->transport_structure == NULL) {
             printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
@@ -675,9 +676,9 @@ bool initialise_node_list(void) {
         // }
         printk(KERN_DEBUG "Finished creating node list\n");
 
-        if (my_nid == -1) {
+        /*if (my_nid == -1) {
             my_nid = identify_myself();
-        }
+        }*/
     }
     return true;
 }
