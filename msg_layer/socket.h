@@ -382,7 +382,7 @@ static int __sock_connect_to_server(struct message_node* node)
 
 	printk(KERN_DEBUG "sock_connect_to_server called 3\n");
 
-	printk(KERN_INFO "Connecting to %pI4\n", node->address);
+	//printk(KERN_INFO "Connecting to %pI4\n", node->address); //this line may cause kernel panic?
 	do {
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
@@ -408,6 +408,8 @@ static int __sock_accept_client(struct message_node* node)
 	struct socket *sock;
 	struct sockaddr_in addr;
 	int addr_len = sizeof(addr);
+
+	printk(KERN_DEBUG "sock_acept_client called\n");
 
 	do {
 		ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
