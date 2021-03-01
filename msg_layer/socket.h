@@ -422,6 +422,8 @@ static int __sock_accept_client(struct message_node* node)
 			return ret;
 		}
 
+		printk(KERN_DEBUG "Socket created, accepting incomming connections...\n");
+
 		ret = kernel_accept(sock_listen, &sock, 0);
 		if (ret < 0) {
 			printk(KERN_INFO "Failed to accept, %d\n", ret);
