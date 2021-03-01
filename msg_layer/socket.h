@@ -387,7 +387,7 @@ static int __sock_connect_to_server(struct message_node* node)
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
 			printk(KERN_INFO "Failed to connect the socket %d. Attempt again!!\n", ret);
-			msleep(5000); ////////////////////delay increased to 5 seconds from 1 to see if this prevents SYN flooding
+			msleep(1000);
 		}
 	} while (ret < 0);
 
