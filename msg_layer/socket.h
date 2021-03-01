@@ -383,12 +383,15 @@ static int __sock_connect_to_server(struct message_node* node)
 	printk(KERN_DEBUG "sock_connect_to_server called 3\n");
 
 	do {
+		printk(KERN_DEBUG "Attempting connection...\n");
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
 			printk(KERN_INFO "Failed to connect the socket %d. Attempt again!!\n", ret);
-			msleep(1000);
+			msleep(5000); ////////////////////delay increased to 5 seconds from 1 to see if this prevents SYN flooding
 		}
 	} while (ret < 0);
+
+	printk(KERN_DEBUG "Finished connecting\n");
 
 	node->handle->sock = sock;
 	ret = __sock_start_handlers(node);
