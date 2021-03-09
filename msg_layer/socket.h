@@ -587,13 +587,13 @@ bool init_node_sock(struct message_node* node) {
 
 	printk(KERN_DEBUG "Node initialised, estabilishing connection...");
 
-	if (node->index > my_nid || my_nid < 0) {
+	if (node->index < my_nid || my_nid < 0) {
 		if (__sock_accept_client(node)) {
 			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
 			return true;
 		}
 	}
-	else if (node->index < my_nid) {
+	else if (node->index > my_nid) {
 		//you are earlier in the list so you start the connection
 		if (__sock_connect_to_server(node)) {
 			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
