@@ -386,7 +386,7 @@ static int __sock_connect_to_server(struct message_node* node)
 		printk(KERN_DEBUG "Attempting connection...\n");
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
-			printk(KERN_INFO "Failed to connect the socket %d. Attempt again!!\n", ret);
+			printk(KERN_INFO "Failed to connect the socket for node %d, error: %d. Attempt again!!\n", node->index, ret);
 			msleep(1000);
 		}
 	} while (ret < 0);
