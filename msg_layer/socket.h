@@ -386,7 +386,7 @@ static int __sock_connect_to_server(struct message_node* node)
 		printk(KERN_DEBUG "Attempting connection...\n");
 		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if (ret < 0) {
-			printk(KERN_INFO "Failed to connect the socket for node %d, error: %d. Attempt again!!\n", node->index, ret);
+			printk(KERN_INFO "Failed to connect the socket for node %d (%4pI), error: %d. Attempt again!!\n", node->index, node->address, ret);
 			msleep(1000);
 		}
 	} while (ret < 0);
@@ -411,7 +411,7 @@ static int __sock_accept_client(struct message_node* node)
 	struct sockaddr_in addr;
 	int addr_len = sizeof(addr);
 
-	printk(KERN_DEBUG "sock_acept_client called\n");
+	printk(KERN_DEBUG "sock_accept_client called\n");
 
 	do {
 		printk(KERN_DEBUG "Attempting to connect, try: %d\n", retry);
