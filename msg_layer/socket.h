@@ -436,8 +436,8 @@ static int __sock_accept_client(struct message_node* node)
 			goto out_release;
 		}
 
-		printk(KERN_DEBUG "Wanting to connect to %d\n", node->address);
-		printk(KERN_DEBUG "Connection from       %d\n", addr.sin_addr.s_addr);
+		printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
+		printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
 
 		/* Identify incoming peer nid */
 		if (addr.sin_addr.s_addr == node->address) {
