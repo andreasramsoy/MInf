@@ -76,6 +76,18 @@ void broadcast_my_node_info(int nr_nodes)
 }
 EXPORT_SYMBOL(broadcast_my_node_info);
 
+//this function does the same as above but just sends info to that particular node
+void broadcast_my_node_info_to_node(int nid)
+{
+	int i;
+	node_info_t info = {
+		.nid = my_nid,
+		.arch = my_arch,
+	};
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, nid, &info, sizeof(info));
+}
+EXPORT_SYMBOL(broadcast_my_node_info);
+
 static bool my_node_info_printed = false;
 
 static int handle_node_info(struct pcn_kmsg_message *msg)

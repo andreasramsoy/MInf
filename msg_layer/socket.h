@@ -389,6 +389,7 @@ static int __sock_connect_to_server(struct message_node* node)
 			printk(KERN_INFO "Failed to connect the socket for node %d (%4pI), error: %d. Attempt again!!\n", node->index, node->address, ret);
 			msleep(1000);
 		}
+		else printk(KERN_DEBUG "Connected\n");
 	} while (ret < 0);
 
 	printk(KERN_DEBUG "Finished connecting\n");
@@ -556,6 +557,7 @@ struct pcn_kmsg_transport transport_socket = {
  */
 bool init_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
+	int ret;
 
 	printk(KERN_DEBUG "Initialising node %d for socket\n", node->index);
 
@@ -585,26 +587,26 @@ bool init_node_sock(struct message_node* node) {
 	sema_init(&sh->q_empty, 0);
 	sema_init(&sh->q_full, MAX_SEND_DEPTH);
 
-	printk(KERN_DEBUG "Node initialised, estabilishing connection...");
+	printk(KERN_DEBUG "Node initialised, estabilishing connection...\n");
 
-	if (node->index < my_nid || my_nid < 0) {
-		if (__sock_accept_client(node)) {
-			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-			return true;
-		}
+	// if the node is earlier than you in the node list then accept a connection from it
+	// if the node is after you, then you need to make a connection with it
+	// you don't need to make a connection to yourself
+
+	if (node->index < my_nid || my_nid < 0) ret = __sock_accept_client(node);
+	else if (node->index > my_nid) ret = __sock_connect_to_server(node));
+	else ret = 1; //success so online (for when nid == my_nid)
+	
+	printk(KERN_DEBUG "Node initialisation, connections done\n");
+
+	if (ret) {
+		printk(KERN_DEBUG "Setting online and broadcasting node info\n");
+		set_popcorn_node_online(node->index, true);
+		broadcast_my_node_info_to_node(node->index); //give them info about architecture
+		return true
 	}
-	else if (node->index > my_nid) {
-		//you are earlier in the list so you start the connection
-		if (__sock_connect_to_server(node)) {
-			set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-			return true;
-		}
-	}
-	else {
-		set_popcorn_node_online(node->index, true); /////////////////////////////////////////////////this should be in the main .c file
-		return true;
-	}
-	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
+
+	printk(KERN_ERR "Failed to create connection\n");
 	return false;
 }
 
