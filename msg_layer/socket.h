@@ -593,9 +593,15 @@ bool init_node_sock(struct message_node* node) {
 	// if the node is after you, then you need to make a connection with it
 	// you don't need to make a connection to yourself
 
-	if (node->index < my_nid || my_nid < 0) ret = __sock_accept_client(node);
-	else if (node->index > my_nid) ret = __sock_connect_to_server(node));
-	else ret = 1; //success so online (for when nid == my_nid)
+	if (node->index < my_nid || my_nid < 0) {
+		ret = __sock_accept_client(node);
+	}
+	else if (node->index > my_nid) {
+		ret = __sock_connect_to_server(node);
+	}
+	else {
+		ret = 1; //success so online (for when nid == my_nid)
+	}
 	
 	printk(KERN_DEBUG "Node initialisation, connections done\n");
 
@@ -603,7 +609,7 @@ bool init_node_sock(struct message_node* node) {
 		printk(KERN_DEBUG "Setting online and broadcasting node info\n");
 		set_popcorn_node_online(node->index, true);
 		broadcast_my_node_info_to_node(node->index); //give them info about architecture
-		return true
+		return true;
 	}
 
 	printk(KERN_ERR "Failed to create connection\n");

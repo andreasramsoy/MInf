@@ -86,7 +86,7 @@ void broadcast_my_node_info_to_node(int nid)
 	};
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, nid, &info, sizeof(info));
 }
-EXPORT_SYMBOL(broadcast_my_node_info);
+EXPORT_SYMBOL(broadcast_my_node_info_to_node);
 
 static bool my_node_info_printed = false;
 
