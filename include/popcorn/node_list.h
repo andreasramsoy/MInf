@@ -19,7 +19,6 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <popcorn/node_structs.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/bundle.h>
 #include <popcorn/debug.h>
