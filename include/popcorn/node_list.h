@@ -30,9 +30,6 @@
 #include <linux/inetdevice.h>
 #include <linux/netdevice.h>
 
-#define NODE_LIST_FILE_ADDRESS "/node_list_file.csv" ///////////////////////////////////update this, find appropriate place for this file to be
-#define MAX_FILE_LINE_LENGTH 2048
-
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
@@ -183,27 +180,6 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
 
 uint32_t address_string_to_int(char* address) {
     return in_aton(address);
-}
-
-bool save_to_file(void) {
-    /*struct message_node* node;
-    FILE *fileptr = fopen(NODE_LIST_FILE_ADDRESS, "w");
-
-    if (fileptr == NULL) {
-        printk(KERN_ERR "The node list file could not be opened and so could not be saved");
-        return false;
-    }
-
-    int i;
-    for (i = 0; i < after_last_node_index; i++) {
-        node = get_node(i);
-        if (node) {
-            fprintk(KERN_DEBUG fileptr, "%s,%s\n", address_int_to_string(node->address), protocol_to_string(node->transport->name));
-        }
-    }
-
-    fclose(fileptr);*/
-    return true;
 }
 
 struct node_list* create_node_list(void) {
@@ -412,94 +388,6 @@ int add_node(struct message_node* node) { //function for adding a single node to
     printk(KERN_DEBUG "Successfully added node at index %d\n", index);
 
 	return index;
-}
-
-
-
-struct message_node* parse_node(char* node_string) {
-    int i;
-    int j;
-    struct message_node* rtn;
-    char* address = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH, GFP_KERNEL);
-    char* protocol = kmalloc(sizeof(char) * MAX_FILE_LINE_LENGTH, GFP_KERNEL);
-    //
-    //    Structure of CSV line: address, protocol
-    //
-    i = 0;
-    while (i < MAX_FILE_LINE_LENGTH && node_string[i] != '\0' && node_string[i] != ',') i++;
-    if (i >= MAX_FILE_LINE_LENGTH) {
-        printk(KERN_DEBUG "The address was malformed in the node list file\n");
-        return NULL;
-    }
-    else {
-        memcpy(address, &node_string[0], i);
-        address[i] = '\0'; //finishes the string
-    }
-
-    j = i + 1; //move past the comma
-    while (j < MAX_FILE_LINE_LENGTH && node_string[j] != '\n' &&node_string[j] != '\0' && node_string[j] != ',') j++;
-    if (j >= MAX_FILE_LINE_LENGTH) {
-        printk(KERN_DEBUG "The protocol was malformed in the node list file\n");
-        return NULL;
-    }
-    else {
-        memcpy(protocol, &node_string[i + 1], j - i - 1);
-        protocol[j - i] = '\0'; //finishes the string
-    }
-
-    rtn = create_node(address_string_to_int(address), string_to_transport(protocol));
-
-    kfree(address);
-    kfree(protocol);
-
-    return rtn;
-}
-
-bool get_node_list_from_file(const char * address) {
-    /*char line[MAX_FILE_LINE_LENGTH];
-    struct message_node* new_node;
-    struct message_node* node;
-    FILE * fileptr;
-    int i;
-
-    printk(KERN_DEBUG "Removing previous nodes from node list\n");
-    for (i = 0; i < after_last_node_index; i++) {
-        node = get_node(i);
-        if (node) {
-            remove_node(i);
-            kfree(node);
-        }
-    }
-    
-    fileptr = fopen(address, "r");
-
-    if (fileptr == NULL && strcmp(NODE_LIST_FILE_ADDRESS, address) != 0) {
-        printk(KERN_DEBUG "The node list file could not be opened\n");
-        printk(KERN_DEBUG "Attempting to revert to previously saved node list\n");
-        return get_node_list_from_file(NODE_LIST_FILE_ADDRESS);
-    }
-    else if (fileptr == NULL) {
-        printk(KERN_DEBUG "The default node list file could not be opened\n");
-        */return false;/*
-    }
-
-    while (fgets(line, MAX_FILE_LINE_LENGTH, fileptr)) {
-        new_node = parse_node(line);
-        if (new_node == NULL) { //process each node line by line
-            printk(KERN_DEBUG "Failed to parse node line: %s\n", line);
-        }
-        else if (add_node(new_node) >= 0) {
-            printk(KERN_INFO "Failed to add the node to the node list\n");
-            kfree(new_node);
-        }
-        else {
-            printk(KERN_DEBUG "Successfully added the new node\n");
-        }
-    }
-
-    fclose(fileptr);
-
-    return true;*/
 }
 
 uint32_t __init __get_host_ip(void)

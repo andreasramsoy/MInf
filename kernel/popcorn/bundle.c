@@ -24,13 +24,23 @@
 
 bool get_popcorn_node_online(int nid)
 {
-	return popcorn_nodes[nid].is_connected;
+	struct message_node* node = get_node(nid);
+	if (node) return node.is_connected;
+	else {
+		printk(KERN_ERR "Cannot get online status of node %d as it does not exist", nid);
+		return false;
+	}
 }
 EXPORT_SYMBOL(get_popcorn_node_online);
 
 void set_popcorn_node_online(int nid, bool online)
 {
-    popcorn_nodes[nid].is_connected = online;
+	struct message_node* node = get_node(nid);
+	if (node) node.is_connected = online;
+	else {
+		printk(KERN_ERR "Cannot set online status of node %d as it does not exist", nid);
+		return false;
+	}
 }
 EXPORT_SYMBOL(set_popcorn_node_online);
 
@@ -100,16 +110,16 @@ static bool my_node_info_printed = false;
 static int handle_node_info(struct pcn_kmsg_message *msg)
 {
 	node_info_t *info = (node_info_t *)msg;
-	message_node* me = get_node(my_nid);
-	message_node* them = get_node(info->nid);
+	struct message_node* me = get_node(my_nid);
+	struct message_node* them = get_node(info->nid);
 
 	if (my_nid != -1 && !my_node_info_printed && node) {
-		me.arch = my_arch;
+		me->arch = my_arch;
 		my_node_info_printed = true;
 	}
 
 	PCNPRINTK("   %d joined, %s\n", info->nid, archs_sz[info->arch]);
-	them.arch = info->arch;
+	them->arch = info->arch;
 	smp_mb();
 
 	pcn_kmsg_done(msg);

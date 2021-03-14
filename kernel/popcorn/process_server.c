@@ -27,6 +27,7 @@
 #include <popcorn/types.h>
 #include <popcorn/bundle.h>
 #include <popcorn/cpuinfo.h>
+#include <popcorn/node_list.h>
 
 #include "types.h"
 #include "process_server.h"
@@ -262,14 +263,17 @@ static void process_remote_futex_request(remote_futex_request *req)
 static void __terminate_remotes(struct remote_context *rc)
 {
 	int nid;
+	struct message_node* node;
+
 	origin_task_exit_t req = {
 		.origin_pid = current->pid,
 		.exit_code = current->exit_code,
 	};
 
 	/* Take down peer vma workers */
-	for (nid = 0; nid < MAX_POPCORN_NODES; nid++) {
-		if (nid == my_nid || rc->remote_tgids[nid] == 0) continue;
+	for (nid = 0; nid < after_last_node_index; nid++) {
+		node = get_node(nid);
+		if (nid == my_nid || rc->remote_tgids[nid] == 0 || node == NULL) continue;
 		PSPRINTK("TERMINATE [%d/%d] with 0x%d\n",
 				rc->remote_tgids[nid], nid, req.exit_code);
 
