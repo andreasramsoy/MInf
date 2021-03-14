@@ -2,6 +2,7 @@
 #define __NODE_STRUCTS_H__
 
 #include <linux/semaphore.h>
+#include <popcorn/bundle.h>
 
 /** TODO: What is the optimum number of nodes? Generally, the higher the 
  *  better but should there be some process in deciding this value?
