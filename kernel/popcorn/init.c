@@ -44,6 +44,8 @@ static int __init popcorn_init(void)
 
 	pcn_kmsg_init();
 
+	initialise_node_list();
+
 	popcorn_nodes_init();
 	vma_server_init();
 	process_server_init();
