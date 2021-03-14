@@ -187,11 +187,11 @@ void node_update_protocol(int index, char* protocol) {
  * @param char* address address of new node list file to be loaded
  * @return void however the output_buffer is filled with bool success
 */
-void node_load(char* address) {
+/*void node_load(char* address) {
     printk(KERN_DEBUG "node_load called\n");
     //load the connections
     snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", get_node_list_from_file(address));
-}
+}*/
 
 /**
  * Gives the highest indexed node.
@@ -205,8 +205,8 @@ void node_highest_index(void) {
 /**
  * Saves the current configuration so that when booting occurs this is the configuration
 */
-void node_save(void) {
+/*void node_save(void) {
     printk(KERN_DEBUG "node_save called\n");
     snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", save_to_file());
-}
+}*/
 #endif

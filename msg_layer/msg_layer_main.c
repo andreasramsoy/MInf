@@ -103,7 +103,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
 
     switch (number_of_parameters) {
         case 1:
-            if (strncmp("save", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_save();
+            //if (strncmp("save", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_save();
             if (strncmp("help", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) show_help();
             else if (strncmp("highest", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_highest_index();
             else parse_error(number_of_parameters, buffer);
@@ -112,7 +112,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) node_get(index);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
-            else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
+            //else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
             else parse_error(number_of_parameters, buffer);
             break;
         case 3:
