@@ -1,4 +1,4 @@
-#include <node_list.h>
+#include <popcorn/node_list.h>
 
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
