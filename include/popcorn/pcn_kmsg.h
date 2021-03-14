@@ -202,7 +202,7 @@ struct pcn_kmsg_transport {
 	bool is_initialised;
 	uint64_t number_of_users; //number of nodes currently using this transport
 	int (*init_transport)(void); //one time initialisation
-	int (*exit_transport)(void); //final destroying of the transport
+	int (*exit_transport)(void); //destroying of the transport (so that no additional resources are used)
 	bool (*init_node)(struct message_node*); //called for each node that joins
 	bool (*kill_node)(struct message_node*); //called for each node removed
 	int (*connect)(struct message_node*);
