@@ -1,5 +1,13 @@
 #include <popcorn/node_list.h>
 
+
+struct transport_list* transport_list_head;
+struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
+int after_last_node_index;
+EXPORT_SYMBOL(transport_list_head);
+EXPORT_SYMBOL(root_node_list);
+EXPORT_SYMBOL(after_last_node_index);
+
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
