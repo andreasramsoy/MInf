@@ -20,7 +20,7 @@
 };*/
 
 
-static struct popcorn_node popcorn_nodes[MAX_POPCORN_NODES];
+//static struct popcorn_node popcorn_nodes[MAX_POPCORN_NODES];
 
 bool get_popcorn_node_online(int nid)
 {
@@ -52,7 +52,12 @@ EXPORT_SYMBOL(my_arch);
 
 int get_popcorn_node_arch(int nid)
 {
-	return popcorn_nodes[nid].arch;
+	message_node* node = get_node(nid);
+	if (node) return node->arch;
+	else {
+		printk(KERN_ERR "Node %d arch requested but it is not in the node list", nid);
+		return POPCORN_ARCH_UNKNOWN;
+	}
 }
 EXPORT_SYMBOL(get_popcorn_node_arch);
 
@@ -113,16 +118,16 @@ static int handle_node_info(struct pcn_kmsg_message *msg)
 
 int __init popcorn_nodes_init(void)
 {
-	int i;
+	//int i;
 	BUG_ON(my_arch == POPCORN_ARCH_UNKNOWN);
 
-	for (i = 0; i < MAX_POPCORN_NODES; i++) {
+	/*for (i = 0; i < MAX_POPCORN_NODES; i++) {
 		struct popcorn_node *pn = popcorn_nodes + i;
 
 		pn->is_connected = false;
 		pn->arch = POPCORN_ARCH_UNKNOWN;
 		pn->bundle_id = -1;
-	}
+	}*/
 
 	REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_INFO, node_info);
 

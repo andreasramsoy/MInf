@@ -95,6 +95,12 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
 
+
+    //previously in bundle.c
+    node->is_connected = false;
+    node->arch = POPCORN_ARCH_UNKNOWN;
+    node->bundle_id = -1;
+
     //transport structure
     node->transport = transport;
     if (node->transport == NULL) {
