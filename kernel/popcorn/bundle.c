@@ -9,14 +9,15 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/bundle.h>
 #include <popcorn/debug.h>
+#include <popcorn/node_list.h>
 #include "types.h"
 
-struct popcorn_node {
+/*struct popcorn_node {
 	enum popcorn_arch arch;
 	int bundle_id;
 
 	bool is_connected;
-};
+};*/
 
 
 static struct popcorn_node popcorn_nodes[MAX_POPCORN_NODES];
@@ -62,7 +63,9 @@ const char *archs_sz[] = {
 };
 
 
-void broadcast_my_node_info(int nr_nodes)
+//replaced by function that follows 
+/** TODO: check it works then delete this code */
+/*void broadcast_my_node_info(int nr_nodes)
 {
 	int i;
 	node_info_t info = {
@@ -74,7 +77,7 @@ void broadcast_my_node_info(int nr_nodes)
 		pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, i, &info, sizeof(info));
 	}
 }
-EXPORT_SYMBOL(broadcast_my_node_info);
+EXPORT_SYMBOL(broadcast_my_node_info);*/
 
 //this function does the same as above but just sends info to that particular node
 void broadcast_my_node_info_to_node(int nid)
@@ -92,14 +95,16 @@ static bool my_node_info_printed = false;
 static int handle_node_info(struct pcn_kmsg_message *msg)
 {
 	node_info_t *info = (node_info_t *)msg;
+	message_node* me = get_node(my_nid);
+	message_node* them = get_node(info->nid);
 
-	if (my_nid != -1 && !my_node_info_printed) {
-		popcorn_nodes[my_nid].arch = my_arch;
+	if (my_nid != -1 && !my_node_info_printed && node) {
+		me.arch = my_arch;
 		my_node_info_printed = true;
 	}
 
 	PCNPRINTK("   %d joined, %s\n", info->nid, archs_sz[info->arch]);
-	popcorn_nodes[info->nid].arch = info->arch;
+	them.arch = info->arch;
 	smp_mb();
 
 	pcn_kmsg_done(msg);

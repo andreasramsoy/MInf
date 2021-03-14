@@ -95,8 +95,6 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
 
-    node->connected = false;
-
     //transport structure
     node->transport = transport;
     if (node->transport == NULL) {
@@ -130,8 +128,7 @@ bool disable_node(int index) {
         printk(KERN_DEBUG "Either node is NULL or it does not have transport");
         return false;
     }
-    node->connected = !(node->transport->kill_node(node)); //destroys the connection
-    return node->connected;
+    return !(node->transport->kill_node(node)); //destroys the connection
 }
 
 //enable and connect
@@ -143,8 +140,7 @@ bool enable_node(int index) {
     if (node == NULL || node->transport == NULL) {
         printk(KERN_DEBUG "Node cannot be enabled when it is NULL or doesn't have transport");
     }
-    node->connected = node->transport->init_node(node); //destroys the connection
-    return node->connected;
+    return node->transport->init_node(node); //destroys the connection
 }
 
 char* protocol_to_string(struct pcn_kmsg_transport* transport) {

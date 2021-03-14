@@ -22,7 +22,10 @@ void set_popcorn_node_online(int nid, bool online);
 
 int get_popcorn_node_arch(int nid);
 
+//replaced by function that follows 
+/** TODO: check it works then delete this code */
 void broadcast_my_node_info(int nr_nodes);
+void broadcast_my_node_info_to_node(int nid);
 
 int popcorn_nodes_init(void);
 

@@ -18,10 +18,12 @@ struct q_item {
 
 struct message_node {
     uint64_t index;
-    bool connected;
     uint32_t address;
     struct sock_handle* handle;
     struct pcn_kmsg_transport* transport;
+	enum popcorn_arch arch;
+	int bundle_id;
+	bool is_connected;
 };
 
 struct node_list {
