@@ -35,6 +35,10 @@
  */
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
+// encryption
+#define AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
+#define AES_IV_LENGTH 
+
 struct pcn_kmsg_transport; //defined in pcn_kmsg.h
 
 struct q_item {
@@ -51,6 +55,8 @@ struct message_node {
 	enum popcorn_arch arch;
 	int bundle_id;
 	bool is_connected;
+    u8 iv[16]; //iv for AES
+    u8 key[AES_KEY_SIZE]; //key for AES
 };
 
 struct node_list {
@@ -85,11 +91,12 @@ extern struct node_list* root_node_list; //Do not access directly! Use get_node(
 
 extern int after_last_node_index;
 
+extern void propagate_command(node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections);
 
 extern struct message_node* get_node(int index);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
 extern void remove_node(int index);
-extern int add_node(struct message_node* node);
+extern int add_node(struct message_node* node, int max_connections);
 
 extern int find_first_null_pointer(void);
 extern bool disable_node(int index);

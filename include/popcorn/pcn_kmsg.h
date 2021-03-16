@@ -58,6 +58,9 @@ enum pcn_kmsg_type {
 	PCN_KMSG_TYPE_REMOTE_PROC_PS_REQUEST,
 	PCN_KMSG_TYPE_REMOTE_PROC_PS_RESPONSE,
 
+	/* Controlling node list */
+	PCN_KMSG_TYPE_NODE_COMMAND,
+
 	/* Schedule server */
 	PCN_KMSG_TYPE_SCHED_PERIODIC,		/* XXX sched requires help!! */
 
