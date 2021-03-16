@@ -510,22 +510,36 @@ out_release:
  */
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
+	printk(KERN_DEBUG "kill_node_sock 1\n");
 
 	printk(KERN_INFO "Deinitialising node %d\n", node->index);
 
 	sh = node->handle;
+	printk(KERN_DEBUG "kill_node_sock 2\n");
 	if (sh->send_handler) {
+		printk(KERN_DEBUG "kill_node_sock 2.1\n");
 		kthread_stop(sh->send_handler);
+		printk(KERN_DEBUG "kill_node_sock 2.2\n");
 	} else {
+		printk(KERN_DEBUG "kill_node_sock 2.3\n");
 		if (sh->msg_q) kfree(sh->msg_q);
+		printk(KERN_DEBUG "kill_node_sock 2.4\n");
 	}
+	printk(KERN_DEBUG "kill_node_sock 3\n");
 	if (sh->recv_handler) {
+		printk(KERN_DEBUG "kill_node_sock 3.1\n");
 		kthread_stop(sh->recv_handler);
+		printk(KERN_DEBUG "kill_node_sock 3.2\n");
 	}
+	printk(KERN_DEBUG "kill_node_sock 4\n");
 	if (sh->sock) {
+		printk(KERN_DEBUG "kill_node_sock 4.1\n");
 		sock_release(sh->sock);
+		printk(KERN_DEBUG "kill_node_sock 4.2\n");
 	}
+	printk(KERN_DEBUG "kill_node_sock 5\n");
 	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
+	printk(KERN_DEBUG "kill_node_sock 6\n");
 	return true;
 }
 
@@ -600,12 +614,12 @@ bool init_node_sock(struct message_node* node) {
 		ret = __sock_connect_to_server(node);
 	}
 	else {
-		ret = 1; //success so online (for when nid == my_nid)
+		ret = 0; //zero is no error (for when nid == my_nid)
 	}
 	
 	printk(KERN_DEBUG "Node initialisation, connections done\n");
 
-	if (ret) {
+	if (ret == 0) { //if no error
 		printk(KERN_DEBUG "Setting online and broadcasting node info\n");
 		set_popcorn_node_online(node->index, true);
 		broadcast_my_node_info_to_node(node->index); //give them info about architecture
