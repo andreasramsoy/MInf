@@ -538,8 +538,6 @@ bool kill_node_sock(struct message_node* node) {
 		printk(KERN_DEBUG "kill_node_sock 4.2\n");
 	}
 	printk(KERN_DEBUG "kill_node_sock 5\n");
-	set_popcorn_node_online(node->index, false); /////////////////////////////////////////////////this should be in the main .c file
-	printk(KERN_DEBUG "kill_node_sock 6\n");
 	return true;
 }
 
@@ -621,8 +619,6 @@ bool init_node_sock(struct message_node* node) {
 
 	if (ret == 0) { //if no error
 		printk(KERN_DEBUG "Setting online and broadcasting node info\n");
-		set_popcorn_node_online(node->index, true);
-		broadcast_my_node_info_to_node(node->index); //give them info about architecture
 		return true;
 	}
 
