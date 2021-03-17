@@ -618,7 +618,6 @@ bool init_node_sock(struct message_node* node) {
 	printk(KERN_DEBUG "Node initialisation, connections done\n");
 
 	if (ret == 0) { //if no error
-		printk(KERN_DEBUG "Setting online and broadcasting node info\n");
 		return true;
 	}
 
