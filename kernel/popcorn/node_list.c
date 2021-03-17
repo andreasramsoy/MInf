@@ -108,6 +108,12 @@ bool disable_node(int index) {
         return false;
     }
     return !(node->transport->kill_node(node)); //destroys the connection
+
+#ifdef POPCORN_ENCRYPTION_ON
+    //end encryption
+	crypto_free_skcipher(node->transform_obj);
+    skcipher_request_free(node->cipher_request);
+#endif
 }
 EXPORT_SYMBOL(disable_node);
 
@@ -120,6 +126,32 @@ bool enable_node(int index) {
     if (node == NULL || node->transport == NULL) {
         printk(KERN_DEBUG "Node cannot be enabled when it is NULL or doesn't have transport");
     }
+
+#ifdef POPCORN_ENCRYPTION_ON
+	//encryption setup
+
+	//create transform object
+	transform_obj = crypto_alloc_skcipher("xts(aes)", 0, 0);
+	if (IS_ERR(transform_obj)) {
+		pr_err("Could not create transform object for AES decryption: %ld\n", PTR_ERR(transform_obj));
+		goto encryption_fail;
+	}
+
+	//set the key according to the node that it was from
+	error = crypto_skcipher_setkey(transform_obj, node->key, sizeof(node->key));
+	if (error) {
+		pr_err("Could not set the key error: %d\n", error);
+		goto encryption_fail;
+	}
+
+	//allocate cipher request
+	cipher_request = skcipher_request_alloc(transform_obj, GFP_KERNEL);
+	if (!cipher_request) {
+			printk(KERN_ERR "Could not allocate cipher request\n");
+			goto encryption_fail;
+	}
+#endif
+
     return node->transport->init_node(node); //destroys the connection
 }
 EXPORT_SYMBOL(enable_node);

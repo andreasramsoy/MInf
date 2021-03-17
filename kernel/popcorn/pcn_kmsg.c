@@ -172,33 +172,6 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	get_random_bytes(msg->iv, AES_IV_LENGTH);
 	if ((ret = __build_and_check_msg(type, to, msg->data, size))) return ret;
 
-	//now encrypt the message
-	if (node == NULL) {
-		printk(KERN_ERR "The message could not be encrypted as node %d which does not exist\n", to);
-		goto encryption_fail;
-	}
-
-	//create transform object
-	transform_obj = crypto_alloc_skcipher("xts(aes)", 0, 0);
-	if (IS_ERR(transform_obj)) {
-		pr_err("Could not create transform object for AES decryption: %ld\n", PTR_ERR(transform_obj));
-		goto encryption_fail;
-	}
-
-	//set the key according to the node that it was from
-	error = crypto_skcipher_setkey(transform_obj, node->key, sizeof(node->key));
-	if (error) {
-		pr_err("Could not set the key error: %d\n", error);
-		goto encryption_fail;
-	}
-
-	//allocate cipher request
-	cipher_request = skcipher_request_alloc(transform_obj, GFP_KERNEL);
-	if (!cipher_request) {
-			printk(KERN_ERR "Could not allocate cipher request\n");
-			goto encryption_fail;
-	}
-
 	sg_init_one(&sg, encrypted_msg->data, datasize);
 	skcipher_request_set_callback(cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
@@ -210,9 +183,6 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
 
 	//now ready to process msg as normal
-
-	crypto_free_skcipher(transform_obj);
-    skcipher_request_free(cipher_request);
 
 encryption_fail:
 	printk(KERN_ERR "Error encrypting, abort message!\n");
