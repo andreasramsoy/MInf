@@ -489,7 +489,11 @@ static int __sock_listen_to_connection(void)
 	/**
 	 * TODO: Check the after last node index for this function
 	 */
+<<<<<<< HEAD
 	ret = kernel_listen(sock_listen, 5000); /**  TODO: The second parameter is the number of SYN connections, this will need to be decided dynamically in future */
+=======
+	ret = kernel_listen(sock_listen, 5000);
+>>>>>>> 68d10d70e2197cda603d56cdb2d7f21bc64997c4
 	if (ret < 0) {
 		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
 		goto out_release;

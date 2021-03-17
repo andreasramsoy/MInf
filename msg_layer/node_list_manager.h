@@ -81,7 +81,7 @@ void node_add(char* address_string, char* protocol_string) {
         printk(KERN_DEBUG "Created the node\n");
         if (node != NULL) {
             printk(KERN_DEBUG "Ready to add node\n");
-            snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node));
+            snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node, 1)); /** TODO: replace max connection with user input */
         }
         else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
     }

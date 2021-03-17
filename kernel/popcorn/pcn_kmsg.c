@@ -13,6 +13,7 @@
 #include <popcorn/debug.h>
 #include <popcorn/stat.h>
 #include <popcorn/bundle.h>
+#include <popcorn/crypto.h>
 #include <popcorn/node_list.h> //to access the node list
 
 static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
@@ -20,7 +21,7 @@ static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
 static struct pcn_kmsg_transport *transport = NULL;
 
 /**
- * TODO: Remove folling function (ensure that nothing breaks from removing it first)
+ * TODO: Remove following function (ensure that nothing breaks from removing it first)
  */
 void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr)
 {
@@ -96,9 +97,11 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {
 	int ret;
+	u8 iv[AES_IV_LENGTH];
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
 
 	account_pcn_message_sent(msg);
+
 	return get_node(to)->transport->send(to, msg, size);
 }
 EXPORT_SYMBOL(pcn_kmsg_send);

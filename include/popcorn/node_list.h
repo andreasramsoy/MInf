@@ -22,6 +22,7 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/bundle.h>
 #include <popcorn/debug.h>
+#include <popcorn/crypto.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
@@ -51,6 +52,7 @@ struct message_node {
 	enum popcorn_arch arch;
 	int bundle_id;
 	bool is_connected;
+    u8 key[AES_KEY_SIZE]; //key for AES (specific to that node)
 };
 
 struct node_list {
@@ -85,11 +87,12 @@ extern struct node_list* root_node_list; //Do not access directly! Use get_node(
 
 extern int after_last_node_index;
 
+extern void propagate_command(node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections);
 
 extern struct message_node* get_node(int index);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
 extern void remove_node(int index);
-extern int add_node(struct message_node* node);
+extern int add_node(struct message_node* node, int max_connections);
 
 extern int find_first_null_pointer(void);
 extern bool disable_node(int index);
