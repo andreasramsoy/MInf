@@ -100,7 +100,7 @@ void broadcast_my_node_info_to_node(int nid)
 		.nid = my_nid,
 		.arch = my_arch,
 	};
-	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, nid, &info, sizeof(info));
+	if (my_nid != nid) pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, nid, &info, sizeof(info)); //don't send to yourself!
 }
 EXPORT_SYMBOL(broadcast_my_node_info_to_node);
 
