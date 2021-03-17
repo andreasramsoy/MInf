@@ -51,9 +51,62 @@ EXPORT_SYMBOL(pcn_kmsg_unregister_callback);
 static atomic_t __nr_outstanding_requests[PCN_KMSG_TYPE_MAX] = { ATOMIC_INIT(0) };
 #endif
 
+#ifdef POPCORN_ENCRYPTION_ON
+void pcn_kmsg_process(struct pcn_kmsg_message_encrypted *encrypted_msg)
+#else
 void pcn_kmsg_process(struct pcn_kmsg_message *msg)
+#endif
 {
 	pcn_kmsg_cbftn ftn;
+
+#ifdef POPCORN_ENCRYPTION_ON
+	//translate pcn_kmsg_message_encrypted to be pcn_kmsg_message
+
+	struct pcn_kmsg_message *msg;
+	int error;
+	struct scatterlist sg;
+    DECLARE_CRYPTO_WAIT(wait);
+	struct crypto_skcipher *transform_obj = NULL;
+    struct skcipher_request *cipher_request = NULL;
+	struct message_node* node = get_node(encrypted_msg->from_nid);
+	if (node == NULL) {
+		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
+		goto decryption_fail;
+	}
+
+	//create transform object
+	transform_obj = crypto_alloc_skcipher("xts(aes)", 0, 0);
+	if (IS_ERR(transform_obj)) {
+		pr_err("Could not create transform object for AES decryption: %ld\n", PTR_ERR(transform_obj));
+		goto decryption_fail;
+	}
+
+	//set the key according to the node that it was from
+	error = crypto_skcipher_setkey(transform_obj, node->key, sizeof(node->key));
+	if (error) {
+		pr_err("Could not set the key error: %d\n", error);
+		goto decryption_fail;
+	}
+
+	//allocate cipher request
+	cipher_request = skcipher_request_alloc(transform_obj, GFP_KERNEL);
+	if (!cipher_request) {
+			printk(KERN_ERR "Could not allocate cipher request\n");
+			goto decryption_fail;
+	}
+
+	sg_init_one(&sg, encrypted_msg->data, datasize);
+	skcipher_request_set_callback(cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(cipher_request), &wait);
+	if (error) {
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
+			goto decryption_fail;
+	}
+	msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
+
+	//now ready to process msg as normal
+#endif
 
 #ifdef CONFIG_POPCORN_CHECK_SANITY
 	BUG_ON(msg->header.type < 0 || msg->header.type >= PCN_KMSG_TYPE_MAX);
@@ -64,6 +117,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 		}
 	}
 #endif
+
 	account_pcn_message_recv(msg);
 
 	ftn = pcn_kmsg_cbftns[msg->header.type];
@@ -72,13 +126,22 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 		ftn(msg);
 	} else {
 		printk(KERN_ERR"No callback registered for %d\n", msg->header.type);
+		#ifndef POPCORN_ENCRYPTION_ON
 		pcn_kmsg_done(msg);
+		#endif
 	}
+
+decryption_fail:
+	#ifdef POPCORN_ENCRYPTION_ON
+	crypto_free_skcipher(transform_obj);
+    skcipher_request_free(cipher_request);
+	pcn_kmsg_done(encrypted_msg);
+	#endif
 }
 EXPORT_SYMBOL(pcn_kmsg_process);
 
 
-static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message *msg, size_t size)
+static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message msg, size_t size)
 {
 #ifdef CONFIG_POPCORN_CHECK_SANITY
 	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
@@ -93,6 +156,69 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	msg->header.from_nid = my_nid;
 	return 0;
 }
+
+#ifdef POPCORN_ENCRYPTION_ON
+static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message_encrypted *msg, size_t size)
+{
+	int error;
+	struct scatterlist sg;
+    DECLARE_CRYPTO_WAIT(wait);
+	struct crypto_skcipher *transform_obj = NULL;
+    struct skcipher_request *cipher_request = NULL;
+	struct message_node* node = get_node(to);
+
+	//build the message as normal
+	msg->from_nid = my_nid;
+	get_random_bytes(msg->iv, AES_IV_LENGTH);
+	if ((ret = __build_and_check_msg(type, to, msg->data, size))) return ret;
+
+	//now encrypt the message
+	if (node == NULL) {
+		printk(KERN_ERR "The message could not be encrypted as node %d which does not exist\n", to);
+		goto encryption_fail;
+	}
+
+	//create transform object
+	transform_obj = crypto_alloc_skcipher("xts(aes)", 0, 0);
+	if (IS_ERR(transform_obj)) {
+		pr_err("Could not create transform object for AES decryption: %ld\n", PTR_ERR(transform_obj));
+		goto encryption_fail;
+	}
+
+	//set the key according to the node that it was from
+	error = crypto_skcipher_setkey(transform_obj, node->key, sizeof(node->key));
+	if (error) {
+		pr_err("Could not set the key error: %d\n", error);
+		goto encryption_fail;
+	}
+
+	//allocate cipher request
+	cipher_request = skcipher_request_alloc(transform_obj, GFP_KERNEL);
+	if (!cipher_request) {
+			printk(KERN_ERR "Could not allocate cipher request\n");
+			goto encryption_fail;
+	}
+
+	sg_init_one(&sg, encrypted_msg->data, datasize);
+	skcipher_request_set_callback(cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(cipher_request), &wait);
+	if (error) {
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
+			goto encryption_fail;
+	}
+	msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
+
+	//now ready to process msg as normal
+
+	crypto_free_skcipher(transform_obj);
+    skcipher_request_free(cipher_request);
+
+encryption_fail:
+	printk(KERN_ERR "Error encrypting, abort message!\n");
+	return 1;
+}
+#endif
 
 int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {

@@ -97,6 +97,11 @@ static int recv_handler(void* arg0)
 
 		/* Call pcn_kmsg upper layer */
 		pcn_kmsg_process((struct pcn_kmsg_message *)data);
+		#ifdef POPCORN_ENCRYPTION_ON
+		pcn_kmsg_process((struct pcn_kmsg_message_encrypted *)data);
+		#else
+		pcn_kmsg_process((struct pcn_kmsg_message *)data);
+		#endif
 	}
 	return 0;
 }
@@ -242,6 +247,30 @@ void sock_kmsg_put(struct pcn_kmsg_message *msg)
 /***********************************************
  * This is the interface for message layer
  ***********************************************/
+#ifdef POPCORN_ENCRYPTION_ON
+int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size)
+{
+	DECLARE_COMPLETION_ONSTACK(done);
+	enq_send(dest_nid, msg, 0, &done);
+
+	if (!try_wait_for_completion(&done)) { 
+		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
+		if (!ret) return -EAGAIN;
+	}
+	return 0;
+}
+
+int sock_kmsg_post(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size)
+{
+	enq_send(dest_nid, msg, 1 << SEND_FLAG_POSTED, NULL);
+	return 0;
+}
+
+void sock_kmsg_done(struct pcn_kmsg_message_encrypted *msg)
+{
+	kfree(msg);
+}
+#else
 int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 {
 	DECLARE_COMPLETION_ONSTACK(done);
@@ -264,6 +293,7 @@ void sock_kmsg_done(struct pcn_kmsg_message *msg)
 {
 	kfree(msg);
 }
+#endif
 
 void sock_kmsg_stat(struct seq_file *seq, void *v)
 {
@@ -489,11 +519,7 @@ static int __sock_listen_to_connection(void)
 	/**
 	 * TODO: Check the after last node index for this function
 	 */
-<<<<<<< HEAD
 	ret = kernel_listen(sock_listen, 5000); /**  TODO: The second parameter is the number of SYN connections, this will need to be decided dynamically in future */
-=======
-	ret = kernel_listen(sock_listen, 5000);
->>>>>>> 68d10d70e2197cda603d56cdb2d7f21bc64997c4
 	if (ret < 0) {
 		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
 		goto out_release;
