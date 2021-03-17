@@ -99,6 +99,7 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
 
 	account_pcn_message_sent(msg);
+	printk(KERN_DEBUG "PCN_KMSG_SEND!\n");
 	return get_node(to)->transport->send(to, msg, size);
 }
 EXPORT_SYMBOL(pcn_kmsg_send);
@@ -109,6 +110,7 @@ int pcn_kmsg_post(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
 
 	account_pcn_message_sent(msg);
+	printk(KERN_DEBUG "PCN_KMSG_POST!\n");
 	return get_node(to)->transport->post(to, msg, size);
 }
 EXPORT_SYMBOL(pcn_kmsg_post);
@@ -116,8 +118,11 @@ EXPORT_SYMBOL(pcn_kmsg_post);
 void *pcn_kmsg_get(size_t size)
 {
 	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	printk(KERN_DEBUG "PCN_KMSG_GET!\n");
 	if (transport && transport->get)
 		return transport->get(size);
+	
 	return kmalloc(size, GFP_KERNEL);
 }
 EXPORT_SYMBOL(pcn_kmsg_get);
@@ -125,6 +130,7 @@ EXPORT_SYMBOL(pcn_kmsg_get);
 void pcn_kmsg_put(void *msg)
 {
 	////////////////////////////////////////////////////////////////////////////////////////////////same as above function
+	printk(KERN_DEBUG "PCN_KMSG_PUT!\n");
 	if (transport && transport->put) {
 		transport->put(msg);
 	} else {
