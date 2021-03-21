@@ -249,6 +249,8 @@ void remove_node(int index) {
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
+    set_popcorn_node_online(node->index, false);
+
     if (!is_myself(node)) {
         printk(KERN_DEBUG "Killing connections for this node\n");
         node->transport->kill_node(node);
@@ -318,6 +320,7 @@ int add_node(struct message_node* node) { //function for adding a single node to
 	int index;
 	int i;
 	int list_number;
+    struct message_node* prev_node;
 	struct node_list* list = root_node_list;
 
     if (node == NULL) {
@@ -398,7 +401,19 @@ int add_node(struct message_node* node) { //function for adding a single node to
     }
     else {
         printk(KERN_DEBUG "This node is myself, skipping initialising connection");
+        for (i = 0; i < node->index; i++) {
+            prev_node = get_node(i);
+            if (prev_node) {
+                printk(KERN_DEBUG "Broadcasting info to node I have previously connected to\n");
+                broadcast_my_node_info_to_node(i);
+            }
+        }
     }
+
+
+    printk(KERN_DEBUG "Setting node to be online\n");
+    set_popcorn_node_online(node->index, true);
+    if (my_nid != -1) broadcast_my_node_info_to_node(node->index); //give them info about architecture
 
     printk(KERN_DEBUG "Successfully added node at index %d\n", index);
 
