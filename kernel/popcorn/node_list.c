@@ -3,7 +3,6 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
-#include "types.h"
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
@@ -485,9 +484,10 @@ send_node_command_message(int index, enum node_command_t node_command_type, uint
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int node, enum node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
-    struct message_node* node;
+void send_to_child(int node, enum node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+    //struct message_node* existing_node; //note the name of one of the parameters is already node
     int index;
+    int i;
     printk(KERN_DEBUG "send_to_child called\n");
 
     //send to children of binary tree where:
@@ -523,7 +523,7 @@ void send_to_child(int node, enum node_command_t node_command_type, uint32_t add
  * @param char* transport_type
  * @param int max_connections
  */
-void propagate_command(node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void propagate_command(node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
     struct message_node* node;
     int level;
     int i;
@@ -537,7 +537,7 @@ void propagate_command(node_command_t node_command_type, uint32_t address, char*
         send_to_child(my_nid, node_command_type, address, transport_type, max_connections);
     }
 }
-EXPORT_SYMBOL(propagate_command)
+EXPORT_SYMBOL(propagate_command);
 
 /**
  * Takes a node and adds it to the node list.
@@ -795,7 +795,6 @@ void destroy_node_list(void) {
         }
         //note that the node list file is only updated when saved (so if someone messes up connections they can just not save and then reboot)
     }
-    sem_destroy(&command_queue_sem);
 }
 EXPORT_SYMBOL(destroy_node_list);
 
@@ -807,7 +806,6 @@ bool initialise_node_list(void) {
 
     command_queue_start = 0; //set up queue
     command_queue_end = 0;
-    sem_init(&command_queue_sem 0, 1);
 
     if (transport_list_head == NULL || transport_list_head->transport_structure == NULL) {
             printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
