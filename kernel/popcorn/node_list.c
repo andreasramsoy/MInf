@@ -1,5 +1,6 @@
 #include <linux/semaphore.h>
 #include <linux/types.h>
+#include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
 
