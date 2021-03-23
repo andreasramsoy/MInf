@@ -66,39 +66,16 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	int error;
 	struct scatterlist sg;
     DECLARE_CRYPTO_WAIT(wait);
-	struct crypto_skcipher *transform_obj = NULL;
-    struct skcipher_request *cipher_request = NULL;
 	struct message_node* node = get_node(encrypted_msg->from_nid);
 	if (node == NULL) {
 		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
 		goto decryption_fail;
 	}
 
-	//create transform object
-	transform_obj = crypto_alloc_skcipher("xts(aes)", 0, 0);
-	if (IS_ERR(transform_obj)) {
-		pr_err("Could not create transform object for AES decryption: %ld\n", PTR_ERR(transform_obj));
-		goto decryption_fail;
-	}
-
-	//set the key according to the node that it was from
-	error = crypto_skcipher_setkey(transform_obj, node->key, sizeof(node->key));
-	if (error) {
-		pr_err("Could not set the key error: %d\n", error);
-		goto decryption_fail;
-	}
-
-	//allocate cipher request
-	cipher_request = skcipher_request_alloc(transform_obj, GFP_KERNEL);
-	if (!cipher_request) {
-			printk(KERN_ERR "Could not allocate cipher request\n");
-			goto decryption_fail;
-	}
-
 	sg_init_one(&sg, encrypted_msg->data, datasize);
-	skcipher_request_set_callback(cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
-	skcipher_request_set_crypt(cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
-	error = crypto_wait_req(crypto_skcipher_decrypt(cipher_request), &wait);
+	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
 			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
 			goto decryption_fail;
@@ -163,19 +140,24 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	int error;
 	struct scatterlist sg;
     DECLARE_CRYPTO_WAIT(wait);
-	struct crypto_skcipher *transform_obj = NULL;
-    struct skcipher_request *cipher_request = NULL;
 	struct message_node* node = get_node(to);
 
-	//build the message as normal
+	if (get_node(to) == NULL) {
+		printk(KERN_ERR "Trying to build message for node that does not exist\n");
+		goto encrption_fail;
+	}
+
 	msg->from_nid = my_nid;
 	get_random_bytes(msg->iv, AES_IV_LENGTH);
+
+	//build the message as normal
 	if ((ret = __build_and_check_msg(type, to, msg->data, size))) return ret;
 
+	//encrypt the message (setup is done on node initialisation to save time)
 	sg_init_one(&sg, encrypted_msg->data, datasize);
-	skcipher_request_set_callback(cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
-	skcipher_request_set_crypt(cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
-	error = crypto_wait_req(crypto_skcipher_decrypt(cipher_request), &wait);
+	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
 			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
 			goto encryption_fail;
