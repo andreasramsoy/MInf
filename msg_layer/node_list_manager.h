@@ -54,6 +54,28 @@ void node_get(int index) {
 }*/
 
 /**
+ * Get the first node and @return the index of the first node in the node list
+ */
+int forward_message_to() {
+    struct message_node* node;
+    int i;
+    bool is_first = false;
+
+    //check if I am the first node, if not then propagate to the first node
+    if (my_nid == 0) return my_nid;
+    else {
+        for (i = 0; i < my_nid; i++) {
+            node = get_node(i);
+            if (node != NULL) {
+                first_node = i;
+                break;
+            }
+        }
+    }
+    return first_node;
+}
+
+/**
  * Adds a new node to the node list.
  * @param char* address address of the node
  * @param char* protocol the protocol to be used for the node
@@ -64,6 +86,7 @@ void node_add(char* address_string, char* protocol_string) {
     uint32_t address;
     struct message_node* node;
     struct pcn_kmsg_transport* protocol;
+    int first_node;
 
     printk(KERN_DEBUG "node_add called\n");
     protocol = string_to_transport(protocol_string);
@@ -76,14 +99,21 @@ void node_add(char* address_string, char* protocol_string) {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
         address = in_aton(address_string);
 
-        //using the values create a node and add it to the list
-        node = create_node(address, protocol);
-        printk(KERN_DEBUG "Created the node\n");
-        if (node != NULL) {
-            printk(KERN_DEBUG "Ready to add node\n");
-            snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node, 1)); /** TODO: replace max connection with user input */
+        first_node = forward_message_to();
+        if (first_node == my_nid || my_nid == -1) { //start process myself
+            //using the values create a node and add it to the list
+            node = create_node(address, protocol);
+            printk(KERN_DEBUG "Created the node\n");
+            if (node != NULL) {
+                printk(KERN_DEBUG "Ready to add node\n");
+                snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node, 1)); /** TODO: replace max connection with user input */
+            }
+            else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
         }
-        else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
+        else {
+            printk(KERN_DEBUG "Message is being forwarded to the first node\n");
+            send_node_command_message(first_node, NODE_LIST_ADD_NODE_COMMAND, address, protocol->name, 1);
+        }
     }
     printk(KERN_DEBUG "Done adding node\n");
 }
@@ -96,11 +126,19 @@ void node_add(char* address_string, char* protocol_string) {
  * @return void however the output_buffer is filled with true if successful false if not
 */
 void node_remove(int index) {
+    int first_node;
     printk(KERN_DEBUG "node_remove called\n");
     if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
-        remove_node(index);
-        strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+        first_node = forward_message_to();
+        if (first_node == my_nid || my_nid == -1) { //start process myself
+            remove_node(index);
+            strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+        }
+        else {
+            printk(KERN_DEBUG "Message is being forwarded to the first node\n");
+            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, address, protocol->name, 1);
+        }
     }
 }
 
