@@ -1,9 +1,10 @@
 #include <linux/semaphore.h>
 
-#include <popcorn/types.h>
+#include <popcorn/bundle.h>
+#include <popcorn/node_list.h>
+
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
-#include <popcorn/node_list.h>
 
 #include "types.h"
 
@@ -379,13 +380,13 @@ bool command_queue_push(struct node_list_command_t* command) {
 /**
  * Function to handle the commands sent to the node list
  */
-void process_command(enum node_command_type* command) {
+void process_command(enum node_list_command command) {
     struct message_node* node;
-    if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
-        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
-        node = create_node(command->address, string_to_transport(command->transport));
+    if (command.command_type == NODE_LIST_ADD_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command.sender);
+        node = create_node(command.address, string_to_transport(command.transport));
         if (node) {
-            if (add_node(node, command->max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
+            if (add_node(node, command.max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
             else {
                 printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
                 kfree(node);
@@ -396,16 +397,16 @@ void process_command(enum node_command_type* command) {
             kfree(node);
         }
     }
-    else if (command->command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
-        printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command->sender, command->nid_to_remove);
-        if (my_nid == command->nid_to_remove) {
+    else if (command.command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command.sender, command.nid_to_remove);
+        if (my_nid == command.nid_to_remove) {
             /** TODO: Ensure no running processes are remote at this point - this node can start this process */
             printk(KERN_DEBUG "No need to do anything to remove myself - wait for other nodes to end connection\n");
         }
         else {
-            printk(KERN_DEBUG "Removing node %d from the node list\n", command->nid_to_remove);
+            printk(KERN_DEBUG "Removing node %d from the node list\n", command.nid_to_remove);
             /** TODO: Ensure no running processes are remote at this point */
-            remove_node(command->nid_to_remove);
+            remove_node(command.nid_to_remove);
         }
     }
     else {
@@ -417,8 +418,8 @@ void process_command(enum node_command_type* command) {
 /**
  * Function that processes all items in the queue until it is empty
  */
-void command_queue_process() {
-    struct node_list_command* command_to_be_processed;
+void command_queue_process(void) {
+    struct node_list_command command_to_be_processed;
 
     down_trylock(command_queue_sem);
     while (command_queue_start != command_queue_end) {
@@ -442,7 +443,7 @@ void command_queue_process() {
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_command(struct pcn_kmsg_message *msg) {
-    struct node_list_command *command = (node_list_command *)msg;
+    node_list_command *command = (node_list_command *)msg;
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
