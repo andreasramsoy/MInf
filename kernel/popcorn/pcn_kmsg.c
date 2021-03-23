@@ -175,7 +175,6 @@ encryption_fail:
 int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {
 	int ret;
-	u8 iv[AES_IV_LENGTH];
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
 
 	account_pcn_message_sent(msg);
