@@ -1,8 +1,8 @@
 #include <linux/semaphore.h>
-#include <popcorn/types.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
+#include "types.h"
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
@@ -523,7 +523,7 @@ void send_to_child(int node, enum node_list_command_t node_command_type, uint32_
  * @param char* transport_type
  * @param int max_connections
  */
-void propagate_command(node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void propagate_command(enum node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
     struct message_node* node;
     int level;
     int i;
