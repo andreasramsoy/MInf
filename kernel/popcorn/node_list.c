@@ -1,4 +1,5 @@
 #include <linux/semaphore.h>
+#include <popcorn/types.h>
 #include <popcorn/node_list.h>
 
 
