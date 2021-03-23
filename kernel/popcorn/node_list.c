@@ -3,6 +3,7 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
+#include "types.h"
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
