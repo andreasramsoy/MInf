@@ -23,6 +23,7 @@
 #include <popcorn/bundle.h>
 #include <popcorn/debug.h>
 #include <popcorn/crypto.h>
+#include <popcorn/types.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
@@ -86,11 +87,6 @@ struct sock_handle {
 struct transport_list { //used to store all of the protocols
 	struct pcn_kmsg_transport* transport_structure;
 	struct transport_list* next;
-};
-
-enum node_command_t {
-    NODE_LIST_REMOVE_NODE_COMMAND,
-    NODE_LIST_ADD_NODE_COMMAND,
 };
 
 extern struct transport_list* transport_list_head;
