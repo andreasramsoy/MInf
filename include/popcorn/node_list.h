@@ -36,6 +36,10 @@
  */
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 
+// encryption
+#define AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
+#define AES_IV_LENGTH 
+
 struct pcn_kmsg_transport; //defined in pcn_kmsg.h
 
 struct q_item {

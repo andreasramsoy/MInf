@@ -1,9 +1,18 @@
+#include <semaphore.h>
 #include <popcorn/node_list.h>
 
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 int after_last_node_index;
+
+#define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
+int command_queue_start;
+int command_queue_end;
+struct node_command_t* command_queue[COMMAND_QUEUE_LENGTH];
+sem_t command_queue_sem;
+
+
 EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
@@ -40,6 +49,24 @@ struct message_node* get_node(int index) {
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
 }
 EXPORT_SYMBOL(get_node);
+
+/**
+ * Generates the key and IV for AES for the given node. Nothing is returned since 
+ * only one thing can be returned at a time
+ * @param int index of node that shall get new encryption keys
+ */
+void generate_symmetric_key(int index) {
+    struct message_node* node = get_node(index);
+    if (node) {
+        printk(KERN_DEBUG "Randomly generating key and IV for node %d\n", index);
+        get_random_bytes(node->iv, sizeof(node->iv));
+        get_random_bytes(node->key, sizeof(node->key));
+        printk(KERN_DEBUG "Done key generation for node %d", index);
+    }
+    else {
+        printk(KERN_ERR "Cannot generate symmetric keys for node %d as it does not exist\n", index);
+    }
+}
 
 /**
  * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
@@ -316,11 +343,201 @@ void remove_node(int index) {
 EXPORT_SYMBOL(remove_node);
 
 /**
+ * Pushes command to the queue
+ * @param node_command_t command
+ * @return bool success
+ */
+bool command_queue_push(struct node_command_t* command) {
+    bool success = true;
+    sem_wait(&command_queue_sem);
+
+    if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
+        //if the queue is full
+        success = false;
+    }
+    else {
+        //must be space
+        command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
+        command_queue[command_queue_end] = command;
+        success = true;
+    }
+
+    sem_post(&command_queue_sem);
+
+    return success;
+}
+
+/**
+ * Function to handle the commands sent to the node list
+ */
+void process_command(struct node_comment_t* command) {
+    if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
+        node = create_node(command->address, string_to_transport(command->transport));
+        if (node) {
+            if (add_node(node, command->max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
+            else {
+                printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
+                kfree(node);
+            }
+        }
+        else {
+            printk(KERN_ERR "Failed to create the node! If other nodes succeed then the node list will become inconsistent\n");
+            kfree(node);
+        }
+    }
+    else if (command->command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command->sender, command->nid_to_remove);
+        if (my_nid == command->nid_to_remove) {
+            /** TODO: Ensure no running processes are remote at this point - this node can start this process */
+            printk(KERN_DEBUG "No need to do anything to remove myself - wait for other nodes to end connection\n");
+        }
+        else {
+            printk(KERN_DEBUG "Removing node %d from the node list\n", command->nid_to_remove);
+            /** TODO: Ensure no running processes are remote at this point */
+            remove_node(command->nid_to_remove);
+        }
+    }
+    else {
+        printk(KERN_ERR "A message was sent to the node list but it had an unknown type!\n");
+        /** TODO: Should an error message be sent to the node above? */
+    }
+}
+
+/**
+ * Function that processes all items in the queue until it is empty
+ */
+void command_queue_process() {
+    struct node_command_t* command_to_be_processed;
+
+    sem_wait(&command_queue_sem);
+    while (command_queue_start != command_queue_end) {
+        command_to_be_processed = command_queue[command_queue_start];
+        command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
+        sem_post(&command_queue_sem);
+
+
+        //not critical section
+        process_command(command_to_be_processed);
+        kfree(command_to_be_processed);
+        //end of non-criticial section
+
+
+        sem_wait(&command_queue_sem);
+    } /** TODO: quite ugly error prone code, find a better way of doing this */
+    sem_post(&command_queue_sem); //finally release when there are no more commands to process
+}
+
+/**
+ * Function to handle incoming messages to adjust node list from other nodes
+ * @param struct pcn_kmsg_message
+ */
+static int handle_node_list_command(struct pcn_kmsg_message *msg) {
+    struct message_node* node;
+    node_command__t *command = (node_command_t *)msg;
+
+    printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
+
+    command_queue_push(memcpy(command, sizeof(command))); //add to the queue
+
+    command_queue_process(); //process all of the commands (does nothing if none are left)
+
+	//smp_mb(); //this function appears in bundle.c, don't think is necessary
+
+	pcn_kmsg_done(msg);
+    return 0;
+}
+EXPORT_SYMBOL(handle_node_list_command);
+REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, handle_node_list_command);
+
+/**
+ * Function to send message to a given node
+ * @param int node that messages will be forwarded to children of
+ * @param node_command_t node_command_type
+ * @param uint32_t address
+ * @param char* transport_type
+ * @param int max_connections
+ */
+send_node_command_message(int index, enum node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+
+	node_list_command_t command = {
+		.sender = my_nid,
+		.command_type = node_command_type,
+        .address = address,
+        .transport = transport_type,
+        .max_connections = max_connections,
+	};
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
+}
+
+/**
+ * Function to pass message onto children of node
+ * @param int node that messages will be forwarded to children of
+ * @param node_command_t node_command_type
+ * @param uint32_t address
+ * @param char* transport_type
+ * @param int max_connections
+ */
+void send_to_child(int node, enum node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+    struct message_node* node;
+    int index;
+    printk(KERN_DEBUG "send_to_child called\n");
+
+    //send to children of binary tree where:
+    //  left = 2n
+    // right = 2n + 1
+    //
+    // where a node is missing then this node must send messages to children
+    // means that if sucessive nodes are missing then messages increase exponentially
+    // this is unlikely though as the first gap will be filled when a node is added
+
+    for (i = 0; i < 2; i++) { //two branches
+        index = 2 * (node + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
+        node = get_node(index);
+        if (node) {
+            send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+        }
+        else if (index < after_last_node_index) {
+            send_to_child(index - 1, node_command_type, address, transport_type, max_connections);
+        }
+        else {
+            printk(KERN_INFO "No more nodes to propagate to\n");
+        }
+
+        /** TODO: Implement waiting for max connections */
+        // wait here if the first branch takes up all the connections (max_connections)
+    }
+}
+
+/**
+ * Function to send commands to change the node list to other nodes
+ * @param node_command_t node_command_type
+ * @param uint32_t address
+ * @param char* transport_type
+ * @param int max_connections
+ */
+void propagate_command(node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+    struct message_node* node;
+    int level;
+    int i;
+
+    printk(KERN_DEBUG "propagate_command called\n");
+    if (my_nid < 0) {
+        printk(KERN_ERR "Cannot propagate when this node's my_nid is not set\n");
+    }
+    else {
+        //forward to children
+        send_to_child(my_nid, node_command_type, address, transport_type, max_connections);
+    }
+}
+EXPORT_SYMBOL(propagate_command)
+
+/**
  * Takes a node and adds it to the node list.
  * @param message_node* node the node that will be added to the list
  * @return int index of the location of the new node (-1 if it could not be added)
 */
-int add_node(struct message_node* node) { //function for adding a single node to the list
+int add_node(struct message_node* node, int max_connections) { //function for adding a single node to the list
 	int index;
 	int i;
 	int list_number;
@@ -420,6 +637,10 @@ int add_node(struct message_node* node) { //function for adding a single node to
     if (my_nid != -1) broadcast_my_node_info_to_node(node->index); //give them info about architecture
 
     printk(KERN_DEBUG "Successfully added node at index %d\n", index);
+
+    printk(KERN_DEBUG "Propagate command to other nodes\n");
+    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, 1); //one max connection (replace later)
+    printk(KERN_DEBUG "Sent messages to other nodes\n");
 
 	return index;
 }
@@ -567,6 +788,7 @@ void destroy_node_list(void) {
         }
         //note that the node list file is only updated when saved (so if someone messes up connections they can just not save and then reboot)
     }
+    sem_destroy(&command_queue_sem);
 }
 EXPORT_SYMBOL(destroy_node_list);
 
@@ -574,6 +796,10 @@ bool initialise_node_list(void) {
     struct message_node* myself;
     after_last_node_index = 0;
     my_nid = -1;
+
+    command_queue_start = 0; //set up queue
+    command_queue_end = 0;
+    sem_init(&command_queue_sem 0, 1);
 
     if (transport_list_head == NULL || transport_list_head->transport_structure == NULL) {
             printk(KERN_ERR "At least one transport structure must be in the transport list for popcorn to work\n");
