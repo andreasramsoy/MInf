@@ -13,7 +13,7 @@ bool registered_on_popcorn_network;
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;
 int command_queue_end;
-struct node_command_t* command_queue[COMMAND_QUEUE_LENGTH];
+struct node_list_command_t* command_queue[COMMAND_QUEUE_LENGTH];
 #define DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 
 
@@ -350,10 +350,10 @@ EXPORT_SYMBOL(remove_node);
 
 /**
  * Pushes command to the queue
- * @param node_command_t command
+ * @param node_list_command_t command
  * @return bool success
  */
-bool command_queue_push(struct node_command_t* command) {
+bool command_queue_push(struct node_list_command_t* command) {
     bool success = true;
     down_trylock(command_queue_sem);
 
@@ -376,7 +376,7 @@ bool command_queue_push(struct node_command_t* command) {
 /**
  * Function to handle the commands sent to the node list
  */
-void process_command(struct node_command_t* command) {
+void process_command(enum node_command_type* command) {
     struct message_node* node;
     if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
@@ -415,7 +415,7 @@ void process_command(struct node_command_t* command) {
  * Function that processes all items in the queue until it is empty
  */
 void command_queue_process() {
-    struct node_command_t* command_to_be_processed;
+    struct node_list_command* command_to_be_processed;
 
     sem_wait(&command_queue_sem);
     while (command_queue_start != command_queue_end) {
@@ -440,7 +440,7 @@ void command_queue_process() {
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_command(struct pcn_kmsg_message *msg) {
-    node_command__t *command = (node_command_t *)msg;
+    struct node_list_command *command = (node_list_command *)msg;
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
@@ -459,14 +459,14 @@ REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, handle_node_list_command);
 /**
  * Function to send message to a given node
  * @param int node that messages will be forwarded to children of
- * @param node_command_t node_command_type
+ * @param node_list_command_type node_command_type
  * @param uint32_t address
  * @param char* transport_type
  * @param int max_connections
  */
-send_node_command_message(int index, enum node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+send_node_command_message(int index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
 
-	node_list_command_t command = {
+	struct node_list_command command = {
 		.sender = my_nid,
 		.command_type = node_command_type,
         .address = address,
@@ -479,12 +479,12 @@ send_node_command_message(int index, enum node_command_t node_command_type, uint
 /**
  * Function to pass message onto children of node
  * @param int node that messages will be forwarded to children of
- * @param node_command_t node_command_type
+ * @param node_list_command_type node_command_type
  * @param uint32_t address
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int node, enum node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
     int index;
     int i;
@@ -518,12 +518,12 @@ void send_to_child(int node, enum node_list_command_t node_command_type, uint32_
 
 /**
  * Function to send commands to change the node list to other nodes
- * @param node_command_t node_command_type
+ * @param node_list_command_type node_command_type
  * @param uint32_t address
  * @param char* transport_type
  * @param int max_connections
  */
-void propagate_command(enum node_list_command_t node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
     struct message_node* node;
     int level;
     int i;
