@@ -18,7 +18,7 @@ bool registered_on_popcorn_network;
 int command_queue_start;
 int command_queue_end;
 struct node_list_command_t* command_queue[COMMAND_QUEUE_LENGTH];
-#define DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
+DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 
 
 EXPORT_SYMBOL(transport_list_head);
