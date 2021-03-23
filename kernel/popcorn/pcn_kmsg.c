@@ -108,8 +108,8 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 		#endif
 	}
 
-decryption_fail:
 	#ifdef POPCORN_ENCRYPTION_ON
+decryption_fail:
 	crypto_free_skcipher(transform_obj);
     skcipher_request_free(cipher_request);
 	pcn_kmsg_done(encrypted_msg);
@@ -118,7 +118,7 @@ decryption_fail:
 EXPORT_SYMBOL(pcn_kmsg_process);
 
 
-static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message msg, size_t size)
+static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message *msg, size_t size)
 {
 #ifdef CONFIG_POPCORN_CHECK_SANITY
 	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
