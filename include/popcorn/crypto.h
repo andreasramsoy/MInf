@@ -7,9 +7,6 @@
 
 #define POPCORN_ENCRYPTION_ON
 
-// symmetric using AES-256-XTS
-#define AES_KEY_SIZE 64 //key size for AES-256-XTS
-#define AES_IV_LENGTH 16 //IV size for AES-256-XTS
 
 
 

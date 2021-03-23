@@ -88,12 +88,17 @@ struct transport_list { //used to store all of the protocols
 	struct transport_list* next;
 };
 
+enum node_command_t {
+    NODE_LIST_REMOVE_NODE_COMMAND,
+    NODE_LIST_ADD_NODE_COMMAND,
+};
+
 extern struct transport_list* transport_list_head;
 extern struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
 extern int after_last_node_index;
 
-extern void propagate_command(node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections);
+extern void propagate_command(enum node_command_t node_command_type, uint32_t address, char* transport_type, int max_connections);
 
 extern struct message_node* get_node(int index);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);

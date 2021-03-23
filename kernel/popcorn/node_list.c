@@ -370,7 +370,7 @@ bool command_queue_push(struct node_command_t* command) {
 /**
  * Function to handle the commands sent to the node list
  */
-void process_command(struct node_comment_t* command) {
+void process_command(struct node_command_t* command) {
     if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
         node = create_node(command->address, string_to_transport(command->transport));
