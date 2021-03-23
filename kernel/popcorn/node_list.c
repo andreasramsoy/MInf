@@ -1,4 +1,7 @@
 #include <linux/semaphore.h>
+
+#include <popcorn/types.h>
+#include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
@@ -417,22 +420,21 @@ void process_command(enum node_command_type* command) {
 void command_queue_process() {
     struct node_list_command* command_to_be_processed;
 
-    sem_wait(&command_queue_sem);
+    down_trylock(command_queue_sem);
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
-        sem_post(&command_queue_sem);
+        up(command_queue_sem);
 
 
         //not critical section
         process_command(command_to_be_processed);
-        kfree(command_to_be_processed);
         //end of non-criticial section
 
 
-        sem_wait(&command_queue_sem);
+        down_trylock(command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
-    sem_post(&command_queue_sem); //finally release when there are no more commands to process
+    up(command_queue_sem); //finally release when there are no more commands to process
 }
 
 /**
@@ -444,7 +446,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
-    command_queue_push(memcpy(command, sizeof(command))); //add to the queue
+    command_queue_push(command); //add to the queue
 
     command_queue_process(); //process all of the commands (does nothing if none are left)
 
