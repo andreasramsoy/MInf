@@ -303,7 +303,7 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 #define NODE_COMMAND_FIELDS \
 	int sender; \
-	enum node_list_command_types node_command_type; \
+	enum node_list_command_type node_command_type; \
 	uint32_t address; \
 	char* transport; \
 	int max_connections; \
