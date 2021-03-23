@@ -100,7 +100,7 @@ void node_add(char* address_string, char* protocol_string) {
         address = in_aton(address_string);
 
         first_node = forward_message_to();
-        if (first_node == my_nid || my_nid == -1) { //start process myself
+        if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself
             //using the values create a node and add it to the list
             node = create_node(address, protocol);
             printk(KERN_DEBUG "Created the node\n");

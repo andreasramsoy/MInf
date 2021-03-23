@@ -1,5 +1,5 @@
 #include <linux/semaphore.h>
-#include <linux/types.h>
+#include <popcorn/types.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/node_list.h>
 
@@ -8,11 +8,13 @@ struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 int after_last_node_index;
 
+bool registered_on_popcorn_network;
+
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;
 int command_queue_end;
 struct node_command_t* command_queue[COMMAND_QUEUE_LENGTH];
-sem_t command_queue_sem;
+#define DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 
 
 EXPORT_SYMBOL(transport_list_head);
@@ -60,10 +62,12 @@ EXPORT_SYMBOL(get_node);
 void generate_symmetric_key(int index) {
     struct message_node* node = get_node(index);
     if (node) {
+        #ifdef POPCORN_ENCRYPTION_ON
         printk(KERN_DEBUG "Randomly generating key and IV for node %d\n", index);
         get_random_bytes(node->iv, sizeof(node->iv));
         get_random_bytes(node->key, sizeof(node->key));
         printk(KERN_DEBUG "Done key generation for node %d", index);
+        #endif
     }
     else {
         printk(KERN_ERR "Cannot generate symmetric keys for node %d as it does not exist\n", index);
@@ -149,7 +153,7 @@ EXPORT_SYMBOL(disable_node);
 //enable and connect
 bool enable_node(int index) {
     struct message_node* node;
-    int error
+    int error;
     printk(KERN_DEBUG "Enabling node %d\n", index);
 
     node = get_node(index);
@@ -351,7 +355,7 @@ EXPORT_SYMBOL(remove_node);
  */
 bool command_queue_push(struct node_command_t* command) {
     bool success = true;
-    sem_wait(&command_queue_sem);
+    down_trylock(command_queue_sem);
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -364,7 +368,7 @@ bool command_queue_push(struct node_command_t* command) {
         success = true;
     }
 
-    sem_post(&command_queue_sem);
+    up(command_queue_sem);
 
     return success;
 }
@@ -373,6 +377,7 @@ bool command_queue_push(struct node_command_t* command) {
  * Function to handle the commands sent to the node list
  */
 void process_command(struct node_command_t* command) {
+    struct message_node* node;
     if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
         node = create_node(command->address, string_to_transport(command->transport));
@@ -435,7 +440,6 @@ void command_queue_process() {
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_command(struct pcn_kmsg_message *msg) {
-    struct message_node* node;
     node_command__t *command = (node_command_t *)msg;
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
@@ -796,6 +800,7 @@ EXPORT_SYMBOL(destroy_node_list);
 
 bool initialise_node_list(void) {
     struct message_node* myself;
+    registered_on_popcorn_network = false; //initially not part of any network
     after_last_node_index = 0;
     my_nid = -1;
 
