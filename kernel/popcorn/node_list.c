@@ -507,9 +507,14 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
 
     for (i = 0; i < 2; i++) { //two branches
         index = 2 * (node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
-        node = get_node(index);
+        node = get_node(index -1);
         if (node) {
-            send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+            if (node_command_type != NODE_LIST_ADD_NODE_COMMAND || index - 1 != node->index) {
+                send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+            }
+            else {
+                printk(KERN "The message was not forwarded to node %d, as this is the node to be added\n", node->index);
+            }
         }
         else if (index < after_last_node_index) {
             send_to_child(index - 1, node_command_type, address, transport_type, max_connections);
@@ -843,7 +848,7 @@ bool initialise_node_list(void) {
             my_nid = identify_myself();
         }*/
     }
-    
+
 
 
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
