@@ -56,10 +56,10 @@ void node_get(int index) {
 /**
  * Get the first node and @return the index of the first node in the node list
  */
-int forward_message_to() {
+int forward_message_to(void) {
     struct message_node* node;
     int i;
-    bool is_first = false;
+    int is_first = false;
 
     //check if I am the first node, if not then propagate to the first node
     if (my_nid == 0) return my_nid;
