@@ -277,6 +277,7 @@ bool is_myself(struct message_node* node)
             printk(KERN_DEBUG "My address is: %d.%d.%d.%d\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
             if (addr == node->address) {
                 my_nid = node->index;
+                registered_on_popcorn_network = true;
                 return true;
             }
 		}
@@ -539,7 +540,7 @@ EXPORT_SYMBOL(send_to_child);
 void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
     printk(KERN_DEBUG "propagate_command called\n");
     if (my_nid < 0) {
-        printk(KERN_ERR "Cannot propagate when this node's my_nid is not set\n");
+        printk(KERN_ERR "Cannot propagate when this node's my_nid is not set (this happens when we are not a part of any node list)\n");
     }
     else {
         //forward to children
