@@ -362,7 +362,7 @@ EXPORT_SYMBOL(remove_node);
  */
 bool command_queue_push(node_list_command* command) {
     bool success = true;
-    down_trylock(&command_queue_sem);
+    down(&command_queue_sem);
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -424,7 +424,7 @@ void process_command(node_list_command* command) {
 void command_queue_process(void) {
     node_list_command* command_to_be_processed;
 
-    down_trylock(&command_queue_sem);
+    down(&command_queue_sem);
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
@@ -435,7 +435,7 @@ void command_queue_process(void) {
         process_command(command_to_be_processed);
         //end of non-criticial section
 
-        down_trylock(&command_queue_sem);
+        down(&command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
 }
@@ -469,7 +469,7 @@ REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
  * @param char* transport_type
  * @param int max_connections
  */
-send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections) {
+void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections) {
 
 	node_list_command command = {
 		.sender = my_nid,
@@ -489,8 +489,9 @@ send_node_command_message(int index, enum node_list_command_type command_type, u
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
+    struct message_node* node;
     int index;
     int i;
     printk(KERN_DEBUG "send_to_child called\n");
@@ -504,7 +505,7 @@ void send_to_child(int node, enum node_list_command_type node_command_type, uint
     // this is unlikely though as the first gap will be filled when a node is added
 
     for (i = 0; i < 2; i++) { //two branches
-        index = 2 * (node + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
+        index = 2 * (node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
         node = get_node(index);
         if (node) {
             send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
