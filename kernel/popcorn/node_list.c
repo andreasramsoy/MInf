@@ -841,7 +841,7 @@ bool initialise_node_list(void) {
             my_nid = identify_myself();
         }*/
     }
-    
+
 
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
 
