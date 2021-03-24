@@ -163,10 +163,6 @@ EXPORT_SYMBOL(disable_node);
 //enable and connect
 bool enable_node(int index) {
     struct message_node* node;
-<<<<<<< HEAD
-    int error;
-=======
->>>>>>> 76cb5977211f6fe30c2abc67a69281f1cace36c2
     printk(KERN_DEBUG "Enabling node %d\n", index);
 
     node = get_node(index);
@@ -363,21 +359,12 @@ EXPORT_SYMBOL(remove_node);
 
 /**
  * Pushes command to the queue
-<<<<<<< HEAD
- * @param node_list_command_t command
- * @return bool success
- */
-bool command_queue_push(struct node_list_command_t* command) {
-    bool success = true;
-    down_trylock(command_queue_sem);
-=======
  * @param node_list_command command
  * @return bool success
  */
 bool command_queue_push(node_list_command* command) {
     bool success = true;
     down(&command_queue_sem);
->>>>>>> 76cb5977211f6fe30c2abc67a69281f1cace36c2
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -815,10 +802,6 @@ void destroy_node_list(void) {
 EXPORT_SYMBOL(destroy_node_list);
 
 bool initialise_node_list(void) {
-<<<<<<< HEAD
-    struct message_node* myself;
-=======
->>>>>>> 76cb5977211f6fe30c2abc67a69281f1cace36c2
     registered_on_popcorn_network = false; //initially not part of any network
     after_last_node_index = 0;
     my_nid = -1;
@@ -860,13 +843,10 @@ bool initialise_node_list(void) {
             my_nid = identify_myself();
         }*/
     }
-<<<<<<< HEAD
-=======
-    
+
 
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
 
->>>>>>> 76cb5977211f6fe30c2abc67a69281f1cace36c2
     return true;
 }
 EXPORT_SYMBOL(initialise_node_list);
