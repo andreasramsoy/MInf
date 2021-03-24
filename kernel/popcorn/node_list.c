@@ -12,7 +12,6 @@ struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 int after_last_node_index;
 
-bool registered_on_popcorn_network;
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;

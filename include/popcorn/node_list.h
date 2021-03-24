@@ -94,6 +94,7 @@ extern struct transport_list* transport_list_head;
 extern struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 
 extern int after_last_node_index;
+extern bool registered_on_popcorn_network;
 
 extern struct message_node* get_node(int index);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
