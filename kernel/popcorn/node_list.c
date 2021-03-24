@@ -459,7 +459,6 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
     return 0;
 }
 EXPORT_SYMBOL(handle_node_list_command);
-REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
 
 /**
  * Function to send message to a given node
@@ -842,6 +841,9 @@ bool initialise_node_list(void) {
             my_nid = identify_myself();
         }*/
     }
+
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
+
     return true;
 }
 EXPORT_SYMBOL(initialise_node_list);
