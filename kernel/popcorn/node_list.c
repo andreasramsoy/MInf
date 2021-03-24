@@ -278,7 +278,6 @@ bool is_myself(struct message_node* node)
             printk(KERN_DEBUG "My address is: %d.%d.%d.%d\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
             if (addr == node->address) {
                 my_nid = node->index;
-                registered_on_popcorn_network = true;
                 return true;
             }
 		}
@@ -311,6 +310,9 @@ void remove_node(int index) {
             node->transport->exit_transport();
             printk(KERN_DEBUG "No nodes are using %s as transport, removing this transport\n", node->transport->name);
         }
+    }
+    else {
+        registered_on_popcorn_network = false;
     }
 
     printk(KERN_DEBUG "Updating the after last node index\n");
@@ -640,6 +642,7 @@ int add_node(struct message_node* node, int max_connections) { //function for ad
         node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
     }
     else {
+        registered_on_popcorn_network = true;
         printk(KERN_DEBUG "This node is myself, skipping initialising connection");
         for (i = 0; i < node->index; i++) {
             prev_node = get_node(i);
