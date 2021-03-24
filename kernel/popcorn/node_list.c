@@ -385,7 +385,7 @@ bool command_queue_push(node_list_command* command) {
  */
 void process_command(node_list_command* command) {
     struct message_node* node;
-    if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
+    if (command->node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
         node = create_node(command->address, string_to_transport(command->transport));
         if (node) {
@@ -400,7 +400,7 @@ void process_command(node_list_command* command) {
             kfree(node);
         }
     }
-    else if (command->command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
+    else if (command->node_command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command->sender, command->nid_to_remove);
         if (my_nid == command->nid_to_remove) {
             /** TODO: Ensure no running processes are remote at this point - this node can start this process */
@@ -435,7 +435,6 @@ void command_queue_process(void) {
         process_command(command_to_be_processed);
         //end of non-criticial section
 
-
         down_trylock(&command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
@@ -460,7 +459,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
     return 0;
 }
 EXPORT_SYMBOL(handle_node_list_command);
-REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, handle_node_list_command);
+REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
 
 /**
  * Function to send message to a given node
@@ -470,11 +469,11 @@ REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, handle_node_list_command);
  * @param char* transport_type
  * @param int max_connections
  */
-send_node_command_message(int index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
+send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections) {
 
 	node_list_command command = {
 		.sender = my_nid,
-		.command_type = node_command_type,
+		.node_command_type = command_type,
         .address = address,
         .transport = transport_type,
         .max_connections = max_connections,
@@ -531,10 +530,6 @@ EXPORT_SYMBOL(send_to_child);
  * @param int max_connections
  */
 void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
-    struct message_node* node;
-    int level;
-    int i;
-
     printk(KERN_DEBUG "propagate_command called\n");
     if (my_nid < 0) {
         printk(KERN_ERR "Cannot propagate when this node's my_nid is not set\n");
