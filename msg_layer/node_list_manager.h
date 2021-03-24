@@ -59,7 +59,7 @@ void node_get(int index) {
 int forward_message_to(void) {
     struct message_node* node;
     int i;
-    int is_first = false;
+    bool is_first = false;
 
     //check if I am the first node, if not then propagate to the first node
     if (my_nid == 0) return my_nid;
@@ -91,13 +91,13 @@ void node_add(char* address_string, char* protocol_string) {
     printk(KERN_DEBUG "node_add called\n");
     protocol = string_to_transport(protocol_string);
     printk(KERN_DEBUG "node_add called 2\n");
+    address = in_aton(address_string);
     if (protocol == NULL) {
         printk(KERN_DEBUG "Wrong protocols in node add\n");
         strncpy(output_buffer, "-1 WRONG_PROTOCOL", sizeof(output_buffer));
     }
     else {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
-        address = in_aton(address_string);
 
         first_node = forward_message_to();
         if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself
@@ -112,7 +112,7 @@ void node_add(char* address_string, char* protocol_string) {
         }
         else {
             printk(KERN_DEBUG "Message is being forwarded to the first node\n");
-            send_node_command_message(first_node, NODE_LIST_ADD_NODE_COMMAND, address, protocol->name, 1);
+            send_node_command_message(first_node, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, 1);
         }
     }
     printk(KERN_DEBUG "Done adding node\n");

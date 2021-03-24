@@ -12,7 +12,7 @@ struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 int after_last_node_index;
 
-bool registered_on_popcorn_network;
+extern bool registered_on_popcorn_network;
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;
@@ -26,10 +26,11 @@ DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
+EXPORT_SYMBOL(registered_on_popcorn_network);
 
 //export send to child here as it needs the "types.h" file for the definition of node_list_command_type
 extern void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections);
-
+extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections);
 
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
@@ -482,6 +483,7 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
 	};
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
 }
+EXPORT_SYMBOL(send_node_command_message);
 
 /**
  * Function to pass message onto children of node
@@ -517,7 +519,8 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
                 printk(KERN_DEBUG "The message was not forwarded to node %d, as this is the node to be added\n", node->index);
             }
         }
-        else if (index < after_last_node_index) {
+        else if (index - 1 < after_last_node_index) {
+            //the node doesn't exist so send to it's would-be children
             send_to_child(index - 1, node_command_type, address, transport_type, max_connections);
         }
         else {
