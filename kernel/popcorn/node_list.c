@@ -25,6 +25,10 @@ EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
 
+//export send to child here as it needs the "types.h" file for the definition of node_list_command_type
+extern void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections);
+
+
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
@@ -157,7 +161,6 @@ EXPORT_SYMBOL(disable_node);
 //enable and connect
 bool enable_node(int index) {
     struct message_node* node;
-    int error;
     printk(KERN_DEBUG "Enabling node %d\n", index);
 
     node = get_node(index);
@@ -359,7 +362,7 @@ EXPORT_SYMBOL(remove_node);
  */
 bool command_queue_push(struct node_list_command_t* command) {
     bool success = true;
-    down_trylock(command_queue_sem);
+    down_trylock(&command_queue_sem);
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -372,7 +375,7 @@ bool command_queue_push(struct node_list_command_t* command) {
         success = true;
     }
 
-    up(command_queue_sem);
+    up(&command_queue_sem);
 
     return success;
 }
@@ -380,13 +383,13 @@ bool command_queue_push(struct node_list_command_t* command) {
 /**
  * Function to handle the commands sent to the node list
  */
-void process_command(enum node_list_command command) {
+void process_command(struct node_list_command* command) {
     struct message_node* node;
-    if (command.command_type == NODE_LIST_ADD_NODE_COMMAND) {
-        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command.sender);
-        node = create_node(command.address, string_to_transport(command.transport));
+    if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
+        node = create_node(command->address, string_to_transport(command->transport));
         if (node) {
-            if (add_node(node, command.max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
+            if (add_node(node, command->max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
             else {
                 printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
                 kfree(node);
@@ -397,16 +400,16 @@ void process_command(enum node_list_command command) {
             kfree(node);
         }
     }
-    else if (command.command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
-        printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command.sender, command.nid_to_remove);
-        if (my_nid == command.nid_to_remove) {
+    else if (command->command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
+        printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command->sender, command->nid_to_remove);
+        if (my_nid == command->nid_to_remove) {
             /** TODO: Ensure no running processes are remote at this point - this node can start this process */
             printk(KERN_DEBUG "No need to do anything to remove myself - wait for other nodes to end connection\n");
         }
         else {
-            printk(KERN_DEBUG "Removing node %d from the node list\n", command.nid_to_remove);
+            printk(KERN_DEBUG "Removing node %d from the node list\n", command->nid_to_remove);
             /** TODO: Ensure no running processes are remote at this point */
-            remove_node(command.nid_to_remove);
+            remove_node(command->nid_to_remove);
         }
     }
     else {
@@ -419,13 +422,13 @@ void process_command(enum node_list_command command) {
  * Function that processes all items in the queue until it is empty
  */
 void command_queue_process(void) {
-    struct node_list_command command_to_be_processed;
+    struct node_list_command* command_to_be_processed;
 
-    down_trylock(command_queue_sem);
+    down_trylock(&command_queue_sem);
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
-        up(command_queue_sem);
+        up(&command_queue_sem);
 
 
         //not critical section
@@ -433,9 +436,9 @@ void command_queue_process(void) {
         //end of non-criticial section
 
 
-        down_trylock(command_queue_sem);
+        down_trylock(&command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
-    up(command_queue_sem); //finally release when there are no more commands to process
+    up(&command_queue_sem); //finally release when there are no more commands to process
 }
 
 /**
@@ -518,6 +521,7 @@ void send_to_child(int node, enum node_list_command_type node_command_type, uint
         // wait here if the first branch takes up all the connections (max_connections)
     }
 }
+EXPORT_SYMBOL(send_to_child);
 
 /**
  * Function to send commands to change the node list to other nodes
@@ -540,7 +544,6 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
         send_to_child(my_nid, node_command_type, address, transport_type, max_connections);
     }
 }
-EXPORT_SYMBOL(propagate_command);
 
 /**
  * Takes a node and adds it to the node list.
@@ -802,7 +805,6 @@ void destroy_node_list(void) {
 EXPORT_SYMBOL(destroy_node_list);
 
 bool initialise_node_list(void) {
-    struct message_node* myself;
     registered_on_popcorn_network = false; //initially not part of any network
     after_last_node_index = 0;
     my_nid = -1;
