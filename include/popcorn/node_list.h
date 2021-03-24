@@ -23,6 +23,7 @@
 #include <popcorn/debug.h>
 #include <popcorn/crypto.h>
 #include <popcorn/types.h>
+#include <popcorn/pcn_kmsg.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
