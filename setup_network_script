@@ -1,0 +1,39 @@
+echo "Removing previous configuration..."
+
+#cleanup first
+brctl delif br0 tap0
+brctl delif br0 tap1
+
+## delete taps
+ip link set tap0 down mode tap
+ip link set tap1 down mode tap
+
+ip tuntap del tap0
+ip tuntap del tap1
+
+brctl delif br0 ens3
+ifconfig br0 down
+brctl delbr br0
+ifconfig ens3 up
+
+dhclient -v ens3
+
+
+
+#setup
+echo "\n\nSetting up network..."
+
+brctl addbr br0
+ip addr flush dev ens3
+brctl addif br0 ens3
+
+ip tuntap add tap0 mode tap user $(whoami)
+ip tuntap add tap1 mode tap user $(whoami)
+
+ip link set tap0 up
+ip link set tap1 up
+
+brctl addif br0 tap0
+brctl addif br0 tap1
+
+dhclient -v br0
