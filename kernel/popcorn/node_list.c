@@ -21,6 +21,7 @@ node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 
+bool registered_on_popcorn_network;
 
 EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
