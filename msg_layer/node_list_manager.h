@@ -66,7 +66,7 @@ int forward_message_to(void) {
         for (i = 0; i < my_nid; i++) {
             node = get_node(i);
             if (node != NULL) {
-                return first_node;
+                return i;
             }
         }
     }
@@ -138,7 +138,7 @@ void node_remove(int index) {
         }
         else {
             printk(KERN_DEBUG "Message is being forwarded to the first node\n");
-            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, protocol->name, 1);
+            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", 1); //0 and "" are for parameters not needed to remove a node
         }
     }
 }

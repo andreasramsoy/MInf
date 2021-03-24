@@ -28,10 +28,6 @@ EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
 EXPORT_SYMBOL(registered_on_popcorn_network);
 
-//export send to child here as it needs the "types.h" file for the definition of node_list_command_type
-extern void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections);
-extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections);
-
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
