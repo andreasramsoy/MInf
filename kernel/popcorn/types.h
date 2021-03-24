@@ -10,6 +10,7 @@
 #include <linux/radix-tree.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/regset.h>
+#include <popcorn/node_list.h>
 
 #define FAULTS_HASH 31
 
@@ -300,7 +301,6 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 /**
  * Commands to node list
  */
-enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 #define NODE_COMMAND_FIELDS \
 	int sender; \
 	enum node_list_command_type node_command_type; \

@@ -9,6 +9,7 @@
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
 #include <linux/kthread.h>
+#include <popcorn/pcn_kmsg.h>
 #include <popcorn/stat.h>
 #include "ring_buffer.h"
 #define PORT 30467

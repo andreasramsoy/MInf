@@ -40,6 +40,8 @@
 #define AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
 #define AES_IV_LENGTH 
 
+enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
+
 struct pcn_kmsg_transport; //defined in pcn_kmsg.h
 
 struct q_item {

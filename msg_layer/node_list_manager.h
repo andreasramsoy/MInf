@@ -59,7 +59,6 @@ void node_get(int index) {
 int forward_message_to(void) {
     struct message_node* node;
     int i;
-    bool is_first = false;
 
     //check if I am the first node, if not then propagate to the first node
     if (my_nid == 0) return my_nid;
@@ -67,12 +66,11 @@ int forward_message_to(void) {
         for (i = 0; i < my_nid; i++) {
             node = get_node(i);
             if (node != NULL) {
-                first_node = i;
-                break;
+                return first_node;
             }
         }
     }
-    return first_node;
+    return -1;
 }
 
 /**
@@ -100,7 +98,10 @@ void node_add(char* address_string, char* protocol_string) {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
 
         first_node = forward_message_to();
-        if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself
+        if (first_node == -1) {
+            printk(KERN_DEBUG "Message has no more nodes to be forwarded to\n");
+        }
+        else if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself
             //using the values create a node and add it to the list
             node = create_node(address, protocol);
             printk(KERN_DEBUG "Created the node\n");
@@ -137,7 +138,7 @@ void node_remove(int index) {
         }
         else {
             printk(KERN_DEBUG "Message is being forwarded to the first node\n");
-            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, address, protocol->name, 1);
+            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, protocol->name, 1);
         }
     }
 }
