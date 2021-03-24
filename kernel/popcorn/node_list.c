@@ -513,7 +513,7 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
                 send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
             }
             else {
-                printk(KERN "The message was not forwarded to node %d, as this is the node to be added\n", node->index);
+                printk(KERN_DEBUG "The message was not forwarded to node %d, as this is the node to be added\n", node->index);
             }
         }
         else if (index < after_last_node_index) {
