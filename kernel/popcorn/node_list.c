@@ -17,7 +17,7 @@ bool registered_on_popcorn_network;
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;
 int command_queue_end;
-struct node_list_command_t* command_queue[COMMAND_QUEUE_LENGTH];
+node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 
 
@@ -357,10 +357,10 @@ EXPORT_SYMBOL(remove_node);
 
 /**
  * Pushes command to the queue
- * @param node_list_command_t command
+ * @param node_list_command command
  * @return bool success
  */
-bool command_queue_push(struct node_list_command_t* command) {
+bool command_queue_push(node_list_command* command) {
     bool success = true;
     down_trylock(&command_queue_sem);
 
@@ -383,7 +383,7 @@ bool command_queue_push(struct node_list_command_t* command) {
 /**
  * Function to handle the commands sent to the node list
  */
-void process_command(struct node_list_command* command) {
+void process_command(node_list_command* command) {
     struct message_node* node;
     if (command->command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
@@ -422,7 +422,7 @@ void process_command(struct node_list_command* command) {
  * Function that processes all items in the queue until it is empty
  */
 void command_queue_process(void) {
-    struct node_list_command* command_to_be_processed;
+    node_list_command* command_to_be_processed;
 
     down_trylock(&command_queue_sem);
     while (command_queue_start != command_queue_end) {
@@ -472,7 +472,7 @@ REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, handle_node_list_command);
  */
 send_node_command_message(int index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
 
-	struct node_list_command command = {
+	node_list_command command = {
 		.sender = my_nid,
 		.command_type = node_command_type,
         .address = address,
