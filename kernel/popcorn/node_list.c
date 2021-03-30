@@ -28,6 +28,7 @@ EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
 EXPORT_SYMBOL(registered_on_popcorn_network);
 
+
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
