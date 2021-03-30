@@ -180,10 +180,11 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 	account_pcn_message_sent(msg);
 	
 	printk(KERN_DEBUG "PCN_KMSG_SEND!\n");
-	if (to == my_nid) {
-		printk(KERN_ERR "Should never send message to yourself! Abort message.\n");
+	/*if (to == my_nid) {
+		printk(KERN_ERR "Sending a message to myself, transport does not exist - skip layer\n");
+		printk(KERN_ERR "Message type: %d, to: %d", type, to);
 		return 1;
-	}
+	}*/
 	
 	return get_node(to)->transport->send(to, msg, size);
 }
@@ -195,11 +196,11 @@ int pcn_kmsg_post(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
 
 	account_pcn_message_sent(msg);
-	printk(KERN_DEBUG "PCN_KMSG_POST!\n");
+	/*printk(KERN_DEBUG "PCN_KMSG_POST!\n");
 	if (to == my_nid) {
 		printk(KERN_ERR "Should never post message to yourself! Abort message.\n");
 		return 1;
-	}
+	}*/
 	
 	return get_node(to)->transport->post(to, msg, size);
 }
