@@ -36,6 +36,8 @@
  *  better but should there be some process in deciding this value?
  */
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
+#define NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES 16
+#define NODE_LIST_INITAL_TOKEN_ATTEMPTS 5 //number of connections that can attempt to connect before aborting
 
 // encryption
 #define AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
@@ -88,6 +90,7 @@ struct sock_handle {
 
 struct transport_list { //used to store all of the protocols
 	struct pcn_kmsg_transport* transport_structure;
+	struct task_struct* listener;
 	struct transport_list* next;
 };
 
@@ -96,6 +99,8 @@ extern struct node_list* root_node_list; //Do not access directly! Use get_node(
 
 extern int after_last_node_index;
 extern bool registered_on_popcorn_network;
+extern int number_of_nodes_to_be_added;
+extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 extern struct message_node* get_node(int index);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
@@ -111,8 +116,10 @@ extern uint32_t address_string_to_int(char* address);
 
 extern bool is_myself(struct message_node* node);
 
-extern void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections);
+extern void send_to_child(int node, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections);
+extern static int handle_node_list_info(struct pcn_kmsg_message *msg);
+extern void send_node_list_info(int their_index, void* random_token);
 
 extern int add_protocol(struct pcn_kmsg_transport* transport_item);
 extern void remove_protocol(struct pcn_kmsg_transport* transport_item);

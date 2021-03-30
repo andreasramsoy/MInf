@@ -7,6 +7,7 @@
 */
 
 #include <popcorn/node_list.h>
+#include <linux/kthread.h>
 
 /*
  * Note that sscanfs have a max size of 200 (cannot use #define variable for them)
@@ -80,13 +81,21 @@ int forward_message_to(void) {
  * @param char* protocol the protocol to be used for the node
  * @return void however the output_buffer is filled with the index of the newly created node in the node list (-1 if it failed)
 */
-void node_add(char* address_string, char* protocol_string) {
+void node_add(char* address_string, char* protocol_string, int max_connections) {
     //convert values that can be used in the popcorn messaging layer
     uint32_t address;
     struct message_node* node;
     struct pcn_kmsg_transport* protocol;
-    int first_node;
+    struct transport_list transports;
+    struct pcn_kmsg_transport* tr;
+    int instigator_node_index;
+    int new_node_index;
+    bool success;
+    char name[40];
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    int token_attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
 
+    //handle user input
     printk(KERN_DEBUG "node_add called\n");
     protocol = string_to_transport(protocol_string);
     printk(KERN_DEBUG "node_add called 2\n");
@@ -94,30 +103,141 @@ void node_add(char* address_string, char* protocol_string) {
     if (protocol == NULL) {
         printk(KERN_DEBUG "Wrong protocols in node add\n");
         strncpy(output_buffer, "-1 WRONG_PROTOCOL", sizeof(output_buffer));
+        return;
+    }
+
+    //now add the node
+    if (!registered_on_popcorn_network) {
+        printk(KERN_DEBUG "Joining existing popcorn network\n");
+
+        while (my_nid == -1) {
+            printk(KERN_DEBUG "Waiting to recieve node info\n");
+            msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
+        }
+
+        printk(KERN_DEBUG "Node info recieved, ready to listen for connections\n");
+
+        success = true;
+
+        transports = transport_list_head;
+        do {
+            /**
+             * for each transport type start listening for new nodes
+             * once all nodes are accounted for then stop listening
+             * if someone is bute forcing the token then also stop
+             */
+            tr = transports->transport_structure;
+            sprintf(name, "trans_%s_%lld", transports->transport_structure->name, node->index);
+            tr->listener = kthread_run(transports->listen, node->handle, name);
+            if (IS_ERR(tsk)) {
+                printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(tsk));
+                tr->listener = NULL;
+                success = false;
+                break; //didn't work so stop and abort
+            }
+            transports = transports->next;
+        } while (transports != NULL);
+
+        //end all those unsuccessful transports if they failed
+        if (!success) {
+            do {
+                tr = transports->transport_structure;
+
+                if (tr->listener) {
+                    kthread_stop(tr->listener);
+                }
+
+                transports = transports->next;
+            } while (transports != NULL);
+        }
     }
     else {
-        printk(KERN_DEBUG "Checked protocol, now adding address\n");
-
-        first_node = forward_message_to();
-        if (first_node == -1 && registered_on_popcorn_network) {
-            printk(KERN_DEBUG "Message has no more nodes to be forwarded to\n");
+        printk(KERN_DEBUG "Adding new node to my popcorn network\n");
+        instigator_node_index = 0; //instigator is the node that starts sending messages across the network
+        while (instigator_node_index < after_last_node_index && !get_node(instigator_node_index)) {
+            instigator_node_index++; //loop until first non-null value
         }
-        else if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself
-            //using the values create a node and add it to the list
-            node = create_node(address, protocol);
-            printk(KERN_DEBUG "Created the node\n");
-            if (node != NULL) {
-                printk(KERN_DEBUG "Ready to add node\n");
-                snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", add_node(node, 1)); /** TODO: replace max connection with user input */
-            }
-            else strncpy(output_buffer, "-1 COULD_NOT_CREATE_NODE", sizeof(output_buffer));
+        if (instigator_node_index != my_nid) {
+            printk(KERN_DEBUG "The instigator node must start the command sending process, forwarding to instigator\n");
+            send_node_command_message(instigator_node_index, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections);
         }
         else {
-            printk(KERN_DEBUG "Message is being forwarded to the first node\n");
-            send_node_command_message(first_node, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, 1);
+            //this is the instigator node - try to add
+            //then, if successful: tell the new node it's nid and forward command to other nodes
+            node = create_node(address, protocol);
+            if (!node) {
+                printk(KERN_ERR "Failed to create new node\n");
+                return; //couldn't manage so don't forward as other nodes will probably fail too
+            }
+            new_node_index = add_node(node);
+            if (new_node_index == -1) {
+                printk(KERN_ERR "Failed to add the new node\n");
+                kfree(node);
+                return; //couldn't manage so don't forward as other nodes will probably fail too
+            }
+
+            //node now added
+
+            get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
+            send_node_list_info(new_node_index, token); //so the node knows it's nid and all the nodes in the list
+            send_to_child(NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
         }
     }
+    
+    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", new_node_index);
     printk(KERN_DEBUG "Done adding node\n");
+}
+
+/**
+ * Function to instantiate a new popcorn network where this node becomes the first
+ * and others can join
+ * @param string address for this node (node has multiple interfaces so specify)
+ */
+void activate_popcorn(char* address_string) {
+    struct message_node* node;
+    int index;
+    uint32_t address = in_aton(address_string);
+
+    if (registered_on_popcorn_network) {
+        printk(KERN_ERR "Already a part of a popcorn network - cannot create a new one\n");
+        goto fail_to_register;
+    }
+
+    //create myself
+    node = create_node(address, transport_list_head->transport_structure); //doesn't matter which transport is used as not going to send messages to myself
+    if (!node) {
+        printk(KERN_ERR "Could not activate popcorn network as this node could not be created for node list\n");
+        goto failed_to_register;
+    }
+    if (!is_myself(node)) {
+        printk(KERN_ERR "The first node must be myself\n");
+        goto failed_to_register;
+    }
+
+    //add myself
+    index = add_node(node);
+    if (index != 0) { //note it should always be zero as this is the first node to be added
+        goto failed_to_register;
+    }
+
+    //called is_myself which sets my_nid
+    if (my_nid != index) {
+        printk(KERN_ERR "my_nid should have been set to this node\n");
+        goto failed_to_register;
+    }
+    //node is now added to the node list
+
+    registered_on_popcorn_network = true;
+    strncpy(output_buffer, "0 REGISTERED NEW POPCORN NETWORK", sizeof(output_buffer));
+
+    return;
+
+failed_to_register:
+    if (node) {
+        kfree(node);
+    }
+    registered_on_popcorn_network = false;
+    strncpy(output_buffer, "1 FAILED TO REGISTER NETWORK", sizeof(output_buffer));
 }
 
 /**

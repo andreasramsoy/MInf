@@ -11,6 +11,8 @@
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 int after_last_node_index;
+int number_of_nodes_to_be_added;
+char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
@@ -26,6 +28,8 @@ bool registered_on_popcorn_network;
 EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
 EXPORT_SYMBOL(after_last_node_index);
+EXPORT_SYMBOL(number_of_nodes_to_be_added);
+EXPORT_SYMBOL(joining_token);
 EXPORT_SYMBOL(registered_on_popcorn_network);
 
 
@@ -118,8 +122,16 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     if (node->transport == NULL) {
         successful = false; //this can be caused when the protocol is not in the protocol list
         printk(KERN_ERR "The transport protocol cannot be NULL\n");
+        goto create_node_end;
     }
 
+    //setup comms
+    if (!enable_node(node)) {
+        successful = false;
+        printk(KERN_ERR "Failed to enable node\n");
+    }
+
+create_node_end:
     if (!successful) {
         kfree(node);
         printk(KERN_ERR "Failed to create the node\n");
@@ -159,14 +171,31 @@ bool disable_node(int index) {
 EXPORT_SYMBOL(disable_node);
 
 //enable and connect
-bool enable_node(int index) {
-    struct message_node* node;
-    printk(KERN_DEBUG "Enabling node %d\n", index);
+bool enable_node(struct message_node* node) {
+    printk(KERN_DEBUG "Initialising communications for node\n");
+    printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
+    printk(KERN_DEBUG "Transport for the node name?    %s\n", node->transport->name);
 
-    node = get_node(index);
     if (node == NULL || node->transport == NULL) {
         printk(KERN_DEBUG "Node cannot be enabled when it is NULL or doesn't have transport");
         return false;
+    }
+
+    //setup connections if first user of a transport structure
+    if (!is_myself(node)) {
+        printk(KERN_DEBUG "This node is not myself, initialising connection...\n");
+        //initialise communications
+        if (!(node->transport->is_initialised)) {
+            printk(KERN_DEBUG "This transport has not been initialised before\n");
+            if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
+            else {
+                printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
+                return false;
+            }
+        }
+        printk(KERN_DEBUG "Transport initialised\n");
+
+        node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
     }
 
 #ifdef POPCORN_ENCRYPTION_ON
@@ -431,7 +460,7 @@ void command_queue_process(void) {
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
-        up(&command_queue_sem);
+        up_interruptible(&command_queue_sem);
 
 
         //not critical section
@@ -440,7 +469,7 @@ void command_queue_process(void) {
 
         down(&command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
-    up(&command_queue_sem); //finally release when there are no more commands to process
+    up_interruptible(&command_queue_sem); //finally release when there are no more commands to process
 }
 
 /**
@@ -492,10 +521,11 @@ EXPORT_SYMBOL(send_node_command_message);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void send_to_child(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
     struct message_node* node;
     int index;
+    int node_index = my_nid;
     int i;
     printk(KERN_DEBUG "send_to_child called\n");
 
@@ -520,7 +550,7 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
         }
         else if (index - 1 < after_last_node_index) {
             //the node doesn't exist so send to it's would-be children
-            send_to_child(index - 1, node_command_type, address, transport_type, max_connections);
+            send_to_child(index - 1, node_command_type, address, transport_type, max_connections, token);
         }
         else {
             printk(KERN_INFO "No more nodes to propagate to\n");
@@ -539,14 +569,14 @@ EXPORT_SYMBOL(send_to_child);
  * @param char* transport_type
  * @param int max_connections
  */
-void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections) {
+void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
     printk(KERN_DEBUG "propagate_command called\n");
     if (my_nid < 0) {
         printk(KERN_ERR "Cannot propagate when this node's my_nid is not set (this happens when we are not a part of any node list)\n");
     }
     else {
         //forward to children
-        send_to_child(my_nid, node_command_type, address, transport_type, max_connections);
+        send_to_child(node_command_type, address, transport_type, max_connections, token);
     }
 }
 
@@ -611,59 +641,62 @@ int add_node(struct message_node* node, int max_connections) { //function for ad
         return -1;
     }
 
-    printk(KERN_DEBUG "Initialising communications for node\n");
-    printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
-    printk(KERN_DEBUG "Transport for the node name?    %s\n", node->transport->name);
-
-    if (!is_myself(node)) {
-        printk(KERN_DEBUG "This node is not myself, initialising connection...\n");
-        //initialise communications
-        if (!(node->transport->is_initialised)) {
-            printk(KERN_DEBUG "This transport has not been initialised before\n");
-            if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
-            else {
-                printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
-                remove_node(index);
-                return -1; //could not be added
-            }
-        }
-        printk(KERN_DEBUG "Transport initialised\n");
-
-        if (!enable_node(index)) {
-            printk(KERN_ERR "Could not enable node\n");
-            remove_node(index);
-            return -1;
-        }
-        printk(KERN_DEBUG "Node enabled\n");
-
-        node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
-    }
-    else {
-        registered_on_popcorn_network = true;
-        printk(KERN_DEBUG "This node is myself, skipping initialising connection");
-        for (i = 0; i < node->index; i++) {
-            prev_node = get_node(i);
-            if (prev_node) {
-                printk(KERN_DEBUG "Broadcasting info to node I have previously connected to\n");
-                broadcast_my_node_info_to_node(i);
-            }
-        }
-    }
-
-
-    printk(KERN_DEBUG "Setting node to be online\n");
-    set_popcorn_node_online(node->index, true);
-    if (my_nid != -1) broadcast_my_node_info_to_node(node->index); //give them info about architecture
-
     printk(KERN_DEBUG "Successfully added node at index %d\n", index);
 
     printk(KERN_DEBUG "Propagate command to other nodes\n");
-    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, 1); //one max connection (replace later)
+    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
     printk(KERN_DEBUG "Sent messages to other nodes\n");
+
+    set_popcorn_node_online(node->index, true);
+    if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
 
 	return index;
 }
 EXPORT_SYMBOL(add_node);
+
+/**
+ * Function to forward details about the node list to an
+ * incomming node
+ */
+void send_node_list_info(int their_index, void* random_token) {
+    int node_count = 0;
+    int i;
+    transport_structure = transport_list_head;
+    for (i = 0; i < after_last_node_index; i++) {
+        if (get_node(i)) {
+            node_count++;
+        }
+    }
+
+
+    node_list_details = {
+        your_nid = their_index,
+        number_of_nodes = node_count,
+        token = random_token,
+        transport_types = transport_types,
+        transport_usage = usages
+    };
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, index, &node_list_info, sizeof(node_list_info));
+}
+EXPORT_SYMBOL(send_node_list_info);
+
+/**
+ * Function to handle incoming messages to adjust node list from other nodes
+ * @param struct pcn_kmsg_message
+ */
+static int handle_node_list_info(struct pcn_kmsg_message *msg) {
+    node_list_info *info = (node_list_info *)info;
+
+    printk(KERN_DEBUG "Recieved info about the node list\n");
+
+    my_nid = info->your_nid;
+    number_of_nodes = info->number_of_nodes;
+    joining_token = info->random_token;
+
+	pcn_kmsg_done(msg);
+    return 0;
+}
+EXPORT_SYMBOL(handle_node_list_info);
 
 uint32_t __init __get_host_ip(void)
 {
@@ -814,6 +847,7 @@ bool initialise_node_list(void) {
     registered_on_popcorn_network = false; //initially not part of any network
     after_last_node_index = 0;
     my_nid = -1;
+    number_of_nodes_to_be_added = 0;
 
     command_queue_start = 0; //set up queue
     command_queue_end = 0;
@@ -853,9 +887,8 @@ bool initialise_node_list(void) {
         }*/
     }
 
-
-
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_INFO, node_list_info);
 
     return true;
 }

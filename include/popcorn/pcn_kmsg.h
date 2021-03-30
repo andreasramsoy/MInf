@@ -61,6 +61,7 @@ enum pcn_kmsg_type {
 
 	/* Controlling node list */
 	PCN_KMSG_TYPE_NODE_COMMAND,
+	PCN_KMSG_TYPE_NODE_LIST_INFO,
 
 	/* Schedule server */
 	PCN_KMSG_TYPE_SCHED_PERIODIC,		/* XXX sched requires help!! */
