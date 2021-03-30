@@ -63,6 +63,7 @@ int forward_message_to(void) {
     //check if I am the first node, if not then propagate to the first node
     if (my_nid == 0) return my_nid;
     else {
+        //loop through returning the first available node
         for (i = 0; i < my_nid; i++) {
             node = get_node(i);
             if (node != NULL) {
@@ -98,7 +99,7 @@ void node_add(char* address_string, char* protocol_string) {
         printk(KERN_DEBUG "Checked protocol, now adding address\n");
 
         first_node = forward_message_to();
-        if (first_node == -1) {
+        if (first_node == -1 && registered_on_popcorn_network) {
             printk(KERN_DEBUG "Message has no more nodes to be forwarded to\n");
         }
         else if (!registered_on_popcorn_network || first_node == my_nid || my_nid == -1) { //start process myself

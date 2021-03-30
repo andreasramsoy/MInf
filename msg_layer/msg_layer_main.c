@@ -62,7 +62,6 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     int i;
     char c;
     char protocol[COMMAND_BUFFER_SIZE];
-    char file_address[COMMAND_BUFFER_SIZE];
     char address[COMMAND_BUFFER_SIZE];
     int new_position;
     

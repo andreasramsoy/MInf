@@ -435,7 +435,6 @@ static int __sock_connect_to_server(struct message_node* node)
 
 static int __sock_accept_client(struct message_node* node)
 {
-	int i;
 	int ret;
 	int retry = 0;
 	bool found = false;
