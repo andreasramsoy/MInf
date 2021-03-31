@@ -486,20 +486,20 @@ void process_command(node_list_command* command) {
 void command_queue_process(void) {
     node_list_command* command_to_be_processed;
 
-    down(&command_queue_sem);
+    down_interruptible(&command_queue_sem);
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
-        up_interruptible(&command_queue_sem);
+        up(&command_queue_sem);
 
 
         //not critical section
         process_command(command_to_be_processed);
         //end of non-criticial section
 
-        down(&command_queue_sem);
+        down_interruptible(&command_queue_sem);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
-    up_interruptible(&command_queue_sem); //finally release when there are no more commands to process
+    up(&command_queue_sem); //finally release when there are no more commands to process
 }
 
 /**
@@ -551,11 +551,10 @@ EXPORT_SYMBOL(send_node_command_message);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
+void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
     struct message_node* node;
     int index;
-    int node_index = my_nid;
     int i;
     printk(KERN_DEBUG "send_to_child called\n");
 
@@ -606,7 +605,7 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
     }
     else {
         //forward to children
-        send_to_child(node_command_type, address, transport_type, max_connections, token);
+        send_to_child(my_nid, node_command_type, address, transport_type, max_connections, token);
     }
 }
 
@@ -618,9 +617,13 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
  * @param position in node list where it shall be placed
  * @return success
  */
-bool add_node_at_position(struct message_node* node, int position) {
+bool add_node_at_position(struct message_node* node, int index) {
+    int i;
+	int list_number;
+	struct node_list* list = root_node_list;
+
     if (get_node(position) != NULL) {
-        printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", position);
+        printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
         return false;
     }
 
@@ -664,11 +667,7 @@ EXPORT_SYMBOL(add_node_at_position);
  * @return int index of the location of the new node (-1 if it could not be added)
 */
 int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
-	int index;
-	int i;
-	int list_number;
     struct message_node* prev_node;
-	struct node_list* list = root_node_list;
 
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");
@@ -680,7 +679,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
-	if (!add_node_at_position(node, find_first_null_pointer()) { //first free space (may be on a list that needs creating)
+	if (!add_node_at_position(node, find_first_null_pointer())) { //first free space (may be on a list that needs creating)
         printk(KERN_DEBUG "Could not add the node\n");
         return -1;
     }
@@ -712,23 +711,19 @@ EXPORT_SYMBOL(add_node);
  * incomming node
  */
 void send_node_list_info(int their_index, void* random_token) {
-    int node_count = 0;
     int i;
-    transport_structure = transport_list_head;
+    int node_count = 0;
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
             node_count++;
         }
     }
 
-
     node_list_details = {
         your_nid = their_index,
         my_address = get_node(my_nid)->address,
         number_of_nodes = node_count,
-        token = random_token,
-        transport_types = transport_types,
-        transport_usage = usages
+        token = random_token
     };
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, index, &node_list_info, sizeof(node_list_info));
 }

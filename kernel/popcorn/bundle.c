@@ -96,11 +96,11 @@ EXPORT_SYMBOL(broadcast_my_node_info);*/
 //this function does the same as above but just sends info to that particular node
 void broadcast_my_node_info_to_node(int nid)
 {
-	printk("Broadcasting my nid (%d) to node %d", my_nid, nid);
 	node_info_t info = {
 		.nid = my_nid,
 		.arch = my_arch,
 	};
+	printk("Broadcasting my nid (%d) to node %d", my_nid, nid);
 	if (my_nid != nid) pcn_kmsg_send(PCN_KMSG_TYPE_NODE_INFO, nid, &info, sizeof(info)); //don't send to yourself!
 }
 EXPORT_SYMBOL(broadcast_my_node_info_to_node);
