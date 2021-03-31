@@ -10,7 +10,7 @@
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
-struct node_list_info_list* root_node_list_info_list;
+struct node_list_info_list_item* root_node_list_info_list;
 int after_last_node_index;
 int number_of_nodes_to_be_added;
 char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
@@ -485,8 +485,9 @@ void process_command(node_list_command* command) {
  */
 void command_queue_process(void) {
     node_list_command* command_to_be_processed;
-
-    down_interruptible(&command_queue_sem);
+	do {
+		ret = down_interruptible(&command_queue_sem);
+	} while (ret);
     while (command_queue_start != command_queue_end) {
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
@@ -497,7 +498,9 @@ void command_queue_process(void) {
         process_command(command_to_be_processed);
         //end of non-criticial section
 
-        down_interruptible(&command_queue_sem);
+        do {
+            ret = down_interruptible(&command_queue_sem);
+        } while (ret);
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
 }
@@ -658,6 +661,7 @@ bool add_node_at_position(struct message_node* node, int index) {
 	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
 
     node->index = index;
+    return true;
 }
 EXPORT_SYMBOL(add_node_at_position);
 
@@ -691,7 +695,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         return -1;
     }
 
-    printk(KERN_DEBUG "Successfully added node at index %d\n", node->index);
+    printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
     printk(KERN_DEBUG "Propagate command to other nodes\n");
     propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
@@ -700,7 +704,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     set_popcorn_node_online(node->index, true);
     if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
 
-	return index;
+	return node->index;
 }
 EXPORT_SYMBOL(add_node);
 
@@ -710,7 +714,6 @@ EXPORT_SYMBOL(add_node);
  */
 void send_node_list_info(int their_index, void* random_token) {
     int i;
-    node_list_info node_list_details;
     int node_count = 0;
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
@@ -718,11 +721,11 @@ void send_node_list_info(int their_index, void* random_token) {
         }
     }
 
-    node_list_details = {
+    node_list_info node_list_details = {
         .your_nid = their_index,
         .my_address = get_node(my_nid)->address,
         .number_of_nodes = node_count,
-        .token = random_token
+        .token = random_token,
     };
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
 }
@@ -743,7 +746,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         //this is the instigator node (no other connections made so must be)
         my_nid = info->your_nid;
         number_of_nodes_to_be_added = info->number_of_nodes;
-        joining_token = info->token;
+        strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
     if (root_node_list_info_list != NULL) {
@@ -754,15 +757,15 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     }
 
     new_info = kmalloc(sizeof(struct node_list_info_list_item), GFP_KERNEL);
-    if (my_info == NULL) {
+    if (new_info == NULL) {
         printk(KERN_ERR "Could not allocate memory for node list info list\n");
 	    pcn_kmsg_done(msg);
         return -ENOMEM;
     }
-    memcpy(new_info.info, info, sizeof(info)); //copy as the message will be deleted later
+    memcpy(new_info->info, info, sizeof(info)); //copy as the message will be deleted later
 
     if (root_node_list_info_list == NULL) {
-        root_node_list_info_list = *new_info;
+        root_node_list_info_list = new_info;
     }
     else {
         new_info.next = NULL;
@@ -926,7 +929,6 @@ bool initialise_node_list(void) {
     after_last_node_index = 0;
     my_nid = -1;
     number_of_nodes_to_be_added = 0;
-    joining_token = "";
     root_node_list_info_list = NULL;
 
     command_queue_start = 0; //set up queue
