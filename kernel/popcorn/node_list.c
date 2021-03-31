@@ -763,7 +763,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 	    pcn_kmsg_done(msg);
         return -ENOMEM;
     }
-    memcpy(&(new_info->info), info, sizeof(info)); //copy as the message will be deleted later
+    memcpy(&(new_info->info), info, sizeof(node_list_info)); //copy as the message will be deleted later
 
     if (root_node_list_info_list == NULL) {
         root_node_list_info_list = new_info;

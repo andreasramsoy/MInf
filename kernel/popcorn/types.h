@@ -326,7 +326,7 @@ DEFINE_PCN_KMSG(node_list_info, NODE_INFO_FIELDS);
 
 struct node_list_info_list_item {
 	node_list_info info;
-	struct node_list_info_item* next;
+	struct node_list_info_list_item* next;
 };
 
 
