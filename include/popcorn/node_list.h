@@ -94,11 +94,6 @@ struct transport_list { //used to store all of the protocols
 	struct transport_list* next;
 };
 
-struct node_list_info_list_item {
-	node_list_info info;
-	struct node_list_info_item* next;
-};
-
 extern struct transport_list* transport_list_head;
 extern struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 extern struct node_list_info_list* root_node_list_info_list;
