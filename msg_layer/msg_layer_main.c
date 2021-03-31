@@ -110,7 +110,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             break;
         case 2:
             if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) node_get(index);
-            else if (sscanf(buffer, "get %s", address) == number_of_parameters - 1) activate_popcorn(address);
+            else if (sscanf(buffer, "activate %s", address) == number_of_parameters - 1) activate_popcorn(address);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
             //else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
