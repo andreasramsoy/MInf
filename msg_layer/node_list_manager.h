@@ -204,7 +204,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * if someone is bute forcing the token then also stop
              */
             sprintf(name, "transport_%s", transports->transport_structure->name);
-            transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), node->handle, name);
+            transports->listener = kthread_run(listen_for_nodes(transports->transport_structure), node->handle, name);
             if (IS_ERR(transports->listener)) {
                 printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(transports->listener));
                 transports->listener = NULL;
