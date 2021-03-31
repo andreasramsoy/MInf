@@ -104,12 +104,12 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
             if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
                 //correct token so can now add to the node list and remove from node list info list
 
-                if (get_node(node_info->info.my_nid) != NULL) {
+                if (get_node(node_info->info.your_nid) != NULL) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }
                 else {
-                    node->index = node_info->info->my_nid;
+                    node->index = node_info->info.your_nid;
                     if (root_node_list_info_list == node_info) {
                         root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
                     }
