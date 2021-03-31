@@ -1,5 +1,5 @@
-#ifndef __POPCORN_TYPES_H__
-#define __POPCORN_TYPES_H__
+#ifndef __POPCORN_KMESG_TYPES_H__
+#define __POPCORN_KMESG_TYPES_H__
 
 #include <linux/list.h>
 #include <linux/spinlock.h>

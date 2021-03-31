@@ -26,7 +26,7 @@
 #include <popcorn/types.h>
 #include <popcorn/bundle.h>
 
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "util.h"
 #include "vma_server.h"
 #include "page_server.h"
