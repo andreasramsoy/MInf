@@ -7,6 +7,7 @@
 */
 
 #include <popcorn/node_list.h>
+#include <popcorn/kmesg_types.h>
 #include <linux/kthread.h>
 
 /*
@@ -212,7 +213,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             }
             transports = transports->next;
         } while (transports != NULL);
-        
+
 
         //end all those unsuccessful transports if they failed
         if (!success) {
