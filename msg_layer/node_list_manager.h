@@ -81,18 +81,55 @@ int forward_message_to(void) {
  */
 void listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
+    struct node_list_info_list* node_info;
+    struct node_list_info_list* node_info_prev;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
         node = create_any_node(transport);
         if (node) {
             //connection has been established - wait for message with token and nid
-            while (/* not got node data */) {
+            node_info = root_node_list_info_list;
+            while (node_info == NULL) {
+                printk(KERN_DEBUG "Waiting for node info to arrive\n");
                 msleep(100); /** TODO: change from spinlock to something more efficient */
+            }
+            while (node_info.info.my_address != node->address) {
+                printk(KERN_DEBUG "Looping through connections to find node\n");
+                if (node_info->next == NULL) node_info = root_node_list_info_list;
+                else node_info = node_info.next;
+            }
+            //node_info should now contain address we're looking for
+            if (strncmp(node_info->info->token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
+                //correct token so can now add to the node list and remove from node list info list
+
+                if (get_node(node_info->info->my_nid) != NULL) {
+                    printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
+                    /** TODO: Add some sort of reporting system? */
+                }
+                else {
+                    node->index = node_info.info.my_nid;
+                    if (root_node_list_info_list == node_info) {
+                        root_node_list_info_list == node_info->next; //skip over, doesn't matter if it's null
+                    }
+                    else {
+                        node_info_prev = root_node_list_info_list;
+                        while (node_info_prev->next != node_info && node_info_prev->next == NULL) {
+                            node_info_prev = node_info_prev->next;
+                        }
+                        node_info_prev = node_info->next;
+                        kfree(node_info);
+                    }
+                    continue; //don't count as an attempt
+                }
             }
         }
 
         attempts_left--;
+    }
+    
+    if (number_of_nodes_to_be_added == 0 && attempts_left > 0) {
+        registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
 }
 

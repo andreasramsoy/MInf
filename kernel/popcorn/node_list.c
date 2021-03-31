@@ -10,6 +10,7 @@
 
 struct transport_list* transport_list_head;
 struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
+struct node_list_info_list* root_node_list_info_list;
 int after_last_node_index;
 int number_of_nodes_to_be_added;
 char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
@@ -31,6 +32,7 @@ EXPORT_SYMBOL(after_last_node_index);
 EXPORT_SYMBOL(number_of_nodes_to_be_added);
 EXPORT_SYMBOL(joining_token);
 EXPORT_SYMBOL(registered_on_popcorn_network);
+EXPORT_SYMBOL(root_node_list_info_list);
 
 
 /* function to access the node_list safely, will return 1 if invalid request
@@ -722,6 +724,7 @@ void send_node_list_info(int their_index, void* random_token) {
 
     node_list_details = {
         your_nid = their_index,
+        my_address = get_node(my_nid)->address,
         number_of_nodes = node_count,
         token = random_token,
         transport_types = transport_types,
@@ -736,13 +739,43 @@ EXPORT_SYMBOL(send_node_list_info);
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_info(struct pcn_kmsg_message *msg) {
+    struct node_list_info_list_item* new_info;
+    struct node_list_info_list_item* node_list_info_list;
     node_list_info *info = (node_list_info *)info;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
 
-    my_nid = info->your_nid;
-    number_of_nodes = info->number_of_nodes;
-    joining_token = info->random_token;
+    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
+        //this is the instigator node (no other connections made so must be)
+        my_nid = info->your_nid;
+        number_of_nodes_to_be_added = info->number_of_nodes;
+        joining_token = info->random_token;
+    }
+
+    if (root_node_list_info_list != NULL) {
+        node_list_info_list = root_node_list_info_list;
+        while (node_list_info_list->next != NULL) {
+            node_list_info_list = node_list_info_list->next;
+        }
+    }
+
+    new_info = kmalloc(sizeof(struct node_list_info_list_item), GFP_KERNEL);
+    if (my_info == NULL) {
+        printk(KERN_ERR "Could not allocate memory for node list info list\n");
+	    pcn_kmsg_done(msg);
+        return -ENOMEM;
+    }
+    memcpy(new_info.info, info, sizeof(info)); //copy as the message will be deleted later
+
+    if (root_node_list_info_list == NULL) {
+        root_node_list_info_list = *new_info;
+    }
+    else {
+        new_info.next = NULL;
+        node_list_info_list->next = new_info;
+    }
+
+    //now added to the list so that node can be found
 
 	pcn_kmsg_done(msg);
     return 0;
@@ -899,6 +932,8 @@ bool initialise_node_list(void) {
     after_last_node_index = 0;
     my_nid = -1;
     number_of_nodes_to_be_added = 0;
+    joining_token = "";
+    root_node_list_info_list = NULL;
 
     command_queue_start = 0; //set up queue
     command_queue_end = 0;
