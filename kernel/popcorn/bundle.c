@@ -10,7 +10,7 @@
 #include <popcorn/bundle.h>
 #include <popcorn/debug.h>
 #include <popcorn/node_list.h>
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 
 /*struct popcorn_node {
 	enum popcorn_arch arch;

@@ -10,7 +10,7 @@
 #include <linux/workqueue.h>
 
 #include <popcorn/debug.h>
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 
 #define CREATE_TRACE_POINTS
 #include "trace_events.h"

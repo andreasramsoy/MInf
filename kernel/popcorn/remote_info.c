@@ -21,7 +21,7 @@
 #include <popcorn/remote_meminfo.h>
 #include <popcorn/cpuinfo.h>
 
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "wait_station.h"
 
 //#define REMOTE_INFO_VERBOSE

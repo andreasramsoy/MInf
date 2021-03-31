@@ -212,6 +212,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             }
             transports = transports->next;
         } while (transports != NULL);
+        
 
         //end all those unsuccessful transports if they failed
         if (!success) {
