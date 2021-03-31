@@ -81,8 +81,8 @@ int forward_message_to(void) {
  */
 void listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
-    struct node_list_info_list* node_info;
-    struct node_list_info_list* node_info_prev;
+    struct node_list_info_list_item* node_info;
+    struct node_list_info_list_item* node_info_prev;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
@@ -97,7 +97,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
             while (node_info.info.my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 if (node_info->next == NULL) node_info = root_node_list_info_list;
-                else node_info = node_info.next;
+                else node_info = node_info->next;
             }
             //node_info should now contain address we're looking for
             if (strncmp(node_info->info->token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
@@ -108,7 +108,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     /** TODO: Add some sort of reporting system? */
                 }
                 else {
-                    node->index = node_info.info.my_nid;
+                    node->index = node_info->info->my_nid;
                     if (root_node_list_info_list == node_info) {
                         root_node_list_info_list == node_info->next; //skip over, doesn't matter if it's null
                     }
@@ -138,8 +138,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
  * or when an abort is called. Stops all threads that are l
  * istening for nodes
  */
-void stop_listening_threads() {
-    struct pcn_kmsg_transport* tr;
+void stop_listening_threads(void) {
     struct transport_list* transports = transport_list_head;
 
     printk(KERN_DEBUG "Stopping listening threads\n");
@@ -165,14 +164,12 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     uint32_t address;
     struct message_node* node;
     struct pcn_kmsg_transport* protocol;
-    struct transport_list transports;
-    struct pcn_kmsg_transport* tr;
+    struct transport_list* transports;
     int instigator_node_index;
     int new_node_index;
     bool success;
     char name[40];
     char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
-    int token_attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
 
     //handle user input
     printk(KERN_DEBUG "node_add called\n");
@@ -205,12 +202,11 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * once all nodes are accounted for then stop listening
              * if someone is bute forcing the token then also stop
              */
-            tr = transports->transport_structure;
-            sprintf(name, "trans_%s_%lld", transports->transport_structure->name, node->index);
-            tr->listener = kthread_run(transports->listen, node->handle, name);
-            if (IS_ERR(tsk)) {
+            sprintf(name, "transport_%s", transports->transport_structure->name);
+            transports->listener = kthread_run((*listen_for_nodes)(transports->transport_structure), node->handle, name);
+            if (IS_ERR(transports->listener)) {
                 printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(tsk));
-                tr->listener = NULL;
+                transports->listener = NULL;
                 success = false;
                 break; //didn't work so stop and abort
             }
@@ -220,10 +216,9 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         //end all those unsuccessful transports if they failed
         if (!success) {
             do {
-                tr = transports->transport_structure;
 
-                if (tr->listener) {
-                    kthread_stop(tr->listener);
+                if (transports->listener) {
+                    kthread_stop(transports->listener);
                 }
 
                 transports = transports->next;
@@ -248,7 +243,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 printk(KERN_ERR "Failed to create new node\n");
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
-            new_node_index = add_node(node);
+            new_node_index = add_node(node, max_connections, "");
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
                 kfree(node);
@@ -279,7 +274,7 @@ void activate_popcorn(char* address_string) {
 
     if (registered_on_popcorn_network) {
         printk(KERN_ERR "Already a part of a popcorn network - cannot create a new one\n");
-        goto fail_to_register;
+        goto failed_to_register;
     }
 
     //create myself
@@ -378,13 +373,14 @@ char* node_get_protocol(int index) {
 */
 void node_update_protocol(int index, char* protocol) {
     printk(KERN_DEBUG "node_update_protocol called\n");
-    if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
+    printk(KERN_ERR "node_update_protocol disabled as adding and removing is now propagated through network\n");
+    /*if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         disable_node(index); //tear down existing connection
         get_node(index)->transport = string_to_transport(protocol); //change the protocol
         if (enable_node(index)) strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
         else strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
-    }
+    }*/
 }
 
 /**
