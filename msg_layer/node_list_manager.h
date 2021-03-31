@@ -94,7 +94,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 printk(KERN_DEBUG "Waiting for node info to arrive\n");
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
-            while (node_info.info.my_address != node->address) {
+            while (node_info->info->my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 if (node_info->next == NULL) node_info = root_node_list_info_list;
                 else node_info = node_info->next;
@@ -205,7 +205,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             sprintf(name, "transport_%s", transports->transport_structure->name);
             transports->listener = kthread_run((*listen_for_nodes)(transports->transport_structure), node->handle, name);
             if (IS_ERR(transports->listener)) {
-                printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(tsk));
+                printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(transports->listener));
                 transports->listener = NULL;
                 success = false;
                 break; //didn't work so stop and abort
