@@ -1,7 +1,7 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/types.h>
 #include "syscall_server.h"
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "wait_station.h"
 #include <linux/socket.h>
 #include <linux/unistd.h>
