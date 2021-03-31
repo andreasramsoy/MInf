@@ -76,6 +76,48 @@ int forward_message_to(void) {
 }
 
 /**
+ * Called in a thread will listen and add nodes to the node list
+ * until all nodes are added (or process is aborted)
+ */
+void listen_for_nodes(struct pcn_kmsg_transport* transport) {
+    struct message_node* node;
+    int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
+    while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
+        //keep accepting until all are added or no attempts left
+        node = create_any_node(transport);
+        if (node) {
+            //connection has been established - wait for message with token and nid
+            while (/* not got node data */) {
+                msleep(100); /** TODO: change from spinlock to something more efficient */
+            }
+        }
+
+        attempts_left--;
+    }
+}
+
+/**
+ * To be called either when there are no more nodes to connect
+ * or when an abort is called. Stops all threads that are l
+ * istening for nodes
+ */
+void stop_listening_threads() {
+    struct pcn_kmsg_transport* tr;
+    struct transport_list* transports = transport_list_head;
+
+    printk(KERN_DEBUG "Stopping listening threads\n");
+
+    do {
+        if (transports->listener) {
+            kthread_stop(transports->listener);
+        }
+        transports = transports->next;
+    } while (transports != NULL);
+
+    printk(KERN_DEBUG "Finished stopping listening threads\n");
+}
+
+/**
  * Adds a new node to the node list.
  * @param char* address address of the node
  * @param char* protocol the protocol to be used for the node
@@ -183,7 +225,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             send_to_child(NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
         }
     }
-    
+
     snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", new_node_index);
     printk(KERN_DEBUG "Done adding node\n");
 }
@@ -215,7 +257,7 @@ void activate_popcorn(char* address_string) {
     }
 
     //add myself
-    index = add_node(node);
+    index = add_node(node, 1, ""); //token and max connections not needed for itself
     if (index != 0) { //note it should always be zero as this is the first node to be added
         goto failed_to_register;
     }
@@ -241,8 +283,8 @@ failed_to_register:
 }
 
 /**
- * Kills the connection and removes the given node. Destroys the connection to the given node, frees the memory that 
- * it used and then deletes the pointer in the node list (replaced with a NULL pointer). Removing a node will not effect 
+ * Kills the connection and removes the given node. Destroys the connection to the given node, frees the memory that
+ * it used and then deletes the pointer in the node list (replaced with a NULL pointer). Removing a node will not effect
  * any of the other nodes or the indices used to access them.
  * @param int index of the node to be accessed
  * @return void however the output_buffer is filled with true if successful false if not
@@ -339,10 +381,10 @@ void node_update_protocol(int index, char* protocol) {
 }*/
 
 /**
- * Reloads the node list to match that of the provided file. Tears down connections to all nodes, attempts to parse the file 
- * provided and create a node list from it. If successful then the new node list is saved to the node list location and this 
- * node list continues to be used. If it fails then popcorn reloads the previously used file for the node list to re-establish 
- * the old connections. The file at the address provided will never be altered (opened read-only) but the popcorn node list 
+ * Reloads the node list to match that of the provided file. Tears down connections to all nodes, attempts to parse the file
+ * provided and create a node list from it. If successful then the new node list is saved to the node list location and this
+ * node list continues to be used. If it fails then popcorn reloads the previously used file for the node list to re-establish
+ * the old connections. The file at the address provided will never be altered (opened read-only) but the popcorn node list
  * file will be altered if successful.
  * @param char* address address of new node list file to be loaded
  * @return void however the output_buffer is filled with bool success

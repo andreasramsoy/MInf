@@ -471,18 +471,18 @@ static int __sock_accept_client(struct message_node* node)
 		printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
 
 		/* Identify incoming peer nid */
-		if (addr.sin_addr.s_addr == node->address) {
+		/*if (addr.sin_addr.s_addr == node->address) {
 			found = true;
 		}
 		if (!found) {
 			sock_release(sock);
 			continue;
-		}
+		}*/
 	} while (retry++ < 10 && !found);
 
 	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
 
-	if (!found) return -EAGAIN;
+	//if (!found) return -EAGAIN;
 	node->handle->sock = sock;
 
 	ret = __sock_start_handlers(node);
@@ -621,7 +621,7 @@ bool init_node_sock(struct message_node* node) {
 		return false;
 	}
 
-	sh->nid = node->index;
+	//sh->nid = node->index;
 	sh->q_head = 0;
 	sh->q_tail = 0;
 	spin_lock_init(&sh->q_lock);
@@ -635,14 +635,14 @@ bool init_node_sock(struct message_node* node) {
 	// if the node is after you, then you need to make a connection with it
 	// you don't need to make a connection to yourself
 
-	if (node->index < my_nid || my_nid < 0) {
+	if (registered_on_popcorn_network) {
 		ret = __sock_accept_client(node);
 	}
-	else if (node->index > my_nid) {
-		ret = __sock_connect_to_server(node);
+	else if (node->index == my_nid) {
+		ret = 0; //zero is no error (for when nid == my_nid)
 	}
 	else {
-		ret = 0; //zero is no error (for when nid == my_nid)
+		ret = __sock_connect_to_server(node); //connect to any node that wants to
 	}
 	
 	printk(KERN_DEBUG "Node initialisation, connections done\n");

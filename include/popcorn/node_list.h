@@ -103,9 +103,11 @@ extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 extern struct message_node* get_node(int index);
+extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
 extern void remove_node(int index);
-extern int add_node(struct message_node* node, int max_connections);
+extern bool add_node_at_position(struct message_node* node, int position);
+extern int add_node(struct message_node* node, int max_connections, char* token);
 
 extern int find_first_null_pointer(void);
 extern bool disable_node(int index);

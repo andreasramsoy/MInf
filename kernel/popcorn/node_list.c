@@ -87,6 +87,35 @@ void generate_symmetric_key(int index) {
 }
 
 /**
+ * Creates a node, listens for a connection and accepts any that connect,
+ * verify token is correct, delete if it's not
+ * @param transport that the node shall listen on and accept connections on
+ * @return node with connection (and details filled in) or NULL
+ */
+struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
+    struct message_node* node;
+    bool success;
+
+    node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
+
+    //previously in bundle.c
+    node->is_connected = false;
+    node->arch = POPCORN_ARCH_UNKNOWN;
+    node->bundle_id = -1;
+
+    success = enable_node(node);
+
+    if (success) {
+        return node;
+    }
+    else {
+        kfree(node);
+        return NULL;
+    }
+}
+EXPORT_SYMBOL(create_any_node);
+
+/**
  * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
  * etc. so that if the structure of the nodes change then only this function needs to be changed
  * @param uint32_t address the address of new node
@@ -111,6 +140,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
 
+    is_myself(node); //sets my_nid
 
     //previously in bundle.c
     node->is_connected = false;
@@ -182,21 +212,19 @@ bool enable_node(struct message_node* node) {
     }
 
     //setup connections if first user of a transport structure
-    if (!is_myself(node)) {
-        printk(KERN_DEBUG "This node is not myself, initialising connection...\n");
-        //initialise communications
-        if (!(node->transport->is_initialised)) {
-            printk(KERN_DEBUG "This transport has not been initialised before\n");
-            if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
-            else {
-                printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
-                return false;
-            }
+    printk(KERN_DEBUG "This node is not myself, initialising connection...\n");
+    //initialise communications
+    if (!(node->transport->is_initialised)) {
+        printk(KERN_DEBUG "This transport has not been initialised before\n");
+        if (!(node->transport->init_transport())) printk(KERN_DEBUG "Initialised transport for %s (ensure this is only done once for each protocol)\n", node->transport->name);
+        else {
+            printk(KERN_DEBUG "Failed to initialise tranport for %s\n", node->transport->name);
+            return false;
         }
-        printk(KERN_DEBUG "Transport initialised\n");
-
-        node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
     }
+    printk(KERN_DEBUG "Transport initialised\n");
+
+    node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
 #ifdef POPCORN_ENCRYPTION_ON
 	//encryption setup
@@ -421,7 +449,7 @@ void process_command(node_list_command* command) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
         node = create_node(command->address, string_to_transport(command->transport));
         if (node) {
-            if (add_node(node, command->max_connections) >= 0) printk(KERN_DEBUG "Added the new node\n");
+            if (add_node(node, command->max_connections, command->token) >= 0) printk(KERN_DEBUG "Added the new node\n");
             else {
                 printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
                 kfree(node);
@@ -581,11 +609,59 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
 }
 
 /**
+ * Adds node at a particular position. This is for when a node has connected
+ * to this one which the token and nid and just needs to be placd into the 
+ * correct position in the node list.
+ * @param node to be added
+ * @param position in node list where it shall be placed
+ * @return success
+ */
+bool add_node_at_position(struct message_node* node, int position) {
+    if (get_node(position) != NULL) {
+        printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", position);
+        return false;
+    }
+
+    printk(KERN_DEBUG "Searching for position %d\n", index);
+	list_number = index / MAX_NUM_NODES_PER_LIST;
+	for (i = 0; i < list_number; i++) {
+		if (list->next_list == NULL) {
+            printk(KERN_DEBUG "End of node list reached - adding new list of nodes\n");
+			list->next_list = create_node_list();
+            if (list->next_list == NULL) {
+                printk(KERN_ERR "Did not create the list, cannot add node\n");
+                return false;
+            }
+		    list = list->next_list; //move to the new list
+			break; //this ensures that a list can only be added once
+		}
+		list = list->next_list; //move to next list
+	}
+
+    if (index == 0) {
+        printk(KERN_DEBUG "First item, adding first node list\n");
+        root_node_list = create_node_list();
+        if (root_node_list == NULL) {
+            printk(KERN_ERR "Did not create the list, cannot add node\n");
+            return false;
+        }
+        list = root_node_list; //need to set this again because it will have been initialised to NULL
+    }
+
+	//add to that list
+	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
+	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
+
+    node->index = index;
+}
+EXPORT_SYMBOL(add_node_at_position);
+
+/**
  * Takes a node and adds it to the node list.
  * @param message_node* node the node that will be added to the list
  * @return int index of the location of the new node (-1 if it could not be added)
 */
-int add_node(struct message_node* node, int max_connections) { //function for adding a single node to the list
+int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
 	int index;
 	int i;
 	int list_number;
@@ -602,38 +678,13 @@ int add_node(struct message_node* node, int max_connections) { //function for ad
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
-	index = find_first_null_pointer(); //first free space (may be on a list that needs creating)
-    printk(KERN_DEBUG "Searching for position %d\n", index);
-	list_number = index / MAX_NUM_NODES_PER_LIST;
-	for (i = 0; i < list_number; i++) {
-		if (list->next_list == NULL) {
-            printk(KERN_DEBUG "End of node list reached - adding new list of nodes\n");
-			list->next_list = create_node_list();
-            if (list->next_list == NULL) {
-                printk(KERN_ERR "Did not create the list, cannot add node\n");
-                return -1;
-            }
-		    list = list->next_list; //move to the new list
-			break; //this ensures that a list can only be added once
-		}
-		list = list->next_list; //move to next list
-	}
-
-    if (index == 0) {
-        printk(KERN_DEBUG "First item, adding first node list\n");
-        root_node_list = create_node_list();
-        if (root_node_list == NULL) {
-            printk(KERN_ERR "Did not create the list, cannot add node\n");
-            return -1;
-        }
-        list = root_node_list; //need to set this again because it will have been initialised to NULL
+	if (!add_node_at_position(node, find_first_null_pointer()) { //first free space (may be on a list that needs creating)
+        printk(KERN_DEBUG "Could not add the node\n");
+        return -1;
     }
 
-	//add to that list
-	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
-	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
-
-    node->index = index;
+    
+    if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
     if (node->transport == NULL) {
         printk(KERN_ERR "The transport of the node cannot be NULL\n");
