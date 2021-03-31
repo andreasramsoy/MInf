@@ -11,8 +11,8 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/types.h>
 #include <popcorn/debug.h>
+#include <popcorn/kmesg_types.h>
 #include "wait_station.h"
-#include "types.h"
 
 int process_remote_syscall(struct pcn_kmsg_message *msg);
 
