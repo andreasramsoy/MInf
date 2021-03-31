@@ -29,7 +29,7 @@
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
 
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "pgtable.h"
 #include "wait_station.h"
 #include "page_server.h"
