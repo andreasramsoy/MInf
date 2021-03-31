@@ -691,7 +691,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         return -1;
     }
 
-    printk(KERN_DEBUG "Successfully added node at index %d\n", index);
+    printk(KERN_DEBUG "Successfully added node at index %d\n", node->index);
 
     printk(KERN_DEBUG "Propagate command to other nodes\n");
     propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
@@ -710,6 +710,7 @@ EXPORT_SYMBOL(add_node);
  */
 void send_node_list_info(int their_index, void* random_token) {
     int i;
+    node_list_info node_list_details;
     int node_count = 0;
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
@@ -717,13 +718,13 @@ void send_node_list_info(int their_index, void* random_token) {
         }
     }
 
-    node_list_info node_list_details = {
-        your_nid = their_index,
-        my_address = get_node(my_nid)->address,
-        number_of_nodes = node_count,
-        token = random_token
+    node_list_details = {
+        .your_nid = their_index,
+        .my_address = get_node(my_nid)->address,
+        .number_of_nodes = node_count,
+        .token = random_token
     };
-	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, index, &node_list_info, sizeof(node_list_info));
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
 }
 EXPORT_SYMBOL(send_node_list_info);
 
