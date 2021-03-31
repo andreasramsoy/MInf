@@ -485,6 +485,7 @@ void process_command(node_list_command* command) {
  */
 void command_queue_process(void) {
     node_list_command* command_to_be_processed;
+    int ret;
 	do {
 		ret = down_interruptible(&command_queue_sem);
 	} while (ret);
@@ -712,7 +713,7 @@ EXPORT_SYMBOL(add_node);
  * Function to forward details about the node list to an
  * incomming node
  */
-void send_node_list_info(int their_index, void* random_token) {
+void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
     int node_count = 0;
     for (i = 0; i < after_last_node_index; i++) {
@@ -762,13 +763,13 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 	    pcn_kmsg_done(msg);
         return -ENOMEM;
     }
-    memcpy(new_info->info, info, sizeof(info)); //copy as the message will be deleted later
+    memcpy(&(new_info->info), info, sizeof(info)); //copy as the message will be deleted later
 
     if (root_node_list_info_list == NULL) {
         root_node_list_info_list = new_info;
     }
     else {
-        new_info.next = NULL;
+        new_info->next = NULL;
         node_list_info_list->next = new_info;
     }
 
