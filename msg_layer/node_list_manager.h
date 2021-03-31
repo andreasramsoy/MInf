@@ -95,23 +95,23 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 printk(KERN_DEBUG "Waiting for node info to arrive\n");
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
-            while (node_info->info->my_address != node->address) {
+            while (node_info->info.my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 if (node_info->next == NULL) node_info = root_node_list_info_list;
                 else node_info = node_info->next;
             }
             //node_info should now contain address we're looking for
-            if (strncmp(node_info->info->token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
+            if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
                 //correct token so can now add to the node list and remove from node list info list
 
-                if (get_node(node_info->info->my_nid) != NULL) {
+                if (get_node(node_info->info.my_nid) != NULL) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }
                 else {
                     node->index = node_info->info->my_nid;
                     if (root_node_list_info_list == node_info) {
-                        root_node_list_info_list == node_info->next; //skip over, doesn't matter if it's null
+                        root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
                     }
                     else {
                         node_info_prev = root_node_list_info_list;
