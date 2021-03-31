@@ -314,14 +314,14 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 /**
  * Info about node list for incomming nodes
  */
-#define NODE_INFO_FIELDS \
+#define NODE_LIST_INFO_FIELDS \
 	int your_nid; \
 	uint32_t my_address; \
 	int number_of_nodes; \
 	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]; \
 	char** transport_types; \
 	int* transport_usage;
-DEFINE_PCN_KMSG(node_list_info, NODE_INFO_FIELDS);
+DEFINE_PCN_KMSG(node_list_info, NODE_LIST_INFO_FIELDS);
 
 
 struct node_list_info_list_item {

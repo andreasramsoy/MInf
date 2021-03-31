@@ -23,7 +23,7 @@
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/types.h>
 
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "wait_station.h"
 
 ///////////////////////////////////////////////////////////////////////////////

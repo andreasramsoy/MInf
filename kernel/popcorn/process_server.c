@@ -29,7 +29,7 @@
 #include <popcorn/cpuinfo.h>
 #include <popcorn/node_list.h>
 
-#include "types.h"
+#include <popcorn/kmesg_types.h>
 #include "process_server.h"
 #include "vma_server.h"
 #include "page_server.h"
