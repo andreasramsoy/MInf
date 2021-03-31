@@ -574,7 +574,7 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
                 send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
             }
             else {
-                printk(KERN_DEBUG "The message was not forwarded to node %d, as this is the node to be added\n", node->index);
+                printk(KERN_DEBUG "The message was not forwarded to node %lld, as this is the node to be added\n", node->index);
             }
         }
         else if (index - 1 < after_last_node_index) {
@@ -622,7 +622,7 @@ bool add_node_at_position(struct message_node* node, int index) {
 	int list_number;
 	struct node_list* list = root_node_list;
 
-    if (get_node(position) != NULL) {
+    if (get_node(index) != NULL) {
         printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
         return false;
     }
@@ -667,8 +667,6 @@ EXPORT_SYMBOL(add_node_at_position);
  * @return int index of the location of the new node (-1 if it could not be added)
 */
 int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
-    struct message_node* prev_node;
-
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");
         return -1;
@@ -689,7 +687,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     if (node->transport == NULL) {
         printk(KERN_ERR "The transport of the node cannot be NULL\n");
-        remove_node(index);
+        remove_node(node->index);
         return -1;
     }
 
@@ -719,7 +717,7 @@ void send_node_list_info(int their_index, void* random_token) {
         }
     }
 
-    node_list_details = {
+    node_list_info node_list_details = {
         your_nid = their_index,
         my_address = get_node(my_nid)->address,
         number_of_nodes = node_count,
@@ -744,7 +742,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         //this is the instigator node (no other connections made so must be)
         my_nid = info->your_nid;
         number_of_nodes_to_be_added = info->number_of_nodes;
-        joining_token = info->random_token;
+        joining_token = info->token;
     }
 
     if (root_node_list_info_list != NULL) {
