@@ -274,6 +274,7 @@ void activate_popcorn(char* address_string) {
     struct message_node* node;
     int index;
     uint32_t address = in_aton(address_string);
+    printk(KERN_DEBUG "Popcorn network is being activated\n");
 
     if (registered_on_popcorn_network) {
         printk(KERN_ERR "Already a part of a popcorn network - cannot create a new one\n");
@@ -286,6 +287,7 @@ void activate_popcorn(char* address_string) {
         printk(KERN_ERR "Could not activate popcorn network as this node could not be created for node list\n");
         goto failed_to_register;
     }
+    printk(KERN_DEBUG "Instigator node created\n");
     if (!is_myself(node)) {
         printk(KERN_ERR "The first node must be myself\n");
         goto failed_to_register;

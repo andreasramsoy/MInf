@@ -175,6 +175,7 @@ create_node_end:
 EXPORT_SYMBOL(create_node);
 
 int find_first_null_pointer(void) {
+    printk(KERN_DEBUG "Find first null pointer called\n");
     int i = 0;
     
     //keep going until you find a gap
@@ -301,6 +302,8 @@ EXPORT_SYMBOL(address_string_to_int);
 struct node_list* create_node_list(void) {
     int i;
 	struct node_list* new_list = kmalloc(sizeof(struct node_list), GFP_KERNEL);
+    printk(KERN_DEBUG "create_node_list called\n");
+
     if (new_list == NULL) {
         printk(KERN_ERR "Could not create new node list\n");
     }
@@ -626,12 +629,24 @@ bool add_node_at_position(struct message_node* node, int index) {
 	int list_number;
 	struct node_list* list = root_node_list;
 
+    printk(KERN_DEBUG "add_node_at_position called\n");
+
     if (get_node(index) != NULL) {
         printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
         return false;
     }
 
-    printk(KERN_DEBUG "Searching for position %d\n", index);
+    if (root_node_list == NULL) {
+        printk(KERN_DEBUG "Adding first node list\n");
+        root_node_list = create_node_list();
+        if (root_node_list == NULL) {
+            printk(KERN_ERR "Did not create the list, cannot add node\n");
+            return false;
+        }
+        list = root_node_list; //need to set this again because it will have been initialised to NULL
+    }
+
+    printk(KERN_DEBUG "Searching for correct list to put node into (position %d)\n", index);
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
 		if (list->next_list == NULL) {
@@ -647,20 +662,15 @@ bool add_node_at_position(struct message_node* node, int index) {
 		list = list->next_list; //move to next list
 	}
 
-    if (index == 0) {
-        printk(KERN_DEBUG "First item, adding first node list\n");
-        root_node_list = create_node_list();
-        if (root_node_list == NULL) {
-            printk(KERN_ERR "Did not create the list, cannot add node\n");
-            return false;
-        }
-        list = root_node_list; //need to set this again because it will have been initialised to NULL
-    }
+    printk(KERN_DEBUG "Should be on correct list, now add to array\n");
 
 	//add to that list
 	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
+
+    printk(KERN_DEBUG "Updating the after_last_node_index\n");
 	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
 
+    printk(KERN_DEBUG "Setting the index of the node\n");
     node->index = index;
     return true;
 }
@@ -672,6 +682,7 @@ EXPORT_SYMBOL(add_node_at_position);
  * @return int index of the location of the new node (-1 if it could not be added)
 */
 int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
+
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");
         return -1;
@@ -716,6 +727,7 @@ EXPORT_SYMBOL(add_node);
 void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
     int node_count = 0;
+    struct message_node* node = get_node(my_nid);
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
             node_count++;
@@ -724,7 +736,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
 
     node_list_info node_list_details = {
         .your_nid = their_index,
-        .my_address = get_node(my_nid)->address,
+        .my_address = if (node)? node->address : 0,
         .number_of_nodes = node_count,
         .token = random_token,
     };
