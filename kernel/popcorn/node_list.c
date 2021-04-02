@@ -119,7 +119,7 @@ create_any_node_failure:
         return node;
     }
     else {
-        node ? kfree(node);
+        if (node) kfree(node);
         return NULL;
     }
 }
