@@ -98,7 +98,14 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     bool success;
 
+    printk(KERN_DEBUG "create_any_node called\n");
+
     node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
+    if (!node) {
+        success = false;
+        printk(KERN_ERR "Could not create the node\n");
+        goto create_any_node_failure;
+    }
 
     //previously in bundle.c
     node->is_connected = false;
@@ -107,11 +114,12 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
 
     success = enable_node(node);
 
+create_any_node_failure:
     if (success) {
         return node;
     }
     else {
-        kfree(node);
+        node ? kfree(node);
         return NULL;
     }
 }
