@@ -697,7 +697,6 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_DEBUG "Could not add the node\n");
         return -1;
     }
-
     
     if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 

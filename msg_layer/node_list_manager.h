@@ -293,6 +293,8 @@ void activate_popcorn(char* address_string) {
         goto failed_to_register;
     }
 
+    my_nid = 0; //set this as you must be the first node
+
     //add myself
     index = add_node(node, 1, ""); //token and max connections not needed for itself
     if (index != 0) { //note it should always be zero as this is the first node to be added
