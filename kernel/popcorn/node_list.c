@@ -807,7 +807,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
-    printk(KERN_DEBUG "Navigating to end of node info list\n");
+    printk(KERN_DEBUG "Navigating to end of node info list (root is %p)\n", root_node_list_info_list);
     if (root_node_list_info_list != NULL) {
         printk(KERN_DEBUG "Navigating to end of node info list 2\n");
         node_list_info_list = root_node_list_info_list;
