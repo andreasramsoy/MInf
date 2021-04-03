@@ -814,6 +814,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         printk(KERN_DEBUG "Navigating to end of node info list 3\n");
         while (node_list_info_list->next != NULL) {
             printk(KERN_DEBUG "Looping\n");
+            printk(KERN_DEBUG "Next pointer is %p\n", node_list_info_list->next);
             node_list_info_list = node_list_info_list->next;
         }
     }
