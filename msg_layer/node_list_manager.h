@@ -307,9 +307,11 @@ void activate_popcorn(char* address_string) {
         printk(KERN_ERR "Already a part of a popcorn network - cannot create a new one\n");
         goto failed_to_register;
     }
+    
+    my_nid = 0; //must be 0 as we are the first in the node list
 
     //create myself
-    node = create_node(address, transport_list_head->transport_structure); //doesn't matter which transport is used as not going to send messages to myself
+    node = create_instigator_node(address);
     if (!node) {
         printk(KERN_ERR "Could not activate popcorn network as this node could not be created for node list\n");
         goto failed_to_register;

@@ -150,8 +150,6 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
 
-    is_myself(node); //sets my_nid
-
     //previously in bundle.c
     node->is_connected = false;
     node->arch = POPCORN_ARCH_UNKNOWN;
@@ -181,6 +179,35 @@ create_node_end:
     return node;
 }
 EXPORT_SYMBOL(create_node);
+
+
+struct message_node* create_instigator_node(uint32_t address_p) {
+    struct message_node* node;
+    bool successful = true;
+
+    node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
+    if (node == NULL) {
+        printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
+        return NULL;
+    }
+    node->address = address_p;
+
+    //previously in bundle.c
+    node->is_connected = false;
+    node->arch = POPCORN_ARCH_UNKNOWN;
+    node->bundle_id = -1;
+
+create_node_end:
+    if (!successful) {
+        kfree(node);
+        printk(KERN_ERR "Failed to create the node\n");
+        return NULL;
+    }
+
+    return node;
+}
+EXPORT_SYMBOL(create_instigator_node);
+
 
 int find_first_null_pointer(void) {
     printk(KERN_DEBUG "Find first null pointer called\n");
