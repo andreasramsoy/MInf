@@ -635,12 +635,13 @@ bool init_node_sock(struct message_node* node) {
 	// if the node is after you, then you need to make a connection with it
 	// you don't need to make a connection to yourself
 
-	if (registered_on_popcorn_network) {
-		ret = __sock_connect_to_server(node); //connect to any node that wants to
-	}
-	else if (node->index == my_nid) {
+
+	if (node->index == my_nid) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
+	}
+	else if (registered_on_popcorn_network) {
+		ret = __sock_connect_to_server(node); //connect to any node that wants to
 	}
 	else {
 		ret = __sock_accept_client(node);
