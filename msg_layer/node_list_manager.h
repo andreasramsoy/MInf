@@ -329,7 +329,7 @@ void activate_popcorn(char* address_string) {
     //add myself
     index = add_node(node, 1, ""); //token and max connections not needed for itself
     if (index != 0) { //note it should always be zero as this is the first node to be added
-        printk(KERN_ERR "The node was supposed to be put in the first position (index 0) but it was not\n");
+        printk(KERN_ERR "The node was supposed to be put in the first position (index 0) but it was in position %d\n", index);
         goto failed_to_register;
     }
 

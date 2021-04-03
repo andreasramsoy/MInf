@@ -626,7 +626,7 @@ bool init_node_sock(struct message_node* node) {
 	// you don't need to make a connection to yourself
 
 	printk(KERN_DEBUG "my_nid: %lld, node->index: %lld", my_nid, node->index);
-	printk(KERN_DEBUG "Registered on popcorn network? %s", registered_on_popcorn_network ? "True" : "False");
+	printk(KERN_DEBUG "Registered on popcorn network? %s\n", registered_on_popcorn_network ? "True" : "False");
 	if (node->index == my_nid) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)

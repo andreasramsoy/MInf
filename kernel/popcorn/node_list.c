@@ -112,6 +112,8 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     node->arch = POPCORN_ARCH_UNKNOWN;
     node->bundle_id = -1;
 
+    node->transport = transport; //set the transport for enable node
+
     success = enable_node(node);
 
 create_any_node_failure:
@@ -119,6 +121,7 @@ create_any_node_failure:
         return node;
     }
     else {
+        printk(KERN_ERR "Error while trying to create_any_node\n");
         if (node) kfree(node);
         return NULL;
     }
@@ -734,12 +737,6 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     }
     
     if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
-
-    if (node->transport == NULL) {
-        printk(KERN_ERR "The transport of the node cannot be NULL\n");
-        remove_node(node->index);
-        return -1;
-    }
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
