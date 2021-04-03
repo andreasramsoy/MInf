@@ -723,7 +723,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         return -1;
     }
 
-    printk(KERN_DEBUG "Adding new node %d\n", node->address);
+    printk(KERN_DEBUG "Adding new node %4pI\n", node->address);
 
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
@@ -743,9 +743,14 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
-    printk(KERN_DEBUG "Propagate command to other nodes\n");
-    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
-    printk(KERN_DEBUG "Sent messages to other nodes\n");
+    if (node->index != my_nid) {
+        printk(KERN_DEBUG "Propagate command to other nodes\n");
+        propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
+        printk(KERN_DEBUG "Sent messages to other nodes\n");
+    }
+    else {
+        printk(KERN_DEBUG "Did not propagate this node as it is myself\n");
+    }
 
     set_popcorn_node_online(node->index, true);
     if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
