@@ -796,13 +796,13 @@ EXPORT_SYMBOL(send_node_list_info);
 static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     struct node_list_info_list_item* new_info;
     struct node_list_info_list_item* node_list_info_list;
-    node_list_info *info = (node_list_info *)info;
+    node_list_info *info = (node_list_info *)msg;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
 
-    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
+    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header->from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
-        printk(KERN_DEBUG "Token correct\n");
+        printk(KERN_DEBUG "Has not been set and this is the instigator node\n");
         my_nid = info->your_nid;
         number_of_nodes_to_be_added = info->number_of_nodes;
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
