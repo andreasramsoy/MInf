@@ -830,6 +830,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "Copying info into newly allocated memory\n");
     memcpy(&(new_info->info), info, sizeof(info)); //copy as the message will be deleted later
 
+    printk(KERN_DEBUG "Placing new info into info list\n");
     if (root_node_list_info_list == NULL) {
         root_node_list_info_list = new_info;
     }
@@ -837,7 +838,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         new_info->next = NULL;
         node_list_info_list->next = new_info;
     }
-
+    printk(KERN_DEBUG "Done handling new node info\n");
     //now added to the list so that node can be found
 
 	pcn_kmsg_done(msg);
