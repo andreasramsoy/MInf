@@ -800,13 +800,15 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
 
-    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
+    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
         //this is the instigator node (no other connections made so must be)
+        printk(KERN_DEBUG "Token correct\n");
         my_nid = info->your_nid;
         number_of_nodes_to_be_added = info->number_of_nodes;
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
+    printk(KERN_DEBUG "Navigating to end of node info list\n");
     if (root_node_list_info_list != NULL) {
         node_list_info_list = root_node_list_info_list;
         while (node_list_info_list->next != NULL) {
@@ -814,12 +816,15 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         }
     }
 
+    printk(KERN_DEBUG "Now appending more info to the node info list\n");
     new_info = kmalloc(sizeof(struct node_list_info_list_item), GFP_KERNEL);
     if (new_info == NULL) {
         printk(KERN_ERR "Could not allocate memory for node list info list\n");
 	    pcn_kmsg_done(msg);
         return -ENOMEM;
     }
+
+    printk(KERN_DEBUG "Copying info into newly allocated memory\n");
     memcpy(&(new_info->info), info, sizeof(node_list_info)); //copy as the message will be deleted later
 
     if (root_node_list_info_list == NULL) {
