@@ -635,7 +635,7 @@ bool init_node_sock(struct message_node* node) {
 	// if the node is after you, then you need to make a connection with it
 	// you don't need to make a connection to yourself
 
-
+	printk(KERN_DEBUG "my_nid: %lld, node->index: %lld", my_nid, node->index);
 	if (node->index == my_nid) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
