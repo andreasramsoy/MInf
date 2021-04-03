@@ -94,7 +94,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 printk(KERN_DEBUG "Waiting for node info to arrive\n");
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
-            
+
             node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
@@ -346,6 +346,7 @@ void activate_popcorn(char* address_string) {
     return;
 
 failed_to_register:
+    printk(KERN_ERR "Failed to register new popcorn network!\n");
     if (node) {
         kfree(node);
     }
