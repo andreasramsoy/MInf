@@ -636,13 +636,14 @@ bool init_node_sock(struct message_node* node) {
 	// you don't need to make a connection to yourself
 
 	if (registered_on_popcorn_network) {
-		ret = __sock_accept_client(node);
+		ret = __sock_connect_to_server(node); //connect to any node that wants to
 	}
 	else if (node->index == my_nid) {
+		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
 	}
 	else {
-		ret = __sock_connect_to_server(node); //connect to any node that wants to
+		ret = __sock_accept_client(node);
 	}
 	
 	printk(KERN_DEBUG "Node initialisation, connections done\n");
