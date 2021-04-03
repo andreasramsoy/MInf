@@ -90,11 +90,12 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
         node = create_any_node(transport);
         if (node) {
             //connection has been established - wait for message with token and nid
-            node_info = root_node_list_info_list;
             while (node_info == NULL) {
                 printk(KERN_DEBUG "Waiting for node info to arrive\n");
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
+            
+            node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 if (node_info->next == NULL) node_info = root_node_list_info_list;

@@ -766,7 +766,12 @@ EXPORT_SYMBOL(add_node);
 void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
     int node_count = 0;
-    struct message_node* node = get_node(my_nid);
+    struct message_node* node;
+
+    printk(KERN_DEBUG "send_node_list_info called\n");
+    
+    node = get_node(my_nid);
+
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
             node_count++;

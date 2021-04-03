@@ -444,41 +444,31 @@ static int __sock_accept_client(struct message_node* node)
 
 	printk(KERN_DEBUG "sock_accept_client called\n");
 
-	do {
-		printk(KERN_DEBUG "Attempting to connect, try: %d\n", retry);
+	printk(KERN_DEBUG "Attempting to connect, try: %d\n", retry);
 
-		ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
-		if (ret < 0) {
-			printk(KERN_INFO "Failed to create socket, %d\n", ret);
-			return ret;
-		}
+	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
+	if (ret < 0) {
+		printk(KERN_INFO "Failed to create socket, %d\n", ret);
+		return ret;
+	}
 
-		printk(KERN_DEBUG "Socket created, accepting incomming connections...\n");
+	printk(KERN_DEBUG "Socket created, accepting incomming connections...\n");
 
-		ret = kernel_accept(sock_listen, &sock, 0);
-		if (ret < 0) {
-			printk(KERN_INFO "Failed to accept, %d\n", ret);
-			goto out_release;
-		}
-		printk(KERN_DEBUG "Accepted connection\n");
+	ret = kernel_accept(sock_listen, &sock, 0);
+	if (ret < 0) {
+		printk(KERN_INFO "Failed to accept, %d\n", ret);
+		goto out_release;
+	}
+	printk(KERN_DEBUG "Accepted connection\n");
 
-		ret = kernel_getpeername(sock, (struct sockaddr *)&addr, &addr_len);
-		if (ret < 0) {
-			goto out_release;
-		}
+	ret = kernel_getpeername(sock, (struct sockaddr *)&addr, &addr_len);
+	if (ret < 0) {
+		goto out_release;
+	}
 
-		printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
-		printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
+	printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
+	printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
 
-		/* Identify incoming peer nid */
-		/*if (addr.sin_addr.s_addr == node->address) {
-			found = true;
-		}
-		if (!found) {
-			sock_release(sock);
-			continue;
-		}*/
-	} while (retry++ < 10 && !found);
 
 	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
 
