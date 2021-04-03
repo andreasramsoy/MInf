@@ -308,7 +308,7 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 	char* transport; \
 	int max_connections; \
 	int nid_to_remove; \
-	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]
 DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 
 /**
@@ -319,9 +319,7 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 	uint32_t my_address; \
 	uint32_t my_nid; \
 	int number_of_nodes; \
-	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]; \
-	char** transport_types; \
-	int* transport_usage;
+	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]
 DEFINE_PCN_KMSG(node_list_info, NODE_LIST_INFO_FIELDS);
 
 
