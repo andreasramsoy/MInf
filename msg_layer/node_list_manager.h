@@ -186,11 +186,36 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     //now add the node
     if (!registered_on_popcorn_network) {
         printk(KERN_DEBUG "Joining existing popcorn network\n");
+        node = create_node(address, protocol);
+        if (!node) {
+            printk(KERN_ERR "Could not create the node for the instigator\n");
+            return;
+        }
+        printk(KERN_DEBUG "Created the instigator node, now await node list info\n");
 
         while (my_nid == -1) {
             printk(KERN_DEBUG "Waiting to recieve node info\n");
             msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
         }
+
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         printk(KERN_DEBUG "Node info recieved, ready to listen for connections\n");
 
@@ -219,6 +244,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
         //end all those unsuccessful transports if they failed
         if (!success) {
+            if (node) kfree(node);
             do {
 
                 if (transports->listener) {

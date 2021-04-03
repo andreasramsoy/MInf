@@ -743,6 +743,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
 
     node_list_info node_list_details = {
         .your_nid = their_index,
+        .my_nid = my_nid,
         .my_address = (node != NULL) ? node->address : 0,
         .number_of_nodes = node_count,
         .token = random_token,
