@@ -778,9 +778,18 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
     int i;
     int node_count = 0;
     struct message_node* node;
+    uint32_t their_address;
 
     printk(KERN_DEBUG "send_node_list_info called\n");
     
+    node = get_node(their_index);
+    if (node) {
+        their_index = node->address;
+    }
+    else {
+        printk(KERN_ERR "Could not get the node address to send to the node\n");
+    }
+
     node = get_node(my_nid);
 
     for (i = 0; i < after_last_node_index; i++) {
@@ -791,9 +800,11 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
 
     node_count--; //take one away as you've just added the new node (but it does not consider itself a part of the list yet)
 
+
     node_list_info node_list_details = {
         .your_nid = their_index,
         .my_nid = my_nid,
+        .your_address = their_address,
         .my_address = (node != NULL) ? node->address : 0,
         .number_of_nodes = node_count,
         .token = random_token,

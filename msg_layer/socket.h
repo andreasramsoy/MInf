@@ -315,6 +315,9 @@ static int __show_peers(struct seq_file *seq, void *v)
 {	
 	int i;
 	char* myself = " ";	
+	printk(KERN_DEBUG "Showing peers\n");
+	printk(KERN_DEBUG "my_nid: %d\n", my_nid);
+	printk(KERN_DEBUG "after_last_node_index: %d\n", after_last_node_index);
 	for (i = 0; i < after_last_node_index; i++) 
 	{
 		if (i == my_nid) myself = "*";

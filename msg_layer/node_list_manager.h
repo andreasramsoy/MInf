@@ -174,6 +174,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     //convert values that can be used in the popcorn messaging layer
     uint32_t address;
     struct message_node* node;
+    struct message_node* myself;
     struct pcn_kmsg_transport* protocol;
     struct transport_list* transports;
     int instigator_node_index;
@@ -219,6 +220,18 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             printk(KERN_ERR "The instigator node could not be added to the node list\n");
             return;
         }
+
+        //now add myself
+        myself = create_node(root_node_list_info_list->info.your_address, NULL);
+        if (!myself) {
+            printk(KERN_ERR "Could not create a node for myself\n");
+            return;
+        }
+        if (!add_node_at_position(myself, root_node_list_info_list->info.your_nid)) {
+            printk(KERN_ERR "Could not add myself to the node list\n");
+            return;
+        }
+
 
         printk(KERN_DEBUG "Node info recieved, ready to listen for connections\n");
 
