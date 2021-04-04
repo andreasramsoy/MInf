@@ -84,6 +84,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     struct node_list_info_list_item* node_info;
     struct node_list_info_list_item* node_info_prev;
+    int ret;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
 
@@ -97,7 +98,9 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
 
-            down_interruptible(&node_list_info_sem);
+            do {
+                ret = down_interruptible(&node_list_info_sem);
+            } while (ret);
 
             node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {

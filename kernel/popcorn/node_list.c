@@ -467,7 +467,11 @@ EXPORT_SYMBOL(remove_node);
  */
 bool command_queue_push(node_list_command* command) {
     bool success = true;
-    down_interruptible(&command_queue_sem);
+    int ret;
+    do {
+        ret = down_interruptible(&command_queue_sem);
+    } while (ret);
+    
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -795,13 +799,16 @@ EXPORT_SYMBOL(send_node_list_info);
 static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     struct node_list_info_list_item* new_info;
     struct node_list_info_list_item* node_list_info_list;
+    int ret;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
     node_list_info *info = (node_list_info *)msg;
 
     printk(KERN_DEBUG "Recieved info about the node list 2\n");
 
-    down_interruptible(&node_list_info_sem);
+	do {
+		ret = down_interruptible(&node_list_info_sem);
+	} while (ret);
 
     if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
