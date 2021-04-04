@@ -781,6 +781,8 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         }
     }
 
+    node_count--; //take one away as you've just added the new node (but it does not consider itself a part of the list yet)
+
     node_list_info node_list_details = {
         .your_nid = their_index,
         .my_nid = my_nid,
