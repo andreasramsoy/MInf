@@ -218,7 +218,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         success = true;
 
         transports = transport_list_head;
-        do {
+        while (transports != NULL && number_of_nodes_to_be_added > 0) {
             /**
              * for each transport type start listening for new nodes
              * once all nodes are accounted for then stop listening
@@ -235,7 +235,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 break; //didn't work so stop and abort
             }
             transports = transports->next;
-        } while (transports != NULL);
+        }
 
 
         //end all those unsuccessful transports if they failed
