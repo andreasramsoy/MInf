@@ -201,7 +201,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
         }
 
-        if (root_node_list_info_list == NULL || root_node_list_info_list->info == NULL) {
+        if (root_node_list_info_list == NULL) {
             printk(KERN_ERR "Root node list info list cannot be null as it has just sent\n");
             return;
         }
