@@ -855,11 +855,11 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     memcpy(&(new_info->info), info, sizeof(*info)); //copy as the message will be deleted later
 
     printk(KERN_DEBUG "Placing new info into info list\n");
+    new_info->next = NULL;
     if (root_node_list_info_list == NULL) {
         root_node_list_info_list = new_info;
     }
     else {
-        new_info->next = NULL;
         node_list_info_list->next = new_info;
     }
     printk(KERN_DEBUG "Done handling new node info\n");
