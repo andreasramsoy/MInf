@@ -277,7 +277,8 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 printk(KERN_ERR "Failed to create new node\n");
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
-            new_node_index = add_node(node, max_connections, "");
+            get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
+            new_node_index = add_node(node, max_connections, token);
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
                 kfree(node);
@@ -286,8 +287,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
             //node now added
 
-            get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
-            send_node_list_info(new_node_index, token); //so the node knows it's nid and all the nodes in the list
             send_to_child(my_nid, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
         }
     }
