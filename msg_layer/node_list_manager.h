@@ -217,6 +217,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
         success = true;
 
+
         transports = transport_list_head;
         while (transports != NULL && number_of_nodes_to_be_added > 0) {
             /**
