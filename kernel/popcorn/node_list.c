@@ -818,8 +818,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
-    printk(KERN_DEBUG "Message is from: %d", info->my_nid);
-    printk(KERN_DEBUG "States that number of nodes in list is: %d", info->number_of_nodes;
+    printk(KERN_DEBUG "Message is from: %d\n", info->my_nid);
+    printk(KERN_DEBUG "States that number of nodes in list is: %d\n", info->number_of_nodes);
 
     printk(KERN_DEBUG "Navigating to end of node info list (root is %p)\n", root_node_list_info_list);
     if (root_node_list_info_list != NULL) {
