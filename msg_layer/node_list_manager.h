@@ -85,6 +85,8 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct node_list_info_list_item* node_info;
     struct node_list_info_list_item* node_info_prev;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
+    printk(KERN_DEBUG "Listening for nodes\n");
+
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
         node = create_any_node(transport);
@@ -199,24 +201,17 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
         }
 
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ////////////////////add this node to the node list!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (root_node_list_info_list == NULL || root_node_list_info_list->info == NULL) {
+            printk(KERN_ERR "Root node list info list cannot be null as it has just sent\n");
+            return;
+        }
+        if (add_node_at_position(node, root_node_list_info_list->info.my_nid)) { //add the instigator node to its correct position
+            number_of_nodes_to_be_added--; //the instigator node has been added so one less to worry about
+        }
+        else {
+            printk(KERN_ERR "The instigator node could not be added to the node list\n");
+            return;
+        }
 
         printk(KERN_DEBUG "Node info recieved, ready to listen for connections\n");
 
