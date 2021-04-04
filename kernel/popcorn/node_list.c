@@ -47,7 +47,7 @@ struct message_node* get_node(int index) {
     printk(KERN_DEBUG "Getting the node %d\n", index);
 
     if (list == NULL) {
-        printk(KERN_DEBUG "Fetching a list when there is no node lists (this happens when there are no nodes\n");
+        //printk(KERN_DEBUG "Fetching a list when there is no node lists (this happens when there are no nodes\n");
         return NULL;
     }
 	
@@ -57,13 +57,13 @@ struct message_node* get_node(int index) {
 	list_number = index / MAX_NUM_NODES_PER_LIST;
 	for (i = 0; i < list_number; i++) {
         if (list->next_list == NULL) {
-            printk(KERN_INFO "The node trying to be fetched does not exist (or even the node list it is supposed to be on)\n");
+            //printk(KERN_INFO "The node trying to be fetched does not exist (or even the node list it is supposed to be on)\n");
             return NULL;
         }
 		list = list->next_list; //move to next list
 	}
 
-    printk(KERN_DEBUG "On correct list, getting node\n");
+    //printk(KERN_DEBUG "On correct list, getting node\n");
 	
 	//should be on correct list now just directly return the node
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
@@ -716,6 +716,13 @@ bool add_node_at_position(struct message_node* node, int index) {
 
     printk(KERN_DEBUG "Setting the index of the node\n");
     node->index = index;
+
+    printk(KERN_DEBUG "Index: %d\n", node->index);
+    printk(KERN_DEBUG "Address: %4pI\n", node->address);
+    printk(KERN_DEBUG "Handle: %p\n", node->handle);
+    printk(KERN_DEBUG "Transport: %4pI\n", node->transport);
+    printk(KERN_DEBUG "Arch: %d\n", node->arch);
+
     return true;
 }
 EXPORT_SYMBOL(add_node_at_position);
