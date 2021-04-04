@@ -23,6 +23,7 @@ int command_queue_end;
 node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
+DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
 
 bool registered_on_popcorn_network;
 
@@ -33,6 +34,7 @@ EXPORT_SYMBOL(number_of_nodes_to_be_added);
 EXPORT_SYMBOL(joining_token);
 EXPORT_SYMBOL(registered_on_popcorn_network);
 EXPORT_SYMBOL(root_node_list_info_list);
+EXPORT_SYMBOL(node_list_info_sem);
 
 
 /* function to access the node_list safely, will return 1 if invalid request
@@ -465,7 +467,7 @@ EXPORT_SYMBOL(remove_node);
  */
 bool command_queue_push(node_list_command* command) {
     bool success = true;
-    down(&command_queue_sem);
+    down_interruptible(&command_queue_sem);
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
@@ -799,6 +801,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Recieved info about the node list 2\n");
 
+    down_interruptible(&node_list_info_sem);
+
     if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
         printk(KERN_DEBUG "Has not been set and this is the instigator node\n");
@@ -806,6 +810,9 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         number_of_nodes_to_be_added = info->number_of_nodes;
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
+
+    printk(KERN_DEBUG "Message is from: %d", info->my_nid);
+    printk(KERN_DEBUG "States that number of nodes in list is: %d", info->number_of_nodes;
 
     printk(KERN_DEBUG "Navigating to end of node info list (root is %p)\n", root_node_list_info_list);
     if (root_node_list_info_list != NULL) {
@@ -842,6 +849,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     //now added to the list so that node can be found
 
 	pcn_kmsg_done(msg);
+    up(&node_list_info_sem);
+
     return 0;
 }
 EXPORT_SYMBOL(handle_node_list_info);

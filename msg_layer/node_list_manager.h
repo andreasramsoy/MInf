@@ -97,6 +97,8 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 msleep(100); /** TODO: change from spinlock to something more efficient */
             }
 
+            down_interruptible(&node_list_info_sem);
+
             node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {
                 printk(KERN_DEBUG "Looping through connections to find node\n");
@@ -127,6 +129,8 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     continue; //don't count as an attempt
                 }
             }
+
+            up(&node_list_info_sem);
         }
 
         attempts_left--;

@@ -98,6 +98,8 @@ extern struct transport_list* transport_list_head;
 extern struct node_list* root_node_list; //Do not access directly! Use get_node(i) function
 extern struct node_list_info_list_item* root_node_list_info_list;
 
+extern struct semaphore node_list_info_sem;
+
 extern int after_last_node_index;
 extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
