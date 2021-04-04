@@ -37,6 +37,7 @@ EXPORT_SYMBOL(root_node_list_info_list);
 EXPORT_SYMBOL(node_list_info_sem);
 
 
+
 /* function to access the node_list safely, will return 1 if invalid request
    Also allows for changes in data structure (list to avoid limit of 64 nodes) */
 struct message_node* get_node(int index) {
