@@ -627,11 +627,11 @@ bool init_node_sock(struct message_node* node) {
 
 	printk(KERN_DEBUG "my_nid: %lld, node->index: %lld", my_nid, node->index);
 	printk(KERN_DEBUG "Registered on popcorn network? %s\n", registered_on_popcorn_network ? "True" : "False");
-	if (node->index == my_nid) {
+	/*if (node->index == my_nid) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
-	}
-	else if (registered_on_popcorn_network) {
+	}*/
+	if (registered_on_popcorn_network) {
 		ret = __sock_connect_to_server(node); //connect to any node that wants to
 	}
 	else {
