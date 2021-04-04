@@ -724,6 +724,9 @@ bool add_node_at_position(struct message_node* node, int index) {
     printk(KERN_DEBUG "Transport: %4pI\n", node->transport);
     printk(KERN_DEBUG "Arch: %d\n", node->arch);
 
+    if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
+    set_popcorn_node_online(node->index, true);
+
     return true;
 }
 EXPORT_SYMBOL(add_node_at_position);
@@ -762,9 +765,6 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     else {
         printk(KERN_DEBUG "Did not propagate this node as it is myself\n");
     }
-
-    set_popcorn_node_online(node->index, true);
-    if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
 
 	return node->index;
 }
