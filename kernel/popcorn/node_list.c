@@ -805,6 +805,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         .your_nid = their_index,
         .my_nid = my_nid,
         .your_address = their_address,
+        .arch = my_arch,
         .my_address = (node != NULL) ? node->address : 0,
         .number_of_nodes = node_count,
         .token = random_token,

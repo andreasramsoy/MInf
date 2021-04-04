@@ -318,6 +318,7 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 	int your_nid; \
 	uint32_t my_address; \
 	uint32_t your_address; \
+	int arch; \
 	uint32_t my_nid; \
 	int number_of_nodes; \
 	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]

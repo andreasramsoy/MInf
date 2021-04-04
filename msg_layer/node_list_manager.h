@@ -118,6 +118,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
                 else {
                     node->index = node_info->info.your_nid;
+                    node->arch = node_info->info.arch;
                     if (root_node_list_info_list == node_info) {
                         root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
                     }
@@ -215,6 +216,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         }
         if (add_node_at_position(node, root_node_list_info_list->info.my_nid)) { //add the instigator node to its correct position
             number_of_nodes_to_be_added--; //the instigator node has been added so one less to worry about
+            node->arch = root_node_list_info_list->info.arch; //set arch from info given
         }
         else {
             printk(KERN_ERR "The instigator node could not be added to the node list\n");
