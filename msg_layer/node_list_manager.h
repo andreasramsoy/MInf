@@ -206,7 +206,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         printk(KERN_DEBUG "Created the instigator node, now await node list info\n");
 
         while (my_nid == -1) {
-            printk(KERN_DEBUG "Waiting to recieve node info\n");
+            printk(KERN_DEBUG "Waiting for instigator node to send info about the node list\n");
             msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
         }
 

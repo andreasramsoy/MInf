@@ -790,7 +790,14 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         printk(KERN_ERR "Could not get the node address to send to the node\n");
     }
 
+    printk(KERN_DEBUG "send_node_list_info called 2\n");
+
     node = get_node(my_nid);
+    if (!node) {
+        printk(KERN_ERR "Could not get the node address to send to the node\n");
+    }
+
+    printk(KERN_DEBUG "send_node_list_info called 3\n");
 
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
@@ -798,8 +805,11 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         }
     }
 
+    printk(KERN_DEBUG "send_node_list_info called 4\n");
+
     node_count--; //take one away as you've just added the new node (but it does not consider itself a part of the list yet)
 
+    printk(KERN_DEBUG "send_node_list_info called 5\n");
 
     node_list_info node_list_details = {
         .your_nid = their_index,
@@ -810,6 +820,9 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         .number_of_nodes = node_count,
         .token = random_token,
     };
+
+    printk(KERN_DEBUG "send_node_list_info called 6\n");
+
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
 }
 EXPORT_SYMBOL(send_node_list_info);
