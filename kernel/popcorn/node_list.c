@@ -481,23 +481,32 @@ EXPORT_SYMBOL(remove_node);
 bool command_queue_push(node_list_command* command) {
     bool success = true;
     int ret;
+    printk(KERN_DEBUG "command_queue_push called\n");
     do {
         ret = down_interruptible(&command_queue_sem);
     } while (ret);
+    printk(KERN_DEBUG "command_queue_push called 2\n");
     
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
+        printk(KERN_DEBUG "command_queue_push called 2.1\n");
         success = false;
     }
     else {
+        printk(KERN_DEBUG "command_queue_push called 2.2\n");
         //must be space
         command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
         command_queue[command_queue_end] = command;
         success = true;
+        printk(KERN_DEBUG "command_queue_push called 2.21\n");
     }
 
+    printk(KERN_DEBUG "command_queue_push called 3\n");
+
     up(&command_queue_sem);
+
+    printk(KERN_DEBUG "command_queue_push called 4\n");
 
     return success;
 }
@@ -546,24 +555,36 @@ void process_command(node_list_command* command) {
 void command_queue_process(void) {
     node_list_command* command_to_be_processed;
     int ret;
+    printk(KERN_DEBUG "command_queue_process called\n");
 	do {
 		ret = down_interruptible(&command_queue_sem);
 	} while (ret);
+    
+    printk(KERN_DEBUG "command_queue_process called 2\n");
     while (command_queue_start != command_queue_end) {
+
+        printk(KERN_DEBUG "command_queue_process called 3 loop\n");
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
         up(&command_queue_sem);
 
+        printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
         //not critical section
         process_command(command_to_be_processed);
         //end of non-criticial section
+    
+        printk(KERN_DEBUG "command_queue_process called 3.2 loop\n");
 
         do {
             ret = down_interruptible(&command_queue_sem);
         } while (ret);
+
+        printk(KERN_DEBUG "command_queue_process called 3.3 loop\n");
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
+
+    printk(KERN_DEBUG "command_queue_process called 3.4 loop\n");
 }
 
 /**
@@ -576,6 +597,8 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
     command_queue_push(command); //add to the queue
+
+    printk(KERN_DEBUG "Processing command queue\n");
 
     command_queue_process(); //process all of the commands (does nothing if none are left)
 
@@ -615,7 +638,7 @@ EXPORT_SYMBOL(send_node_command_message);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
+void send_to_child(int parent_node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
     struct message_node* node;
     int index;
@@ -631,14 +654,14 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
     // this is unlikely though as the first gap will be filled when a node is added
 
     for (i = 0; i < 2; i++) { //two branches
-        index = 2 * (node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
+        index = 2 * (parent_node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
         node = get_node(index -1);
         if (node) {
             if (node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
-                printk(KERN_DEBUG "my_nid: %d", my_nid);
-                printk(KERN_DEBUG "I am: %d", node_index);
-                printk(KERN_DEBUG "Wanting to send to: %d", node->index);
-                if (node->index != node_index) {
+                printk(KERN_DEBUG "my_nid: %d\n", my_nid);
+                printk(KERN_DEBUG "I am: %d\n", address);
+                printk(KERN_DEBUG "Wanting to send to: %d\n", node->address);
+                if (node->address != address) {
                     send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
                 }
                 else {
