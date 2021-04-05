@@ -10,6 +10,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include <linux/proc_fs.h>
 #include <popcorn/node_list.h>
 
 #include "ring_buffer.h"

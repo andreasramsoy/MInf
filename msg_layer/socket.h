@@ -10,17 +10,6 @@ enum {
 	SEND_FLAG_POSTED = 0,
 };
 
-static int init_sock(void);
-static int exit_sock(void);
-bool init_node_sock(struct message_node* node);
-
-
-
-static struct socket *sock_listen = NULL;
-static struct ring_buffer send_buffer = {};
-
-//prototypes for functions used in the transport socket
-
 //interface for the messaging layer
 extern struct pcn_kmsg_transport transport_socket;
 
