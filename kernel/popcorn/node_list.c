@@ -254,6 +254,11 @@ EXPORT_SYMBOL(disable_node);
 //enable and connect
 bool enable_node(struct message_node* node) {
     printk(KERN_DEBUG "Initialising communications for node\n");
+
+    if (node == NULL || node->transport == NULL) {
+        printk(KERN_DEBUG "Transport is null so don't need enable");
+        return true;
+    }
     printk(KERN_DEBUG "Transport for the node initialised?    %d\n", node->transport->is_initialised);
     printk(KERN_DEBUG "Transport for the node name?    %s\n", node->transport->name);
 
