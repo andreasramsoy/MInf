@@ -141,6 +141,7 @@ EXPORT_SYMBOL(create_any_node);
 struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     bool successful = true;
+    printk(KERN_DEBUG "create_node called\n");
 
     if (transport != NULL) {
         printk(KERN_DEBUG "Creating node with address %d and protocol %s\n", address_p, transport->name);
@@ -186,7 +187,11 @@ create_node_end:
 }
 EXPORT_SYMBOL(create_node);
 
-
+/**
+ * Creates the instigator node (it does not enable it as you don't need to comunicate with yourself)
+ * @param address_p address of the node being added (yourself)
+ * @return struct message_node* node (the instigator node)
+ */
 struct message_node* create_instigator_node(uint32_t address_p) {
     struct message_node* node;
     bool successful = true;
@@ -197,6 +202,7 @@ struct message_node* create_instigator_node(uint32_t address_p) {
         return NULL;
     }
     node->address = address_p;
+    node->transport = NULL; //should never be used but set so make bugs easier to find
 
     //previously in bundle.c
     node->is_connected = false;
@@ -324,7 +330,7 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
 
     printk(KERN_DEBUG "string_to_transport called 2\n");
     while (transport->next != NULL) {
-        printk(KERN_DEBUG "string_to_transport called in loop\n");
+        printk(KERN_DEBUG "Checking if this is %s transport\n", transport->transport_structure->name);
         transport = transport->next;
         if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
     }

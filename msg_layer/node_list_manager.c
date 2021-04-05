@@ -183,7 +183,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     printk(KERN_DEBUG "node_add called 2\n");
     address = in_aton(address_string);
     if (protocol == NULL) {
-        printk(KERN_DEBUG "Wrong protocols in node add\n");
+        printk(KERN_ERR "Wrong protocols in node add\n");
         strncpy(output_buffer, "-1 WRONG_PROTOCOL", sizeof(output_buffer));
         return;
     }
