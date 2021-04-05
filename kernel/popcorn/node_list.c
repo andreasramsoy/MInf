@@ -164,11 +164,12 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
 
     //transport structure
     node->transport = transport;
-    if (node->transport == NULL) {
+    //now check in node list manager that the transport is not null
+    /*if (node->transport == NULL) {
         successful = false; //this can be caused when the protocol is not in the protocol list
         printk(KERN_ERR "The transport protocol cannot be NULL\n");
         goto create_node_end;
-    }
+    }*/
 
     //setup comms
     if (!enable_node(node)) {
@@ -719,7 +720,7 @@ bool add_node_at_position(struct message_node* node, int index) {
 	list->nodes[index % MAX_NUM_NODES_PER_LIST] = node;
 
     printk(KERN_DEBUG "Updating the after_last_node_index\n");
-	if (index > after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
+	if (index >= after_last_node_index) after_last_node_index = index + 1; //this is used when looping through list
 
     printk(KERN_DEBUG "Setting the index of the node\n");
     node->index = index;
