@@ -516,6 +516,12 @@ bool command_queue_push(node_list_command* command) {
  */
 void process_command(node_list_command* command) {
     struct message_node* node;
+    printk(KERN_DEBUG "process_command called\n");
+    if (command == NULL) {
+        printk(KERN_ERR "The pointer to the command was equal to null!\n");
+        return;
+    }
+
     if (command->node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
         node = create_node(command->address, string_to_transport(command->transport));
@@ -573,6 +579,8 @@ void command_queue_process(void) {
         //not critical section
         process_command(command_to_be_processed);
         //end of non-criticial section
+
+        kfree(command_to_be_processed);
     
         printk(KERN_DEBUG "command_queue_process called 3.2 loop\n");
 
@@ -592,9 +600,14 @@ void command_queue_process(void) {
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_command(struct pcn_kmsg_message *msg) {
+    node_list_command command_copy;
     node_list_command *command = (node_list_command *)msg;
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
+
+    memcpy(&command_copy, command, sizeof(*command));
+
+    printk(KERN_DEBUG "Copied command\n");
 
     command_queue_push(command); //add to the queue
 
