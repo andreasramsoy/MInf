@@ -185,6 +185,10 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 		printk(KERN_ERR "Message type: %d, to: %d", type, to);
 		return 1;
 	}*/
+	printk(KERN_DEBUG "Sending to: %d", to);
+	printk(KERN_DEBUG "Node address: %p", get_node(to));
+	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport);
+	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport->send;
 	
 	return get_node(to)->transport->send(to, msg, size);
 }

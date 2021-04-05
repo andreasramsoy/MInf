@@ -767,6 +767,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_ERR "Transport is null so must be instigator node\n");
     }
     
+    printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
     if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
@@ -798,7 +799,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
     
     node = get_node(their_index);
     if (node) {
-        their_index = node->address;
+        their_address = node->address;
     }
     else {
         printk(KERN_ERR "Could not get the node address to send to the node\n");
