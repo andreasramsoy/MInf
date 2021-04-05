@@ -8,7 +8,7 @@ endif
 #msg_init-y := msg_init.o ring_buffer.o
 
 obj-m += msg_layer.o 
-msg_layer-y := msg_layer_main.o node_list_manager.o ring_buffer.o
+msg_layer-y := msg_layer_main.o node_list_manager.o ring_buffer.o socket.o
 
 
 obj-$(CONFIG_POPCORN_KMSG_RDMA) += msg_rdma.o
