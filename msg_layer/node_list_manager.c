@@ -266,6 +266,10 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 transports = transports->next;
             } while (transports != NULL);
         }
+        else {
+            registered_on_popcorn_network = true;
+            printk(KERN_INFO "Successfully registered on popcorn_network\n");
+        }
     }
     else {
         printk(KERN_DEBUG "Adding new node to my popcorn network\n");

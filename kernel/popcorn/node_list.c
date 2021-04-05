@@ -308,6 +308,7 @@ bool enable_node(struct message_node* node) {
 			goto encryption_fail;
 	}
 #endif
+    printk(KERN_DEBUG "Now initialise individual node\n");
 
     return node->transport->init_node(node); //destroys the connection
 }
