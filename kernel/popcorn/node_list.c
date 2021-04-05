@@ -634,11 +634,16 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
         index = 2 * (node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
         node = get_node(index -1);
         if (node) {
-            if (node_command_type != NODE_LIST_ADD_NODE_COMMAND || index - 1 != node->index) {
-                send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+            if (node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
+                if (index - 1 != node->index) {
+                    send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+                }
+                else {
+                    printk(KERN_DEBUG "The message was not forwarded to node %lld, as this is the node to be added\n", node->index);
+                }
             }
             else {
-                printk(KERN_DEBUG "The message was not forwarded to node %lld, as this is the node to be added\n", node->index);
+                printk(KERN_DEBUG "The node command %d (enum type) was not recognised\n", node_command_type);
             }
         }
         else if (index - 1 < after_last_node_index) {
