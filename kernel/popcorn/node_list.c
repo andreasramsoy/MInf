@@ -764,7 +764,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_DEBUG "Transport type is: %s", node->transport->name);
     }
     else {
-        printk(KERN_ERR "ERROR: transport has not been set for this node\n");
+        printk(KERN_ERR "Transport is null so must be instigator node\n");
     }
     
     if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network

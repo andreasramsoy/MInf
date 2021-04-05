@@ -267,13 +267,20 @@ EXPORT_SYMBOL(sock_kmsg_done);
 #else
 int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 {
+    printk(KERN_DEBUG "Socket sock_kmsg_send called\n");
 	DECLARE_COMPLETION_ONSTACK(done);
+    printk(KERN_DEBUG "Socket sock_kmsg_send called 2\n");
 	enq_send(dest_nid, msg, 0, &done);
+    printk(KERN_DEBUG "Socket sock_kmsg_send called 3\n");
 
 	if (!try_wait_for_completion(&done)) { 
+        printk(KERN_DEBUG "Socket sock_kmsg_send called 4 loop\n");
 		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
-		if (!ret) return -EAGAIN;
+        printk(KERN_DEBUG "Socket sock_kmsg_send called 5 loop\n");
+        if (!ret) return -EAGAIN;
+        printk(KERN_DEBUG "Socket sock_kmsg_send called 6 loop\n");
 	}
+    printk(KERN_DEBUG "Socket sock_kmsg_send called 7\n");
 	return 0;
 }
 EXPORT_SYMBOL(sock_kmsg_send);
