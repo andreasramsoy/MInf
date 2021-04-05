@@ -32,12 +32,12 @@ extern void sock_kmsg_done(struct pcn_kmsg_message *msg);
 #endif
 
 extern void sock_kmsg_stat(struct seq_file *seq, void *v);
-extern static int __sock_connect_to_server(struct message_node* node);
-extern static int __sock_accept_client(struct message_node* node);
-extern static int __sock_listen_to_connection(void);
+extern int __sock_connect_to_server(struct message_node* node);
+extern int __sock_accept_client(struct message_node* node);
+extern int __sock_listen_to_connection(void);
 extern bool kill_node_sock(struct message_node* node);
 extern bool init_node_sock(struct message_node* node);
-extern static int exit_sock(void);
+extern int exit_sock(void);
 
-extern static int init_sock(void);
+extern int init_sock(void);
 #endif

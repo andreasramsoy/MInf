@@ -391,7 +391,7 @@ static int __sock_start_handlers(struct message_node* node)
 	return 0;
 }
 
-static int __sock_connect_to_server(struct message_node* node)
+int __sock_connect_to_server(struct message_node* node)
 {
 	int ret;
 	struct sockaddr_in addr;
@@ -434,7 +434,7 @@ static int __sock_connect_to_server(struct message_node* node)
 }
 EXPORT_SYMBOL(__sock_connect_to_server);
 
-static int __sock_accept_client(struct message_node* node)
+int __sock_accept_client(struct message_node* node)
 {
 	int ret;
 	int retry = 0;
@@ -487,7 +487,7 @@ out_release:
 }
 EXPORT_SYMBOL(__sock_accept_client);
 
-static int __sock_listen_to_connection(void)
+int __sock_listen_to_connection(void)
 {
 	int ret;
 	struct sockaddr_in addr;
@@ -654,7 +654,7 @@ bool init_node_sock(struct message_node* node) {
 }
 EXPORT_SYMBOL(init_node_sock);
 
-static int exit_sock(void)
+int exit_sock(void)
 {
 	transport_socket.is_initialised = false;
 	proc_remove(proc_entry);
@@ -670,7 +670,7 @@ static int exit_sock(void)
 }
 EXPORT_SYMBOL(exit_sock);
 
-static int init_sock(void)
+int init_sock(void)
 {
 	int ret;
 	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
