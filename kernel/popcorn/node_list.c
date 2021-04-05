@@ -755,7 +755,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     printk(KERN_DEBUG "Transport for node %d is %p", node->index, node->transport);
     if (node->transport) {
-        printk(KERN_DEBUG "Transport type is: %s" + node->transport->name);
+        printk(KERN_DEBUG "Transport type is: %s", node->transport->name);
     }
     else {
         printk(KERN_ERR "ERROR: transport has not been set for this node\n");
