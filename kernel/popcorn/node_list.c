@@ -635,11 +635,14 @@ void send_to_child(int node_index, enum node_list_command_type node_command_type
         node = get_node(index -1);
         if (node) {
             if (node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
-                if (index - 1 != node->index) {
+                printk(KERN_DEBUG "my_nid: %d", my_nid);
+                printk(KERN_DEBUG "I am: %d", node_index);
+                printk(KERN_DEBUG "Wanting to send to: %d", node->index);
+                if (node->index != node_index) {
                     send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
                 }
                 else {
-                    printk(KERN_DEBUG "The message was not forwarded to node %lld, as this is the node to be added\n", node->index);
+                    printk(KERN_DEBUG "This is the node to be added and so was not forwarded to %lld\n", node->index);
                 }
             }
             else {
