@@ -21,7 +21,7 @@
 extern char output_buffer[COMMAND_BUFFER_SIZE];
 
 extern void node_get(int index);
-extern void listen_for_nodes(struct pcn_kmsg_transport* transport);
+extern int listen_for_nodes(struct pcn_kmsg_transport* transport);
 extern void stop_listening_threads(void);
 extern void node_add(char* address_string, char* protocol_string, int max_connections);
 extern void activate_popcorn(char* address_string);
