@@ -235,6 +235,8 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
 
         transports = transport_list_head;
+        printk(KERN_DEBUG "transport list head: %p", transport_list_head->transport_structure);
+        printk(KERN_DEBUG "transport list head name: %s", transport_list_head->transport_structure->name)
         while (transports != NULL && number_of_nodes_to_be_added > 0) {
             /**
              * for each transport type start listening for new nodes
@@ -242,7 +244,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * if someone is bute forcing the token then also stop
              */
             sprintf(name, "transport_%s", transports->transport_structure->name);
-            transports->listener = kthread_run(listen_for_nodes, node->handle, name, transports.transport_structure);
+            transports->listener = kthread_run(listen_for_nodes, node->handle, name, transports->transport_structure);
             printk(KERN_DEBUG "Listener request made\n");
 
             if (IS_ERR(transports->listener)) {
