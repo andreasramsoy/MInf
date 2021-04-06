@@ -78,11 +78,12 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int ret;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
-    printk(KERN_DEBUG "Now listening for connections on transport with pointer %p", transport);
+    printk(KERN_DEBUG "Transport with pointer %p", transport);
+    printk(KERN_DEBUG "Listening for transport (1) %s", transport->name);
 
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
-        printk(KERN_DEBUG "Now listening for connections on transport %s", transport->name);
+        printk(KERN_DEBUG "Listening for transport %s", transport->name);
         node = create_any_node(transport);
         if (node) {
             //connection has been established - wait for message with token and nid
@@ -246,7 +247,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * if someone is bute forcing the token then also stop
              */
             sprintf(name, "transport_%s", transports->transport_structure->name);
-            transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, node->handle, name);
+            transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             printk(KERN_DEBUG "Listener request made\n");
 
             if (IS_ERR(transports->listener)) {
@@ -385,18 +386,31 @@ EXPORT_SYMBOL(activate_popcorn);
 void node_remove(int index) {
     int first_node;
     printk(KERN_DEBUG "node_remove called\n");
+    max_connections = 1; /** TODO: forward and store this value */
     if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         first_node = forward_message_to();
-        if (first_node == my_nid || my_nid == -1) { //start process myself
-            remove_node(index);
-            strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+        first_node = find_first_null_pointer();
+
+        if (registered_on_popcorn_network) {
+            if (my_nid == first_node) {
+                //I am the instigator so start removing
+                send_to_child(my_nid, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", max_connections, "")); //not all parameters are needed as
+                //now that the message has been forwarded, it is safe to remove the node (without other nodes not getting the message)
+                remove_node(index);
+                strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
+            }
+            else {
+                //forward to the instigator node
+                printk(KERN_DEBUG "Forwarding node removal to the instigator node\n");
+                send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", 1); //0 and "" are for parameters not needed to remove a node
+            }
         }
         else {
-            printk(KERN_DEBUG "Message is being forwarded to the first node\n");
-            send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", 1); //0 and "" are for parameters not needed to remove a node
+            printk(KERN_ERR "Cannot remove a node when you are not a part of a popcorn network\n");
         }
     }
+    printk(KERN_DEBUG "Done handling node removal\n");
 }
 EXPORT_SYMBOL(node_remove);
 
