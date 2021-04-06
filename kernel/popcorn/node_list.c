@@ -116,6 +116,7 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     node->bundle_id = -1;
 
     node->transport = transport; //set the transport for enable node
+    printk(KERN_DEBUG "root transport: %p", transport_list_head->transport_structure);
     printk(KERN_DEBUG "transport: %p", transport);
     printk(KERN_DEBUG "transport name: %s", transport->name);
 

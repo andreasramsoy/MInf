@@ -242,7 +242,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * if someone is bute forcing the token then also stop
              */
             sprintf(name, "transport_%s", transports->transport_structure->name);
-            transports->listener = kthread_run(listen_for_nodes, node->handle, name, transports->transport_structure);
+            transports->listener = kthread_run(listen_for_nodes, node->handle, name, transports.transport_structure);
             printk(KERN_DEBUG "Listener request made\n");
 
             if (IS_ERR(transports->listener)) {
