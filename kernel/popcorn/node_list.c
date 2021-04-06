@@ -632,7 +632,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Copied command\n");
 
-    command_queue_push(command); //add to the queue
+    command_queue_push(command_copy); //add to the queue
 
     printk(KERN_DEBUG "Processing command queue\n");
 
