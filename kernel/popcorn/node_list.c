@@ -402,8 +402,10 @@ bool is_myself(struct message_node* node)
 			addr = ifaddr->ifa_local;
             printk(KERN_DEBUG "Checking if this node is myself 4\n");
             printk(KERN_DEBUG "My address is: %d.%d.%d.%d\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
-            if (my_nid == -1 && addr == node->address) {
-                my_nid = node->index;
+            if (addr == node->address) {
+                if (my_nid == -1) {
+                    my_nid = node->index; //ensures only set once and does not overwrite new info
+                }
                 return true;
             }
 		}
