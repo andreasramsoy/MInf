@@ -301,11 +301,12 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 /**
  * Commands to node list
  */
+#define TRANSPORT_NAME_MAX_LENGTH 10
 #define NODE_COMMAND_FIELDS \
 	int sender; \
 	enum node_list_command_type node_command_type; \
 	uint32_t address; \
-	char* transport; \
+	char transport[TRANSPORT_NAME_MAX_LENGTH]; \
 	int max_connections; \
 	int nid_to_remove; \
 	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]

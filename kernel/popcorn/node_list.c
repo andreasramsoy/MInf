@@ -517,26 +517,33 @@ bool command_queue_push(node_list_command* command) {
  */
 void process_command(node_list_command* command) {
     struct message_node* node;
+    struct pcn_kmsg_transport* protocol;
     printk(KERN_DEBUG "process_command called\n");
     if (command == NULL) {
         printk(KERN_ERR "The pointer to the command was equal to null!\n");
         return;
     }
 
+    printk(KERN_DEBUG "The transport protocol for the node being added is %s", command->transport);
+
     if (command->node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
-        node = create_node(command->address, string_to_transport(command->transport));
-        if (node) {
-            if (add_node(node, command->max_connections, command->token) >= 0) printk(KERN_DEBUG "Added the new node\n");
+        protocol = string_to_transport(command->transport);
+        if (protocol != NULL) {
+            node = create_node(command->address, string_to_transport(command->transport));
+            if (node) {
+                if (add_node(node, command->max_connections, command->token) >= 0) printk(KERN_DEBUG "Added the new node\n");
+                else {
+                    printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
+                    kfree(node);
+                }
+            }
             else {
-                printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
+                printk(KERN_ERR "Failed to create the node! If other nodes succeed then the node list will become inconsistent\n");
                 kfree(node);
             }
         }
-        else {
-            printk(KERN_ERR "Failed to create the node! If other nodes succeed then the node list will become inconsistent\n");
-            kfree(node);
-        }
+        else printk(KERN_DEBUG "Did not attempt to add the node as the protocol was invalid\n");
     }
     else if (command->node_command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to remove node %d!\n", command->sender, command->nid_to_remove);
@@ -637,10 +644,11 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
 		.sender = my_nid,
 		.node_command_type = command_type,
         .address = address,
-        .transport = transport_type,
         .max_connections = max_connections,
 	};
-	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
+    strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
+	
+    pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
 }
 EXPORT_SYMBOL(send_node_command_message);
 
