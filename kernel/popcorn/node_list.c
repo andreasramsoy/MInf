@@ -626,7 +626,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
     node_list_command *command_copy;
     node_list_command *command = (node_list_command *)msg;
 
-    command_copy = kmalloc(sizeof(*command));
+    command_copy = kmalloc(sizeof(*command), GFP_KERNEL);
     if (!command_copy) {
         printk(KERN_ERR "Could not allocate space for command message\n");
         return -ENOMEM;
