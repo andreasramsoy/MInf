@@ -81,7 +81,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     printk(KERN_DEBUG "Transport with pointer %p", transport);
     printk(KERN_DEBUG "Listening for transport (1) %s\n", transport->name);
 
-    while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
+    while (number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
         printk(KERN_DEBUG "Listening for transport %s\n", transport->name);
         node = create_any_node(transport);

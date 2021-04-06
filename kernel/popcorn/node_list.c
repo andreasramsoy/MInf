@@ -162,7 +162,12 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
 
     //previously in bundle.c
     node->is_connected = false;
-    node->arch = POPCORN_ARCH_UNKNOWN;
+    if (is_myself(node)) {
+        node->arch = my_arch;
+    }
+    else {
+        node->arch = POPCORN_ARCH_UNKNOWN;
+    }
     node->bundle_id = -1;
 
     //transport structure
@@ -210,7 +215,12 @@ struct message_node* create_instigator_node(uint32_t address_p) {
 
     //previously in bundle.c
     node->is_connected = false;
-    node->arch = POPCORN_ARCH_UNKNOWN;
+    if (is_myself(node)) {
+        node->arch = my_arch;
+    }
+    else {
+        node->arch = POPCORN_ARCH_UNKNOWN;
+    }
     node->bundle_id = -1;
 
 create_node_end:
