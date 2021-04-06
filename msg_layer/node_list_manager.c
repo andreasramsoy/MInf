@@ -79,11 +79,11 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
     printk(KERN_DEBUG "Transport with pointer %p", transport);
-    printk(KERN_DEBUG "Listening for transport (1) %s", transport->name);
+    printk(KERN_DEBUG "Listening for transport (1) %s\n", transport->name);
 
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
-        printk(KERN_DEBUG "Listening for transport %s", transport->name);
+        printk(KERN_DEBUG "Listening for transport %s\n", transport->name);
         node = create_any_node(transport);
         if (node) {
             //connection has been established - wait for message with token and nid

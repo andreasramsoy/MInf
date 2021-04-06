@@ -583,15 +583,15 @@ void command_queue_process(void) {
         printk(KERN_DEBUG "command_queue_process called 3 loop\n");
         command_to_be_processed = command_queue[command_queue_start];
         command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
-        up(&command_queue_sem);
 
         printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
         //not critical section
         process_command(command_to_be_processed);
         //end of non-criticial section
+        up(&command_queue_sem);
 
-        kfree(command_to_be_processed);
+        //the command is not freed from memory, just overwritten as the queue start keeps track of this
     
         printk(KERN_DEBUG "command_queue_process called 3.2 loop\n");
 
@@ -629,6 +629,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 	//smp_mb(); //this function appears in bundle.c, don't think is necessary
 
 	pcn_kmsg_done(msg);
+    printk(KERN_DEBUG "Done handling new node commands info\n");
     return 0;
 }
 EXPORT_SYMBOL(handle_node_list_command);
