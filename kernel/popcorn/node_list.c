@@ -598,12 +598,12 @@ void command_queue_process(void) {
 
         printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
-        //not critical section
         process_command(command_to_be_processed);
-        //end of non-criticial section
+
+        kfree(command_to_be_processed);
+
         up(&command_queue_sem);
 
-        //the command is not freed from memory, just overwritten as the queue start keeps track of this
     
         printk(KERN_DEBUG "command_queue_process called 3.2 loop\n");
 
@@ -623,8 +623,14 @@ void command_queue_process(void) {
  * @param struct pcn_kmsg_message
  */
 static int handle_node_list_command(struct pcn_kmsg_message *msg) {
-    node_list_command command_copy;
+    node_list_command *command_copy;
     node_list_command *command = (node_list_command *)msg;
+
+    command_copy = kmalloc(sizeof(*command));
+    if (!command_copy) {
+        printk(KERN_ERR "Could not allocate space for command message\n");
+        return -ENOMEM;
+    }
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
