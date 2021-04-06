@@ -402,7 +402,7 @@ bool is_myself(struct message_node* node)
 			addr = ifaddr->ifa_local;
             printk(KERN_DEBUG "Checking if this node is myself 4\n");
             printk(KERN_DEBUG "My address is: %d.%d.%d.%d\n", addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF, (addr >> 24) & 0xFF);
-            if (addr == node->address) {
+            if (my_nid == -1 && addr == node->address) {
                 my_nid = node->index;
                 return true;
             }
@@ -697,6 +697,7 @@ void send_to_child(int parent_node_index, enum node_list_command_type node_comma
                 printk(KERN_DEBUG "my_nid: %d\n", my_nid);
                 printk(KERN_DEBUG "I am: %d\n", address);
                 printk(KERN_DEBUG "Wanting to send to: %d\n", node->address);
+                printk(KERN_DEBUG "Which has index: %d\n", node->index);
                 if (node->address != address) {
                     send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
                 }
@@ -937,6 +938,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         //this is the instigator node (no other connections made so must be)
         printk(KERN_DEBUG "Has not been set and this is the instigator node\n");
         my_nid = info->your_nid;
+        printk(KERN_DEBUG "Set my_nid to %d", my_nid);
         number_of_nodes_to_be_added = info->number_of_nodes;
         strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
