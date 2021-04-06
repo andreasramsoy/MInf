@@ -116,6 +116,8 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     node->bundle_id = -1;
 
     node->transport = transport; //set the transport for enable node
+    printk(KERN_DEBUG "transport: %p", transport);
+    printk(KERN_DEBUG "transport name: %s", transport->name);
 
     success = enable_node(node);
 
@@ -600,7 +602,7 @@ void command_queue_process(void) {
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
 
-    printk(KERN_DEBUG "command_queue_process called 3.4 loop\n");
+    printk(KERN_DEBUG "command_queue_process called 3.4\n");
 }
 
 /**

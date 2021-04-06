@@ -85,7 +85,6 @@ static int recv_handler(void* arg0)
 		if (ret < 0) break;
 
 		/* Call pcn_kmsg upper layer */
-		pcn_kmsg_process((struct pcn_kmsg_message *)data);
 		#ifdef POPCORN_ENCRYPTION_ON
 		pcn_kmsg_process((struct pcn_kmsg_message_encrypted *)data);
 		#else
