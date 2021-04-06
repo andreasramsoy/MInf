@@ -71,7 +71,7 @@ int forward_message_to(void) {
  * Called in a thread will listen and add nodes to the node list
  * until all nodes are added (or process is aborted)
  */
-void listen_for_nodes(struct pcn_kmsg_transport* transport) {
+int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     struct node_list_info_list_item* node_info;
     struct node_list_info_list_item* node_info_prev;
@@ -135,6 +135,7 @@ void listen_for_nodes(struct pcn_kmsg_transport* transport) {
     if (number_of_nodes_to_be_added == 0 && attempts_left > 0) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
+    return 0;
 }
 EXPORT_SYMBOL(listen_for_nodes);
 
@@ -244,7 +245,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
              * if someone is bute forcing the token then also stop
              */
             sprintf(name, "transport_%s", transports->transport_structure->name);
-            transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), node->handle, name);
+            transports->listener = kthread_run(int (*listen_for_nodes)(*transports->transport_structure), node->handle, name);
             printk(KERN_DEBUG "Listener request made\n");
 
             if (IS_ERR(transports->listener)) {
