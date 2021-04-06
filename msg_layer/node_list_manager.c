@@ -78,6 +78,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int ret;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
+    printk(KERN_DEBUG "Now listening for connections on transport with pointer %p", transport);
 
     while (!kthread_should_stop() && number_of_nodes_to_be_added > 0 && attempts_left > 0) {
         //keep accepting until all are added or no attempts left
