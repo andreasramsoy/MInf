@@ -386,7 +386,7 @@ EXPORT_SYMBOL(activate_popcorn);
 void node_remove(int index) {
     int first_node;
     printk(KERN_DEBUG "node_remove called\n");
-    max_connections = 1; /** TODO: forward and store this value */
+    int max_connections = 1; /** TODO: forward and store this value */
     if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         first_node = forward_message_to();
@@ -395,7 +395,7 @@ void node_remove(int index) {
         if (registered_on_popcorn_network) {
             if (my_nid == first_node) {
                 //I am the instigator so start removing
-                send_to_child(my_nid, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", max_connections, "")); //not all parameters are needed as
+                send_to_child(my_nid, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", max_connections, ""); //not all parameters are needed as
                 //now that the message has been forwarded, it is safe to remove the node (without other nodes not getting the message)
                 remove_node(index);
                 strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
