@@ -476,6 +476,7 @@ int __sock_accept_client(struct message_node* node)
 	printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
 	printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
 
+    node->address = addr.sin_addr.s_addr;
 
 	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
 

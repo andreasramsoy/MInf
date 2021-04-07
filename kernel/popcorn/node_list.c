@@ -816,6 +816,7 @@ bool add_node_at_position(struct message_node* node, int index) {
 
     if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
     set_popcorn_node_online(node->index, true);
+    if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
     return true;
 }
@@ -852,7 +853,6 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     }
     
     printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
-    if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
@@ -922,6 +922,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
 
     printk(KERN_DEBUG "My address is: %d", node->address);
     printk(KERN_DEBUG "I think their address is: %d", their_address);
+    printk(KERN_DEBUG "I am sending their address as: %d", node_list_details.your_address);
 
     printk(KERN_DEBUG "send_node_list_info called 6\n");
 
