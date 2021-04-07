@@ -636,7 +636,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
-    memcpy(&command_copy, command, sizeof(*command));
+    memcpy(command_copy, command, sizeof(*command));
 
     printk(KERN_DEBUG "Copied command\n");
 
