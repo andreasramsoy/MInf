@@ -924,7 +924,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         printk(KERN_DEBUG "Token was not needed so was not set\n");
     }
 
-    printk(KERN_DEBUG "My address is: %d", node->address);
+    if (node) printk(KERN_DEBUG "My address is: %d", node->address);
     printk(KERN_DEBUG "I think their address is: %d", their_address);
     printk(KERN_DEBUG "I am sending their address as: %d", node_list_details.your_address);
 
