@@ -907,7 +907,6 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
     printk(KERN_DEBUG "send_node_list_info called 4\n");
 
     node_count--; //take one away as you've just added the new node (but it does not consider itself a part of the list yet)
-
     printk(KERN_DEBUG "send_node_list_info called 5\n");
 
     node_list_info node_list_details = {
