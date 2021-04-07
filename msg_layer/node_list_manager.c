@@ -101,10 +101,11 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 msleep(100); /** TODO: change from spinlock to something more efficient */
                 printk(KERN_INFO "Recieved message from %d, looking for %d", node_info->info.my_address, node->address);
                 printk(KERN_DEBUG "Looping through connections to find node\n");
+                up(&node_list_info_sem);
+
                 if (node_info->next == NULL) node_info = root_node_list_info_list;
                 else node_info = node_info->next;
 
-                up(&node_list_info_sem);
                 do {
                     ret = down_interruptible(&node_list_info_sem);
                 } while (ret);
@@ -203,6 +204,9 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     //now add the node
     if (!registered_on_popcorn_network) {
         printk(KERN_DEBUG "Joining existing popcorn network\n");
+
+
+        //start by adding the instigator
         node = create_node(address, protocol);
         if (!node) {
             printk(KERN_ERR "Could not create the node for the instigator\n");
@@ -228,7 +232,10 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             return;
         }
 
+
+
         //now add myself
+        printk(KERN_DEBUG "My address according to the instigator is: %d", root_node_list_info_list->info.your_address);
         myself = create_node(root_node_list_info_list->info.your_address, NULL);
         if (!myself) {
             printk(KERN_ERR "Could not create a node for myself\n");

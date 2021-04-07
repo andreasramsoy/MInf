@@ -920,6 +920,8 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         .token = random_token,
     };
 
+    printk(KERN_DEBUG "My address is: %d", node->address);
+
     printk(KERN_DEBUG "send_node_list_info called 6\n");
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
