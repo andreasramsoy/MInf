@@ -816,7 +816,7 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
 
     if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
     set_popcorn_node_online(node->index, true);
-    if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
+    if (my_nid != -1 && my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
     return true;
 }
