@@ -839,7 +839,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 	//naviagate to the appropriate list
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
-	if (!add_node_at_position(node, find_first_null_pointer()), token) { //first free space (may be on a list that needs creating)
+	if (!add_node_at_position(node, find_first_null_pointer(), token)) { //first free space (may be on a list that needs creating)
         printk(KERN_DEBUG "Could not add the node\n");
         return -1;
     }
