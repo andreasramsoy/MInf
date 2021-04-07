@@ -921,6 +921,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
     };
 
     printk(KERN_DEBUG "My address is: %d", node->address);
+    printk(KERN_DEBUG "I think their address is: %d", their_address);
 
     printk(KERN_DEBUG "send_node_list_info called 6\n");
 
