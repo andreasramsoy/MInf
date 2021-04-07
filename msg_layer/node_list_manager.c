@@ -223,7 +223,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             printk(KERN_ERR "Root node list info list cannot be null as it has just sent\n");
             return;
         }
-        if (add_node_at_position(node, root_node_list_info_list->info.my_nid)) { //add the instigator node to its correct position
+        if (add_node_at_position(node, root_node_list_info_list->info.my_nid, "")) { //add the instigator node to its correct position
             number_of_nodes_to_be_added--; //the instigator node has been added so one less to worry about
             node->arch = root_node_list_info_list->info.arch; //set arch from info given
         }
@@ -242,7 +242,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             printk(KERN_ERR "Could not create a node for myself\n");
             return;
         }
-        if (!add_node_at_position(myself, root_node_list_info_list->info.your_nid)) {
+        if (!add_node_at_position(myself, root_node_list_info_list->info.your_nid, "")) {
             printk(KERN_ERR "Could not add myself to the node list\n");
             return;
         }

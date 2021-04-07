@@ -110,7 +110,7 @@ extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport
 extern struct message_node* create_instigator_node(uint32_t address_p);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
 extern void remove_node(int index);
-extern bool add_node_at_position(struct message_node* node, int position);
+extern bool add_node_at_position(struct message_node* node, int position, char* token);
 extern int add_node(struct message_node* node, int max_connections, char* token);
 
 extern int find_first_null_pointer(void);
