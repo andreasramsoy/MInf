@@ -98,10 +98,18 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
 
             node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {
+                msleep(100); /** TODO: change from spinlock to something more efficient */
+                printk(KERN_INFO "Recieved message from %d, looking for %d", node_info->info.my_address, node->address);
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 if (node_info->next == NULL) node_info = root_node_list_info_list;
                 else node_info = node_info->next;
+
+                up(&node_list_info_sem);
+                do {
+                    ret = down_interruptible(&node_list_info_sem);
+                } while (ret);
             }
+            up(&node_list_info_sem);
             //node_info should now contain address we're looking for
             if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
                 //correct token so can now add to the node list and remove from node list info list
