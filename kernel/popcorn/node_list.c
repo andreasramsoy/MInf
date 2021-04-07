@@ -548,6 +548,7 @@ void process_command(node_list_command* command) {
         if (protocol != NULL) {
             node = create_node(command->address, string_to_transport(command->transport));
             if (node) {
+                printk("The recieved token was: %s", command->token);
                 if (add_node(node, command->max_connections, command->token) >= 0) printk(KERN_DEBUG "Added the new node\n");
                 else {
                     printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
@@ -763,6 +764,7 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     int i;
 	int list_number;
 	struct node_list* list = root_node_list;
+    printk(KERN_DEBUG "TOKEN: add_node_at_position: %s\n", token);
 
     printk(KERN_DEBUG "add_node_at_position called\n");
 
@@ -828,7 +830,7 @@ EXPORT_SYMBOL(add_node_at_position);
  * @return int index of the location of the new node (-1 if it could not be added)
 */
 int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
-
+    printk(KERN_DEBUG "TOKEN in add_node: %s\n", token);
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");
         return -1;

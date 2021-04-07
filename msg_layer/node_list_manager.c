@@ -114,8 +114,8 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             }
             up(&node_list_info_sem);
             //node_info should now contain address we're looking for
-            printk(KERN_DEBUG "Token provided was: %s", node_info->info.token);
-            printk(KERN_DEBUG "My joining token is: %s", joining_token);
+            printk(KERN_DEBUG "Token provided was: %s\n", node_info->info.token);
+            printk(KERN_DEBUG "My joining token is: %s\n", joining_token);
             if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
                 //correct token so can now add to the node list and remove from node list info list
 
