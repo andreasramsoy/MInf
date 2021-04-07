@@ -233,7 +233,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         }
 
 
-
         //now add myself
         printk(KERN_DEBUG "My address according to the instigator is: %d", root_node_list_info_list->info.your_address);
         myself = create_node(root_node_list_info_list->info.your_address, NULL);
