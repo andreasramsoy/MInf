@@ -326,7 +326,11 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 printk(KERN_ERR "Failed to create new node\n");
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
-            token = kalloc(NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES, GFP_KERNEL);
+            token = kmalloc(NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES, GFP_KERNEL);
+            if (!token) {
+                printk(KERN_ERR "Failed to allocate memory for token\n");
+                return;
+            }
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
             new_node_index = add_node(node, max_connections, token);
             if (new_node_index == -1) {
