@@ -82,6 +82,8 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     printk(KERN_DEBUG "Listening for transport (1) %s\n", transport->name);
 
     while (number_of_nodes_to_be_added > 0 && attempts_left > 0) {
+        printk(KERN_DEBUG "Nodes still to be added: %d\n", number_of_nodes_to_be_added);
+        printk(KERN_DEBUG "Attempts left: %d\n", attempts_left);
         //keep accepting until all are added or no attempts left
         printk(KERN_DEBUG "Listening for transport %s\n", transport->name);
         node = create_any_node(transport);
@@ -119,25 +121,32 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }
-                else {
-                    node->index = node_info->info.your_nid;
-                    node->arch = node_info->info.arch;
-                    if (root_node_list_info_list == node_info) {
-                        root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
-                    }
-                    else {
-                        node_info_prev = root_node_list_info_list;
-                        while (node_info_prev->next != node_info && node_info_prev->next == NULL) {
-                            node_info_prev = node_info_prev->next;
-                        }
-                        node_info_prev = node_info->next;
-                        kfree(node_info);
-                    }
-                    continue; //don't count as an attempt
+                if (add_node_at_position(node, node_info->info.my_nid, node_info->info.token)) {
+                    printk(KERN_DEBUG "Successfully added new node\n");
+                    number_of_nodes_to_be_added--;
                 }
-            }
+                else {
+                    printk(KERN_ERR "Failed to add the new node\n");
+                    kfree(node);
+                }
 
-            up(&node_list_info_sem);
+
+                node->index = node_info->info.your_nid;
+                node->arch = node_info->info.arch;
+                if (root_node_list_info_list == node_info) {
+                    root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
+                }
+                else {
+                    node_info_prev = root_node_list_info_list;
+                    while (node_info_prev->next != node_info && node_info_prev->next == NULL) {
+                        node_info_prev = node_info_prev->next;
+                    }
+                    node_info_prev = node_info->next;
+                    kfree(node_info);
+                }
+                continue; //don't count as an attempt
+            }
+            else kfree(node);
         }
 
         attempts_left--;
