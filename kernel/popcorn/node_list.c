@@ -835,6 +835,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_ERR "Trying to add a NULL node\n");
         return -1;
     }
+    
 
     printk(KERN_DEBUG "Adding new node %4pI\n", node->address);
 
