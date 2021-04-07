@@ -516,6 +516,7 @@ bool command_queue_push(node_list_command* command) {
         command_queue[command_queue_end] = command;
         success = true;
         printk(KERN_DEBUG "command_queue_push called 2.21\n");
+        printk(KERN_DEBUG "Newly pushed command is: %p", command_queue[command_queue_end]);
     }
 
     printk(KERN_DEBUG "command_queue_push called 3\n");
@@ -598,6 +599,7 @@ void command_queue_process(void) {
 
         printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
+        printk(KERN_DEBUG "About to process command: %p", command_to_be_processed);
         process_command(command_to_be_processed);
 
         kfree(command_to_be_processed);
