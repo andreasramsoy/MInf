@@ -917,8 +917,8 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         .arch = my_arch,
         .my_address = (node != NULL) ? node->address : 0,
         .number_of_nodes = node_count,
-        .token = random_token,
     };
+    memcpy(node_list_details.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     printk(KERN_DEBUG "My address is: %d", node->address);
     printk(KERN_DEBUG "I think their address is: %d", their_address);
