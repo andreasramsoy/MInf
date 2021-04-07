@@ -217,6 +217,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
     //now add the node
     if (!registered_on_popcorn_network) {
+        //not registered so joining another network
         printk(KERN_DEBUG "Joining existing popcorn network\n");
 
 
@@ -309,7 +310,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     }
     else {
         printk(KERN_DEBUG "Adding new node to my popcorn network\n");
-        instigator_node_index = 0; //instigator is the node that starts sending messages across the network
+        instigator_node_index = find_first_null_pointer(); //instigator is the node that starts sending messages across the network
         while (instigator_node_index < after_last_node_index && !get_node(instigator_node_index)) {
             instigator_node_index++; //loop until first non-null value
         }
@@ -325,6 +326,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 printk(KERN_ERR "Failed to create new node\n");
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
+            token = kalloc(NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES, GFP_KERNEL);
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
             new_node_index = add_node(node, max_connections, token);
             if (new_node_index == -1) {
@@ -336,6 +338,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             //node now added
 
             send_to_child(my_nid, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
+            kfree(token);
         }
     }
 
