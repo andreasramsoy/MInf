@@ -835,7 +835,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_ERR "Trying to add a NULL node\n");
         return -1;
     }
-    
+
 
     printk(KERN_DEBUG "Adding new node %4pI\n", node->address);
 
@@ -876,7 +876,7 @@ EXPORT_SYMBOL(add_node);
  * Function to forward details about the node list to an
  * incomming node
  */
-void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
+void send_node_list_info(int their_index, char* random_token) {
     int i;
     int node_count = 0;
     struct message_node* node;

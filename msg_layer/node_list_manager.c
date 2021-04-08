@@ -202,7 +202,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     int new_node_index;
     bool success;
     char name[40];
-    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    char* token;
 
     //handle user input
     printk(KERN_DEBUG "node_add called\n");
