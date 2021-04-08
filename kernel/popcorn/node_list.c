@@ -663,7 +663,7 @@ EXPORT_SYMBOL(handle_node_list_command);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections) {
+void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
 
 	node_list_command command = {
 		.sender = my_nid,
@@ -672,7 +672,13 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
         .max_connections = max_connections,
 	};
     strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
-	
+    if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
+        printk(KERN_DEBUG "Copied the token: %s\n", random_token);
+        strncpy(command.token, random_token, sizeof(random_token)); //use size of random token as this can be ""
+    }
+    else {
+        printk(KERN_DEBUG "Token was not needed so was not set\n");
+    }
     pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
 }
 EXPORT_SYMBOL(send_node_command_message);
@@ -710,7 +716,7 @@ void send_to_child(int parent_node_index, enum node_list_command_type node_comma
                 printk(KERN_DEBUG "Wanting to send to: %d\n", node->address);
                 printk(KERN_DEBUG "Which has index: %d\n", node->index);
                 if (node->address != address) {
-                    send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections);
+                    send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections, token);
                 }
                 else {
                     printk(KERN_DEBUG "This is the node to be added and so was not forwarded to %lld\n", node->index);
