@@ -133,19 +133,30 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
 
 
+                printk(KERN_DEBUG "Handled node info 1\n");
                 node->index = node_info->info.your_nid;
+                printk(KERN_DEBUG "Handled node info 2\n");
                 node->arch = node_info->info.arch;
+                printk(KERN_DEBUG "Handled node info 3\n");
                 if (root_node_list_info_list == node_info) {
+                    printk(KERN_DEBUG "Handled node info 3.1\n");
                     root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
                 }
                 else {
+                    printk(KERN_DEBUG "Handled node info 4\n");
                     node_info_prev = root_node_list_info_list;
+                    printk(KERN_DEBUG "Handled node info 4.1\n");
                     while (node_info_prev->next != node_info && node_info_prev->next == NULL) {
+                        printk(KERN_DEBUG "Handled node info 4.2\n");
                         node_info_prev = node_info_prev->next;
+                        printk(KERN_DEBUG "Handled node info 4.3\n");
                     }
+                    printk(KERN_DEBUG "Handled node info 4.4\n");
                     node_info_prev = node_info->next;
+                    printk(KERN_DEBUG "Handled node info 4.5\n");
                     kfree(node_info);
                 }
+                printk(KERN_DEBUG "Handled node info\n");
                 continue; //don't count as an attempt
             }
             else {
@@ -288,8 +299,9 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             }*/
             
             transports = transports->next;
+            printk(KERN_DEBUG "Moving to next transport\n");
         }
-
+        printk(KERN_DEBUG "Outside of loop\n");
 
         //end all those unsuccessful transports if they failed
         if (!success) {
