@@ -280,12 +280,13 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             printk(KERN_DEBUG "Listener request made\n");
 
-            if (IS_ERR(transports->listener)) {
+            /*if (IS_ERR(transports->listener)) {
                 printk(KERN_ERR "Cannot create thread for transport listener: %s, %ld\n", transports->transport_structure->name, PTR_ERR(transports->listener));
                 transports->listener = NULL;
                 success = false;
                 break; //didn't work so stop and abort
-            }
+            }*/
+            
             transports = transports->next;
         }
 
@@ -293,14 +294,14 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         //end all those unsuccessful transports if they failed
         if (!success) {
             if (node) kfree(node);
-            do {
+            /*do {
 
                 if (transports->listener) {
                     kthread_stop(transports->listener);
                 }
 
                 transports = transports->next;
-            } while (transports != NULL);
+            } while (transports != NULL);*/
             printk(KERN_INFO "FAILED to register on popcorn_network\n");
         }
         else {
