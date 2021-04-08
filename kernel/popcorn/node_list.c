@@ -663,7 +663,7 @@ EXPORT_SYMBOL(handle_node_list_command);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
+void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* random_token) {
 
 	node_list_command command = {
 		.sender = my_nid,
@@ -674,7 +674,7 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
     strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
     if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
         printk(KERN_DEBUG "Copied the token: %s\n", random_token);
-        strncpy(command.token, random_token, sizeof(random_token)); //use size of random token as this can be ""
+        strncpy(command.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else {
         printk(KERN_DEBUG "Token was not needed so was not set\n");
@@ -927,7 +927,7 @@ void send_node_list_info(int their_index, char* random_token) {
         .number_of_nodes = node_count,
     };
     if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
-        strncpy(node_list_details.token, random_token, sizeof(random_token)); //use size of random token as this can be ""
+        strncpy(node_list_details.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else {
         printk(KERN_DEBUG "Token was not needed so was not set\n");
