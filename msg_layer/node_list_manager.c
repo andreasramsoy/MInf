@@ -165,10 +165,12 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
 
         attempts_left--;
     }
+    printk(KERN_DEBUG "Handled node info end loop\n");
     
     if (number_of_nodes_to_be_added == 0 && attempts_left > 0) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
+    printk(KERN_DEBUG "Handled node info end loop 2\n");
     return 0;
 }
 EXPORT_SYMBOL(listen_for_nodes);
