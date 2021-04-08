@@ -310,7 +310,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     }
     else {
         printk(KERN_DEBUG "Adding new node to my popcorn network\n");
-        instigator_node_index = find_first_null_pointer(); //instigator is the node that starts sending messages across the network
+        instigator_node_index = 0; //instigator is the node that starts sending messages across the network
         while (instigator_node_index < after_last_node_index && !get_node(instigator_node_index)) {
             instigator_node_index++; //loop until first non-null value
         }
