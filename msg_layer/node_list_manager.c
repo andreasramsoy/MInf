@@ -157,11 +157,10 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     kfree(node_info);
                 }
                 printk(KERN_DEBUG "Handled node info\n");
-                continue; //don't count as an attempt
             }
             else {
                 printk(KERN_ERR "The TOKEN did NOT match! Cannot add this node!\n");
-                kfree(node);
+                if (node) kfree(node);
             }
         }
 
