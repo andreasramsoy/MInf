@@ -171,6 +171,10 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
     printk(KERN_DEBUG "Handled node info end loop 2\n");
+    while(thread_should_stop()) { //wait until this has been recieved by calling node
+        printk(KERN_DEBUG "Sleeping waiting for super thread to respond\n");
+        sleep_interuptible(1);
+    }
     return 0;
 }
 EXPORT_SYMBOL(listen_for_nodes);
@@ -300,7 +304,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 break; //didn't work so stop and abort
             }*/
             
-            transports = transports->next;
+            transports = transports->next ? transport_list_head : transports->next;
             printk(KERN_DEBUG "Moving to next transport\n");
         }
         printk(KERN_DEBUG "Outside of loop\n");
