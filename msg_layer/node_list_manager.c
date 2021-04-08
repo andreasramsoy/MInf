@@ -154,7 +154,6 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     printk(KERN_DEBUG "Handled node info 4.4\n");
                     node_info_prev = node_info->next;
                     printk(KERN_DEBUG "Handled node info 4.5\n");
-                    kfree(node_info);
                 }
                 printk(KERN_DEBUG "Handled node info\n");
             }
