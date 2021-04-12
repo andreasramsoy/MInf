@@ -715,11 +715,13 @@ void send_to_child(int parent_node_index, enum node_list_command_type node_comma
                 printk(KERN_DEBUG "I am: %d\n", address);
                 printk(KERN_DEBUG "Wanting to send to: %d\n", node->address);
                 printk(KERN_DEBUG "Which has index: %d\n", node->index);
-                if (node->address != address) {
+                if (node->address != address) { //check if the address being added is potentially the address that we're attempting to forward to
                     send_node_command_message(index - 1, node_command_type, address, transport_type, max_connections, token);
                 }
                 else {
                     printk(KERN_DEBUG "This is the node to be added and so was not forwarded to %lld\n", node->index);
+                    printk(KERN_DEBUG "Forwarding to children of %lld\n", node->index);
+                    send_to_child(index - 1, node_command_type, address, transport_type, max_connections, token);
                 }
             }
             else {
