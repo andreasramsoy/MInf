@@ -290,7 +290,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             sprintf(name, "transport_%s", transports->transport_structure->name);
             transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             msleep(1000);
-            kthread_stop(transports->listener);
+            //kthread_stop(transports->listener);
             printk(KERN_DEBUG "Listener request made\n");
 
             /*if (IS_ERR(transports->listener)) {
