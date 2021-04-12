@@ -173,7 +173,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     printk(KERN_DEBUG "Handled node info end loop 2\n");
     while(thread_should_stop()) { //wait until this has been recieved by calling node
         printk(KERN_DEBUG "Sleeping waiting for super thread to respond\n");
-        sleep_interuptible(1);
+        msleep(100);
     }
     return 0;
 }
@@ -294,7 +294,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
             sprintf(name, "transport_%s", transports->transport_structure->name);
             transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             kthread_stop(transports->listener);
-            sleep(10); ////////////////////////////////////
+            msleep(10); ////////////////////////////////////
             printk(KERN_DEBUG "Listener request made\n");
 
             /*if (IS_ERR(transports->listener)) {
