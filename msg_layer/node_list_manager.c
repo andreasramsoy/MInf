@@ -171,7 +171,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
     printk(KERN_DEBUG "Handled node info end loop 2\n");
-    while(thread_should_stop()) { //wait until this has been recieved by calling node
+    while(kthread_should_stop()) { //wait until this has been recieved by calling node
         printk(KERN_DEBUG "Sleeping waiting for super thread to respond\n");
         msleep(100);
     }
