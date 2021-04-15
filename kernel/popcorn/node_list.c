@@ -45,7 +45,7 @@ struct message_node* get_node(int index) {
 	int i;
 	struct node_list* list = root_node_list;
 	
-    printk(KERN_DEBUG "Getting the node %d\n", index);
+    //printk(KERN_DEBUG "Getting the node %d\n", index);
 
     if (list == NULL) {
         //printk(KERN_DEBUG "Fetching a list when there is no node lists (this happens when there are no nodes\n");
