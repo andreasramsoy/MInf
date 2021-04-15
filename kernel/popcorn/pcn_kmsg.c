@@ -21,7 +21,7 @@ static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
 static struct pcn_kmsg_transport *transport = NULL;
 
 /**
- * TODO: Remove following function (ensure that nothing breaks from removing it first)
+ * TODO: Remove following function (it should no longer be being used)
  */
 void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr)
 {
@@ -179,16 +179,15 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 
 	account_pcn_message_sent(msg);
 	
-	printk(KERN_DEBUG "PCN_KMSG_SEND!\n");
 	/*if (to == my_nid) {
 		printk(KERN_ERR "Sending a message to myself, transport does not exist - skip layer\n");
 		printk(KERN_ERR "Message type: %d, to: %d", type, to);
 		return 1;
 	}*/
-	printk(KERN_DEBUG "Sending to: %d", to);
+	/*printk(KERN_DEBUG "Sending to: %d", to);
 	printk(KERN_DEBUG "Node address: %p", get_node(to));
 	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport);
-	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport->send);
+	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport->send);*/
 	
 	return get_node(to)->transport->send(to, msg, size);
 }
@@ -214,7 +213,6 @@ void *pcn_kmsg_get(size_t size)
 {
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
-	printk(KERN_DEBUG "PCN_KMSG_GET!\n");
 	if (transport && transport->get)
 		return transport->get(size);
 	
@@ -225,7 +223,6 @@ EXPORT_SYMBOL(pcn_kmsg_get);
 void pcn_kmsg_put(void *msg)
 {
 	////////////////////////////////////////////////////////////////////////////////////////////////same as above function
-	printk(KERN_DEBUG "PCN_KMSG_PUT!\n");
 	if (transport && transport->put) {
 		transport->put(msg);
 	} else {
