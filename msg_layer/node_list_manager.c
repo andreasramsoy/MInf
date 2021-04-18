@@ -119,7 +119,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
                 //correct token so can now add to the node list and remove from node list info list
 
-                if (get_node(node_info->info.your_nid) != NULL) {
+                if (get_node(node_info->info.your_nid) != NULL && get_node(node_info->info.your_nid) != get_node(my_nid)) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }

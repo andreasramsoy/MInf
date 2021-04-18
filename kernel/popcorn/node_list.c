@@ -578,6 +578,7 @@ void process_command(node_list_command* command) {
         printk(KERN_ERR "A message was sent to the node list but it had an unknown type!\n");
         /** TODO: Should an error message be sent to the node above? */
     }
+    command_queue_end = (command_queue_end - 1) % COMMAND_QUEUE_LENGTH;
 }
 
 /**
@@ -904,7 +905,7 @@ void send_node_list_info(int their_index, char* random_token) {
 
     node = get_node(my_nid);
     if (!node) {
-        printk(KERN_ERR "Could not get find myself on the node list\n");
+        printk(KERN_DEBUG "Do not know my own address, other node should know this\n");
     }
 
     printk(KERN_DEBUG "send_node_list_info called 3\n");
