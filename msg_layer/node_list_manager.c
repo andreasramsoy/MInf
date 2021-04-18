@@ -320,7 +320,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
         }
         if (instigator_node_index != my_nid) {
             printk(KERN_DEBUG "The instigator node must start the command sending process, forwarding to instigator\n");
-            send_node_command_message(instigator_node_index, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, "");
+            //send_node_command_message(instigator_node_index, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, "");
         }
         else {
             //this is the instigator node - try to add
@@ -345,7 +345,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
 
             //node now added
 
-            send_to_child(my_nid, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
+            //send_to_child(my_nid, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
             kfree(token);
         }
     }
@@ -444,7 +444,7 @@ void node_remove(int index) {
             else {
                 //forward to the instigator node
                 printk(KERN_DEBUG "Forwarding node removal to the instigator node\n");
-                send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", 1, ""); //0 and "" are for parameters not needed to remove a node
+                //send_node_command_message(first_node, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", 1, ""); //0 and "" are for parameters not needed to remove a node
             }
         }
         else {

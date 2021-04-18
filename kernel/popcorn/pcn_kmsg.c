@@ -211,7 +211,6 @@ EXPORT_SYMBOL(pcn_kmsg_post);
 
 void *pcn_kmsg_get(size_t size)
 {
-	////////////////////////////////////////////////////////////////////////////////////////////////
 
 	if (transport && transport->get)
 		return transport->get(size);
@@ -222,7 +221,6 @@ EXPORT_SYMBOL(pcn_kmsg_get);
 
 void pcn_kmsg_put(void *msg)
 {
-	////////////////////////////////////////////////////////////////////////////////////////////////same as above function
 	if (transport && transport->put) {
 		transport->put(msg);
 	} else {
@@ -240,7 +238,6 @@ void pcn_kmsg_done(void *msg)
 		printk(KERN_ERR "Over-release message type %d\n", h->type);
 	}
 #endif
-	////////////////////////////////////////////////////////////////////////////////////////////////same as above function
 	if (get_node(find_first_null_pointer())) {
 		get_node(find_first_null_pointer())->transport->done(msg);
 	} else {
@@ -252,7 +249,6 @@ EXPORT_SYMBOL(pcn_kmsg_done);
 
 void pcn_kmsg_stat(struct seq_file *seq, void *v)
 {
-	////////////////////////////////////////////////////////////////////////////////////////////////same as above function, more below not labelled
 	if (transport && transport->stat) {
 		transport->stat(seq, v);
 	}

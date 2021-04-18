@@ -648,6 +648,8 @@ EXPORT_SYMBOL(handle_node_list_command);
  */
 void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* random_token) {
 
+    printk(KERN_DEBUG "Sending node command message\n");
+
 	node_list_command command = {
 		.sender = my_nid,
 		.node_command_type = command_type,
