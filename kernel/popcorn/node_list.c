@@ -591,13 +591,10 @@ void command_queue_process(void) {
 		ret = down_interruptible(&command_queue_sem);
 	} while (ret);
     
-    printk(KERN_DEBUG "command_queue_process called 2\n");
     if (command_queue_start != command_queue_end) {
 
-        printk(KERN_DEBUG "command_queue_process called 3 loop\n");
         command_to_be_processed = command_queue[command_queue_start];
 
-        printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
         printk(KERN_DEBUG "About to process command: %p", command_to_be_processed);
         process_command(command_to_be_processed);
@@ -608,17 +605,14 @@ void command_queue_process(void) {
         up(&command_queue_sem);
 
     
-        printk(KERN_DEBUG "command_queue_process called 3.2 loop\n");
 
         do {
             ret = down_interruptible(&command_queue_sem);
         } while (ret);
 
-        printk(KERN_DEBUG "command_queue_process called 3.3 loop\n");
     } /** TODO: quite ugly error prone code, find a better way of doing this */
     up(&command_queue_sem); //finally release when there are no more commands to process
 
-    printk(KERN_DEBUG "command_queue_process called 3.4\n");
 }
 
 /**
@@ -900,14 +894,12 @@ void send_node_list_info(int their_index, char* random_token) {
         printk(KERN_ERR "Could not get the node address to send to the node\n");
     }
 
-    printk(KERN_DEBUG "send_node_list_info called 2\n");
 
     node = get_node(my_nid);
     if (!node) {
         printk(KERN_DEBUG "Do not know my own address, other node should know this\n");
     }
 
-    printk(KERN_DEBUG "send_node_list_info called 3\n");
 
     for (i = 0; i < after_last_node_index; i++) {
         if (get_node(i)) {
@@ -915,10 +907,8 @@ void send_node_list_info(int their_index, char* random_token) {
         }
     }
 
-    printk(KERN_DEBUG "send_node_list_info called 4\n");
 
     node_count--; //take one away as you've just added the new node (but it does not consider itself a part of the list yet)
-    printk(KERN_DEBUG "send_node_list_info called 5\n");
 
     node_list_info node_list_details = {
         .your_nid = their_index,
@@ -939,7 +929,6 @@ void send_node_list_info(int their_index, char* random_token) {
     printk(KERN_DEBUG "I think their address is: %d", their_address);
     printk(KERN_DEBUG "I am sending their address as: %d", node_list_details.your_address);
 
-    printk(KERN_DEBUG "send_node_list_info called 6\n");
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
 }
@@ -957,7 +946,6 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "Recieved info about the node list\n");
     node_list_info *info = (node_list_info *)msg;
 
-    printk(KERN_DEBUG "Recieved info about the node list 2\n");
 
 	do {
 		ret = down_interruptible(&node_list_info_sem);
@@ -1035,37 +1023,6 @@ uint32_t __init __get_host_ip(void)
 	}
 	return -1;
 }
-
-/*bool __init identify_myself(void)
-{
-	int i;
-	uint32_t my_ip;
-    struct message_node* node;
-    printk(KERN_DEBUG "Identifying this node in node list\n");
-
-	my_ip = __get_host_ip();
-
-	for (i = 0; i < after_last_node_index; i++) {
-        node = get_node(i);
-        if (node != NULL) {
-            char *me = " ";
-            if (my_ip == node->address) {
-                my_nid = i;
-                me = "*";
-            }
-            PCNPRINTK("%s %d: %d\n", me, i, node->address);
-        }
-	}*/
-
- /*   if (after_last_node_index == 0) printk(KERN_DEBUG "No nodes in the list to display\n");
-
-	if (my_nid < 0) {
-		printk(KERN_ERR "My IP is not listed in the node configuration\n");
-		//return false; //if the IP is not listed then it should be added
-	}
-
-	return true;
-}*/
 
 int add_protocol(struct pcn_kmsg_transport* transport_item) {
     struct transport_list* trans_list;
@@ -1178,32 +1135,10 @@ bool initialise_node_list(void) {
     }
     else {
         printk(KERN_DEBUG "Initialising existing node list...\n");
-        // if (!get_node_list_from_file(NODE_LIST_FILE_ADDRESS)) {
-        //     printk(KERN_DEBUG "The node list file could not be loaded, this node will be added to an empty list\n"); //need to retreive from an existing file
-        //     /**
-        //      * TODO: Add getting the host ip
-        //      */
-        //     myself = create_node(1, transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
-        //     //myself = create_node(__get_host_ip(), transport_list_head->transport_structure); //create a node with own address and the first transport structure as default
-        //     if (myself == NULL) {
-        //         printk(KERN_ERR "Failed to create node for myself, cannot continue\n");
-        //         return false;
-        //     }
-        //     my_nid = 0; //so that the it knows not establish connections with itself
-        //     my_nid = add_node(myself);
-        //     if (my_nid < 0) {
-        //         printk(KERN_ERR "Created node but failed to add to node list, cannot continue\n");
-        //         kfree(myself); //couldn't add so remove it
-        //         destroy_node_list();
-        //         return false;
-        //     }
-        //     else printk(KERN_DEBUG "Added myself to node list\n");
-        // }
-        printk(KERN_DEBUG "Finished creating node list\n");
 
-        /*if (my_nid == -1) {
-            my_nid = identify_myself();
-        }*/
+
+        
+        printk(KERN_DEBUG "Finished creating node list\n");
     }
 
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);

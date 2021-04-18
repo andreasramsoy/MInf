@@ -133,27 +133,17 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
 
 
-                printk(KERN_DEBUG "Handled node info 1\n");
                 node->index = node_info->info.your_nid;
-                printk(KERN_DEBUG "Handled node info 2\n");
                 node->arch = node_info->info.arch;
-                printk(KERN_DEBUG "Handled node info 3\n");
                 if (root_node_list_info_list == node_info) {
-                    printk(KERN_DEBUG "Handled node info 3.1\n");
                     root_node_list_info_list = node_info->next; //skip over, doesn't matter if it's null
                 }
                 else {
-                    printk(KERN_DEBUG "Handled node info 4\n");
                     node_info_prev = root_node_list_info_list;
-                    printk(KERN_DEBUG "Handled node info 4.1\n");
                     while (node_info_prev->next != node_info && node_info_prev->next == NULL) {
-                        printk(KERN_DEBUG "Handled node info 4.2\n");
                         node_info_prev = node_info_prev->next;
-                        printk(KERN_DEBUG "Handled node info 4.3\n");
                     }
-                    printk(KERN_DEBUG "Handled node info 4.4\n");
                     node_info_prev = node_info->next;
-                    printk(KERN_DEBUG "Handled node info 4.5\n");
                 }
                 printk(KERN_DEBUG "Handled node info\n");
             }
@@ -165,12 +155,10 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
 
         attempts_left--;
     }
-    printk(KERN_DEBUG "Handled node info end loop\n");
     
     if (number_of_nodes_to_be_added == 0 && attempts_left > 0) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
-    printk(KERN_DEBUG "Handled node info end loop 2\n");
     return 0;
 }
 EXPORT_SYMBOL(listen_for_nodes);
@@ -218,7 +206,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
     //handle user input
     printk(KERN_DEBUG "node_add called\n");
     protocol = string_to_transport(protocol_string);
-    printk(KERN_DEBUG "node_add called 2\n");
     address = in_aton(address_string);
     if (protocol == NULL) {
         printk(KERN_ERR "Wrong protocols in node add\n");
@@ -547,21 +534,6 @@ EXPORT_SYMBOL(node_update_protocol);
 }*/
 
 /**
- * Reloads the node list to match that of the provided file. Tears down connections to all nodes, attempts to parse the file
- * provided and create a node list from it. If successful then the new node list is saved to the node list location and this
- * node list continues to be used. If it fails then popcorn reloads the previously used file for the node list to re-establish
- * the old connections. The file at the address provided will never be altered (opened read-only) but the popcorn node list
- * file will be altered if successful.
- * @param char* address address of new node list file to be loaded
- * @return void however the output_buffer is filled with bool success
-*/
-/*void node_load(char* address) {
-    printk(KERN_DEBUG "node_load called\n");
-    //load the connections
-    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", get_node_list_from_file(address));
-}*/
-
-/**
  * Gives the highest indexed node.
  * @return void however the output_buffer is filled with the highest index of a node that exists
 */
@@ -570,11 +542,3 @@ void node_highest_index(void) {
     snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", after_last_node_index - 1);
 }
 EXPORT_SYMBOL(node_highest_index);
-
-/**
- * Saves the current configuration so that when booting occurs this is the configuration
-*/
-/*void node_save(void) {
-    printk(KERN_DEBUG "node_save called\n");
-    snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", save_to_file());
-}*/
