@@ -241,8 +241,8 @@ void pcn_kmsg_done(void *msg)
 	}
 #endif
 	////////////////////////////////////////////////////////////////////////////////////////////////same as above function
-	if (transport && transport->done) {
-		transport->done(msg);
+	if (get_node(find_first_null_pointer())) {
+		get_node(find_first_null_pointer())->transport->done(msg);
 	} else {
 		kfree(msg);
 	}

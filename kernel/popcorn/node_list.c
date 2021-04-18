@@ -616,11 +616,12 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
         printk(KERN_ERR "Could not allocate space for command message\n");
         return -ENOMEM;
     }
-	pcn_kmsg_done(msg);
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
     memcpy(command_copy, command, sizeof(*command));
+
+	pcn_kmsg_done(msg);
 
     printk(KERN_DEBUG "Copied command\n");
 
