@@ -532,9 +532,9 @@ void process_command(node_list_command* command) {
     printk(KERN_DEBUG "The command message was from %d", command->sender);
 
     if (command->node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
-        printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
+        printk(KERN_DEBUG "Recieved message from node %d to add a new node at position %d!\n", command->sender);
         protocol = string_to_transport(command->transport);
-        if (protocol != NULL) {
+        if (protocol != NULL || (get_node(after_last_node_index - 1) && get_node(after_last_node_index - 1)->address != command->address)) {
             node = create_node(command->address, string_to_transport(command->transport));
             if (node) {
                 printk("The recieved token was: %s", command->token);
@@ -545,7 +545,7 @@ void process_command(node_list_command* command) {
                 }
             }
             else {
-                printk(KERN_ERR "Failed to create the node! If other nodes succeed then the node list will become inconsistent\n");
+                printk(KERN_DEBUG "Failed to create the node! If other nodes succeed then the node list will become inconsistent\n");
                 kfree(node);
             }
         }
