@@ -166,7 +166,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         node->arch = my_arch;
     }
     else {
-        node->arch = POPCORN_ARCH_UNKNOWN;
+        node->arch = my_arch; //default until set
     }
     node->bundle_id = -1;
 
