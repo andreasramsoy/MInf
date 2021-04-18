@@ -592,7 +592,7 @@ void command_queue_process(void) {
 	} while (ret);
     
     printk(KERN_DEBUG "command_queue_process called 2\n");
-    while (command_queue_start != command_queue_end) {
+    if (command_queue_start != command_queue_end) {
 
         printk(KERN_DEBUG "command_queue_process called 3 loop\n");
         command_to_be_processed = command_queue[command_queue_start];
