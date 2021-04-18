@@ -496,29 +496,21 @@ bool command_queue_push(node_list_command* command) {
     do {
         ret = down_interruptible(&command_queue_sem);
     } while (ret);
-    printk(KERN_DEBUG "command_queue_push called 2\n");
     
 
     if ((command_queue_end + 1) % COMMAND_QUEUE_LENGTH == command_queue_start) {
         //if the queue is full
-        printk(KERN_DEBUG "command_queue_push called 2.1\n");
         success = false;
     }
     else {
-        printk(KERN_DEBUG "command_queue_push called 2.2\n");
         //must be space
         command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
         command_queue[command_queue_end] = command;
         success = true;
-        printk(KERN_DEBUG "command_queue_push called 2.21\n");
         printk(KERN_DEBUG "Newly pushed command is: %p", command_queue[command_queue_end]);
     }
 
-    printk(KERN_DEBUG "command_queue_push called 3\n");
-
     up(&command_queue_sem);
-
-    printk(KERN_DEBUG "command_queue_push called 4\n");
 
     return success;
 }
@@ -589,11 +581,10 @@ void command_queue_process(void) {
     if (command_queue_start != command_queue_end) {
 
         command_to_be_processed = command_queue[command_queue_start];
-
+        command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
 
         printk(KERN_DEBUG "About to process command: %p", command_to_be_processed);
         process_command(command_to_be_processed);
-        command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
 
         kfree(command_to_be_processed);
 
