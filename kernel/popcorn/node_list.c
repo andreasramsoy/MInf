@@ -578,7 +578,6 @@ void process_command(node_list_command* command) {
         printk(KERN_ERR "A message was sent to the node list but it had an unknown type!\n");
         /** TODO: Should an error message be sent to the node above? */
     }
-    command_queue_end = (command_queue_end - 1) % COMMAND_QUEUE_LENGTH;
 }
 
 /**
@@ -597,12 +596,12 @@ void command_queue_process(void) {
 
         printk(KERN_DEBUG "command_queue_process called 3 loop\n");
         command_to_be_processed = command_queue[command_queue_start];
-        command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
 
         printk(KERN_DEBUG "command_queue_process called 3.1 loop\n");
 
         printk(KERN_DEBUG "About to process command: %p", command_to_be_processed);
         process_command(command_to_be_processed);
+        command_queue_start = (command_queue_start + 1) % COMMAND_QUEUE_LENGTH;
 
         kfree(command_to_be_processed);
 
