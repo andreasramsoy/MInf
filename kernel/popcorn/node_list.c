@@ -504,8 +504,8 @@ bool command_queue_push(node_list_command* command) {
     }
     else {
         //must be space
-        command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
         command_queue[command_queue_end] = command;
+        command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
         success = true;
         printk(KERN_DEBUG "Newly pushed command is: %p", command_queue[command_queue_end]);
     }
