@@ -173,11 +173,6 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     //transport structure
     node->transport = transport;
     //now check in node list manager that the transport is not null
-    /*if (node->transport == NULL) {
-        successful = false; //this can be caused when the protocol is not in the protocol list
-        printk(KERN_ERR "The transport protocol cannot be NULL\n");
-        goto create_node_end;
-    }*/
 
     //setup comms
     if (!enable_node(node)) {
@@ -1137,7 +1132,7 @@ bool initialise_node_list(void) {
         printk(KERN_DEBUG "Initialising existing node list...\n");
 
 
-        
+
         printk(KERN_DEBUG "Finished creating node list\n");
     }
 
