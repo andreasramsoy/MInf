@@ -505,9 +505,9 @@ bool command_queue_push(node_list_command* command) {
     else {
         //must be space
         command_queue[command_queue_end] = command;
+        printk(KERN_DEBUG "Newly pushed command is: %p", command_queue[command_queue_end]);
         command_queue_end = (command_queue_end + 1) % COMMAND_QUEUE_LENGTH;
         success = true;
-        printk(KERN_DEBUG "Newly pushed command is: %p", command_queue[command_queue_end]);
     }
 
     up(&command_queue_sem);
@@ -528,6 +528,8 @@ void process_command(node_list_command* command) {
     }
 
     printk(KERN_DEBUG "The transport protocol for the node being added is %s", command->transport);
+
+    printk(KERN_DEBUG "The command message was from %d", command->sender);
 
     if (command->node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
         printk(KERN_DEBUG "Recieved message from node %d to add a new node!\n", command->sender);
@@ -614,6 +616,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
         printk(KERN_ERR "Could not allocate space for command message\n");
         return -ENOMEM;
     }
+	pcn_kmsg_done(msg);
 
     printk(KERN_DEBUG "Recieved a command message. Queuing for processing\n");
 
@@ -629,7 +632,6 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
 	//smp_mb(); //this function appears in bundle.c, don't think is necessary
 
-	pcn_kmsg_done(msg);
     printk(KERN_DEBUG "Done handling new node commands info\n");
     return 0;
 }
