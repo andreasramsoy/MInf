@@ -27,7 +27,7 @@ bool get_popcorn_node_online(int nid)
 	struct message_node* node = get_node(nid);
 	if (node) return node->is_connected;
 	else {
-		printk(KERN_ERR "Cannot get online status of node %d as it does not exist", nid);
+		printk(KERN_DEBUG "Node %d as it does not exist, so is offline", nid);
 		return false;
 	}
 }
@@ -121,7 +121,7 @@ static int handle_node_info(struct pcn_kmsg_message *msg)
 	PCNPRINTK("   %d joined, %s\n", info->nid, archs_sz[info->arch]);
 
 	if (them) them->arch = info->arch;
-	else printk(KERN_ERR "Could not set arch of requested node as it does not exist");
+	else printk(KERN_DEBUG "Bundle: Could not set arch of requested node as it does not exist");
 	smp_mb();
 
 	pcn_kmsg_done(msg);

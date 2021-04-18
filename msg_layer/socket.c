@@ -266,20 +266,13 @@ EXPORT_SYMBOL(sock_kmsg_done);
 #else
 int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 {
-    printk(KERN_DEBUG "Socket sock_kmsg_send called\n");
 	DECLARE_COMPLETION_ONSTACK(done);
-    printk(KERN_DEBUG "Socket sock_kmsg_send called 2\n");
 	enq_send(dest_nid, msg, 0, &done);
-    printk(KERN_DEBUG "Socket sock_kmsg_send called 3\n");
 
 	if (!try_wait_for_completion(&done)) { 
-        printk(KERN_DEBUG "Socket sock_kmsg_send called 4 loop\n");
 		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
-        printk(KERN_DEBUG "Socket sock_kmsg_send called 5 loop\n");
         if (!ret) return -EAGAIN;
-        printk(KERN_DEBUG "Socket sock_kmsg_send called 6 loop\n");
 	}
-    printk(KERN_DEBUG "Socket sock_kmsg_send called 7\n");
 	return 0;
 }
 EXPORT_SYMBOL(sock_kmsg_send);
@@ -318,9 +311,6 @@ static int __show_peers(struct seq_file *seq, void *v)
 {	
 	int i;
 	char* myself = " ";	
-	printk(KERN_DEBUG "Showing peers\n");
-	printk(KERN_DEBUG "my_nid: %d\n", my_nid);
-	printk(KERN_DEBUG "after_last_node_index: %d\n", after_last_node_index);
 	for (i = 0; i < after_last_node_index; i++) 
 	{
 		if (i == my_nid) myself = "*";
@@ -540,34 +530,21 @@ EXPORT_SYMBOL(__sock_listen_to_connection);
  */
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
-	printk(KERN_DEBUG "kill_node_sock 1\n");
 
 	printk(KERN_INFO "Deinitialising node %d\n", node->index);
 
 	sh = node->handle;
-	printk(KERN_DEBUG "kill_node_sock 2\n");
 	if (sh->send_handler) {
-		printk(KERN_DEBUG "kill_node_sock 2.1\n");
 		kthread_stop(sh->send_handler);
-		printk(KERN_DEBUG "kill_node_sock 2.2\n");
 	} else {
-		printk(KERN_DEBUG "kill_node_sock 2.3\n");
 		if (sh->msg_q) kfree(sh->msg_q);
-		printk(KERN_DEBUG "kill_node_sock 2.4\n");
 	}
-	printk(KERN_DEBUG "kill_node_sock 3\n");
 	if (sh->recv_handler) {
-		printk(KERN_DEBUG "kill_node_sock 3.1\n");
 		kthread_stop(sh->recv_handler);
-		printk(KERN_DEBUG "kill_node_sock 3.2\n");
 	}
-	printk(KERN_DEBUG "kill_node_sock 4\n");
 	if (sh->sock) {
-		printk(KERN_DEBUG "kill_node_sock 4.1\n");
 		sock_release(sh->sock);
-		printk(KERN_DEBUG "kill_node_sock 4.2\n");
 	}
-	printk(KERN_DEBUG "kill_node_sock 5\n");
 	return true;
 }
 EXPORT_SYMBOL(kill_node_sock);

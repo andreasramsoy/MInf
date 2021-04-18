@@ -860,7 +860,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_DEBUG "Transport type is: %s", node->transport->name);
     }
     else {
-        printk(KERN_ERR "Transport is null so must be instigator node\n");
+        printk(KERN_DEBUG "Transport is null so must be instigator node\n");
     }
     
     printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
@@ -904,7 +904,7 @@ void send_node_list_info(int their_index, char* random_token) {
 
     node = get_node(my_nid);
     if (!node) {
-        printk(KERN_ERR "Could not get the node address to send to the node\n");
+        printk(KERN_ERR "Could not get find myself on the node list\n");
     }
 
     printk(KERN_DEBUG "send_node_list_info called 3\n");
