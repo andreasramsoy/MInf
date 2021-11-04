@@ -65,8 +65,10 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	struct pcn_kmsg_message *msg;
 	int error;
 	struct scatterlist sg;
-    DECLARE_CRYPTO_WAIT(wait);
+	struct crypto_wait wait;
 	struct message_node* node = get_node(encrypted_msg->from_nid);
+	
+    DECLARE_CRYPTO_WAIT(wait);
 	if (node == NULL) {
 		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
 		goto decryption_fail;
@@ -118,7 +120,7 @@ decryption_fail:
 EXPORT_SYMBOL(pcn_kmsg_process);
 
 
-static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message *msg, size_t size)
+static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message msg, size_t size)
 {
 #ifdef CONFIG_POPCORN_CHECK_SANITY
 	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
@@ -135,16 +137,18 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 }
 
 #ifdef POPCORN_ENCRYPTION_ON
-static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message_encrypted *msg, size_t size)
+static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message_encrypted *encrypted_msg, size_t size)
 {
 	int error;
+	int ret;
 	struct scatterlist sg;
-    DECLARE_CRYPTO_WAIT(wait);
 	struct message_node* node = get_node(to);
+
+    DECLARE_CRYPTO_WAIT(wait);
 
 	if (get_node(to) == NULL) {
 		printk(KERN_ERR "Trying to build message for node that does not exist\n");
-		goto encrption_fail;
+		goto encryption_fail;
 	}
 
 	msg->from_nid = my_nid;
@@ -154,7 +158,7 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	if ((ret = __build_and_check_msg(type, to, msg->data, size))) return ret;
 
 	//encrypt the message (setup is done on node initialisation to save time)
-	sg_init_one(&sg, encrypted_msg->data, datasize);
+	sg_init_one(&sg, encrypted_msg->data, AES_IV_LENGTH);
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
