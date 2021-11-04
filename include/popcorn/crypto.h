@@ -5,7 +5,7 @@
  * Header file for encryption used by the popcorn subsystem
  */
 
-//#define POPCORN_ENCRYPTION_ON
+#define POPCORN_ENCRYPTION_ON
 
 
 
