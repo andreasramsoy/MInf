@@ -8,6 +8,8 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/crypto.h>
+#include <linux/scatterlist.h>
 
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/debug.h>
@@ -67,7 +69,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	struct scatterlist sg;
 	struct crypto_wait wait;
 	struct message_node* node = get_node(encrypted_msg->from_nid);
-	
+
     DECLARE_CRYPTO_WAIT(wait);
 	if (node == NULL) {
 		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
