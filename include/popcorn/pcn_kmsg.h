@@ -116,12 +116,9 @@ struct pcn_kmsg_message {
 
 #ifdef POPCORN_ENCRYPTION_ON
 
-// symmetric using AES-256-XTS
-#define AES_KEY_SIZE 64 //key size for AES-256-XTS
-#define AES_IV_LENGTH 16 //IV size for AES-256-XTS
 struct pcn_kmsg_message_encrypted {
 	int from_nid			:6; //we need the nid to know which AES key to use
-	u8 iv[AES_IV_LENGTH];
+	u8 iv[POPCORN_AES_IV_LENGTH];
 	struct pcn_kmsg_message data;
 } __attribute__((packed));
 

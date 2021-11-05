@@ -154,13 +154,13 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	}
 
 	encrypted_msg->from_nid = my_nid;
-	get_random_bytes(msg->iv, AES_IV_LENGTH);
+	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH);
 
 	//build the message as normal
 	if ((ret = __build_and_check_msg(type, to, encrypted_msg->data, size))) return ret;
 
 	//encrypt the message (setup is done on node initialisation to save time)
-	sg_init_one(&sg, encrypted_msg->data, AES_IV_LENGTH);
+	sg_init_one(&sg, encrypted_msg->data, POPCORN_AES_IV_LENGTH);
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);

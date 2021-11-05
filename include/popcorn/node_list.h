@@ -39,10 +39,6 @@
 #define NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES 16
 #define NODE_LIST_INITAL_TOKEN_ATTEMPTS 5 //number of connections that can attempt to connect before aborting
 
-// encryption
-#define AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
-#define AES_IV_LENGTH 
-
 enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 
 struct pcn_kmsg_transport; //defined in pcn_kmsg.h
