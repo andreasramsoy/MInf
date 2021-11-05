@@ -153,11 +153,11 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 		goto encryption_fail;
 	}
 
-	msg->from_nid = my_nid;
+	encrypted_msg->from_nid = my_nid;
 	get_random_bytes(msg->iv, AES_IV_LENGTH);
 
 	//build the message as normal
-	if ((ret = __build_and_check_msg(type, to, msg->data, size))) return ret;
+	if ((ret = __build_and_check_msg(type, to, encrypted_msg->data, size))) return ret;
 
 	//encrypt the message (setup is done on node initialisation to save time)
 	sg_init_one(&sg, encrypted_msg->data, AES_IV_LENGTH);
@@ -165,10 +165,10 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
-			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, encrypted_msg->from_nid);
 			goto encryption_fail;
 	}
-	msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
+	encrypted_msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
 
 	//now ready to process msg as normal
 

@@ -261,6 +261,7 @@ EXPORT_SYMBOL(disable_node);
 
 //enable and connect
 bool enable_node(struct message_node* node) {
+    int error;
     printk(KERN_DEBUG "Initialising communications for node\n");
 
     if (node == NULL || node->transport == NULL) {
@@ -315,6 +316,11 @@ bool enable_node(struct message_node* node) {
 			printk(KERN_ERR "Could not allocate cipher request\n");
 			goto encryption_fail;
 	}
+
+encryption_fail:
+    printk(KERN_ERR "Failed encryption, cannot enable node\n");
+    //TODO: add any deinitialisations 
+    return false;
 #endif
     printk(KERN_DEBUG "Now initialise individual node\n");
 
