@@ -57,7 +57,7 @@ struct message_node {
 	enum popcorn_arch arch;
 	int bundle_id;
 	bool is_connected;
-    u8 key[AES_KEY_SIZE]; //key for AES (specific to that node)
+    u8 key[POPCORN_AES_KEY_SIZE]; //key for AES (specific to that node)
     struct crypto_skcipher *transform_obj;
     struct skcipher_request *cipher_request;
 };
