@@ -75,8 +75,9 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
 		goto decryption_fail;
 	}
-
-	sg_init_one(&sg, encrypted_msg->data, datasize);
+	
+	//the input here is only from kernel modules so shouldn't be vulnerable to injection so safe to use sizeof
+	sg_init_one(&sg, encrypted_msg->data, sizeof(encrypted_msg->data));
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
@@ -159,7 +160,7 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	//build the message as normal
 	if ((ret = __build_and_check_msg(type, to, encrypted_msg->data, size))) return ret;
 
-	//encrypt the message (setup is done on node initialisation to save time)
+	//encrypt the message (setup is done on node initialisation, enable_node function, to save time)
 	sg_init_one(&sg, encrypted_msg->data, POPCORN_AES_IV_LENGTH);
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);

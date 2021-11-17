@@ -32,6 +32,8 @@
 #include <linux/netdevice.h>
 #include <linux/semaphore.h>
 
+#include <popcorn/crypto.h>
+
 /** TODO: What is the optimum number of nodes? Generally, the higher the 
  *  better but should there be some process in deciding this value?
  */
