@@ -53,39 +53,39 @@ EXPORT_SYMBOL(pcn_kmsg_unregister_callback);
 static atomic_t __nr_outstanding_requests[PCN_KMSG_TYPE_MAX] = { ATOMIC_INIT(0) };
 #endif
 
-#ifdef POPCORN_ENCRYPTION_ON
-void pcn_kmsg_process(struct pcn_kmsg_message_encrypted *encrypted_msg)
-#else
 void pcn_kmsg_process(struct pcn_kmsg_message *msg)
-#endif
 {
 	pcn_kmsg_cbftn ftn;
 
 #ifdef POPCORN_ENCRYPTION_ON
 	//translate pcn_kmsg_message_encrypted to be pcn_kmsg_message
 
-	struct pcn_kmsg_message *msg;
 	int error;
 	struct scatterlist sg;
 	struct crypto_wait wait;
-	struct message_node* node = get_node(encrypted_msg->from_nid);
+	struct message_node* node;
+	
+	if (!msg->header) {
+		printk(KERN_ERR "Message does not have a header (cannot get sender)\n");
+		goto decryption_fail;
+	}
+	node = get_node(msg->header.from_nid);
 
     DECLARE_CRYPTO_WAIT(wait);
 	if (node == NULL) {
-		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", encrypted_msg->from_nid);
+		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", msg->header.from_nid);
 		goto decryption_fail;
 	}
 	
 	//the input here is only from kernel modules so shouldn't be vulnerable to injection so safe to use sizeof
-	sg_init_one(&sg, encrypted_msg->data, sizeof(encrypted_msg->data));
+	sg_init_one(&sg, msg->data, sizeof(msg->data));
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
-			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->from_nid);
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->header.from_nid);
 			goto decryption_fail;
 	}
-	msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
 
 	//now ready to process msg as normal
 #endif
@@ -123,7 +123,7 @@ decryption_fail:
 EXPORT_SYMBOL(pcn_kmsg_process);
 
 
-static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message msg, size_t size)
+static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message* msg, size_t size)
 {
 #ifdef CONFIG_POPCORN_CHECK_SANITY
 	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
@@ -155,6 +155,7 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 	}
 
 	encrypted_msg->from_nid = my_nid;
+	msg = kmalloc(GFP_KERNEL, )
 	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH);
 
 	//build the message as normal
@@ -169,9 +170,9 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, encrypted_msg->from_nid);
 			goto encryption_fail;
 	}
-	encrypted_msg = encrypted_msg->data; //copy the encrypted data to the msg for processing
+	encrypted_msg->data = msg; //copy the encrypted data to the msg for processing
 
-	//now ready to process msg as normal
+	//now ready to send message (is encrypted) as normal
 
 encryption_fail:
 	printk(KERN_ERR "Error encrypting, abort message!\n");

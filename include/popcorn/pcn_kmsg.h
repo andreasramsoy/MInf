@@ -112,17 +112,11 @@ struct pcn_kmsg_hdr {
 struct pcn_kmsg_message {
 	struct pcn_kmsg_hdr header;
 	unsigned char payload[PCN_KMSG_MAX_PAYLOAD_SIZE];
+	#ifdef POPCORN_ENCRYPTION_ON
+		u8 iv[POPCORN_AES_IV_LENGTH];
+	#endif
 } __attribute__((packed));
 
-#ifdef POPCORN_ENCRYPTION_ON
-
-struct pcn_kmsg_message_encrypted {
-	int from_nid			:6; //we need the nid to know which AES key to use
-	u8 iv[POPCORN_AES_IV_LENGTH];
-	struct pcn_kmsg_message data;
-} __attribute__((packed));
-
-#endif
 
 void pcn_kmsg_dump(struct pcn_kmsg_message *msg);
 
@@ -165,11 +159,7 @@ void pcn_kmsg_put(void *msg);
  * Process the received messag @msg. Each message layer should start processing
  * the request by calling this function
  */
-#ifdef POPCORN_ENCRYPTION_ON
-void pcn_kmsg_process(struct pcn_kmsg_message_encrypted *msg);
-#else
 void pcn_kmsg_process(struct pcn_kmsg_message *msg);
-#endif
 
 /**
  * Return received message @msg after handling to recyle it. @msg becomes
@@ -230,15 +220,9 @@ struct pcn_kmsg_transport {
 	struct pcn_kmsg_message *(*get)(size_t);
 	void (*put)(struct pcn_kmsg_message *);
 
-#ifdef POPCORN_ENCRYPTION_ON
-	int (*send)(int, struct pcn_kmsg_message_encrypted *, size_t);
-	int (*post)(int, struct pcn_kmsg_message_encrypted *, size_t);
-	void (*done)(struct pcn_kmsg_message_encrypted *);
-#else
 	int (*send)(int, struct pcn_kmsg_message *, size_t);
 	int (*post)(int, struct pcn_kmsg_message *, size_t);
 	void (*done)(struct pcn_kmsg_message *);
-#endif
 
 	void (*stat)(struct seq_file *, void *);
 

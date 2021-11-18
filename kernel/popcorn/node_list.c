@@ -81,7 +81,6 @@ void generate_symmetric_key(int index) {
     if (node) {
         #ifdef POPCORN_ENCRYPTION_ON
         printk(KERN_DEBUG "Randomly generating key and IV for node %d\n", index);
-        get_random_bytes(node->iv, sizeof(node->iv));
         get_random_bytes(node->key, sizeof(node->key));
         printk(KERN_DEBUG "Done key generation for node %d", index);
         #endif
