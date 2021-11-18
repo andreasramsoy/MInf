@@ -114,8 +114,6 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 
 	#ifdef POPCORN_ENCRYPTION_ON
 decryption_fail:
-	crypto_free_skcipher(transform_obj);
-    skcipher_request_free(cipher_request);
 	pcn_kmsg_done(msg);
 	#endif
 }
@@ -132,8 +130,8 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 #endif
 
 	int error;
-	int ret;
 	struct scatterlist sg;
+	struct crypto_wait wait;
 	struct message_node* node = get_node(to);
 
 	msg->header.type = type;
