@@ -64,7 +64,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	struct crypto_wait wait;
 	struct message_node* node;
 	
-	if (!msg->header) {
+	if (!(msg->header)) {
 		printk(KERN_ERR "Message does not have a header (cannot get sender)\n");
 		goto decryption_fail;
 	}
