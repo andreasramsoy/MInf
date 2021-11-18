@@ -58,7 +58,6 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	pcn_kmsg_cbftn ftn;
 
 #ifdef POPCORN_ENCRYPTION_ON
-	//translate pcn_kmsg_message_encrypted to be pcn_kmsg_message
 
 	int error;
 	struct scatterlist sg;
@@ -117,7 +116,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 decryption_fail:
 	crypto_free_skcipher(transform_obj);
     skcipher_request_free(cipher_request);
-	pcn_kmsg_done(encrypted_msg);
+	pcn_kmsg_done(msg);
 	#endif
 }
 EXPORT_SYMBOL(pcn_kmsg_process);
@@ -132,21 +131,18 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	BUG_ON(to == my_nid);
 #endif
 
-	msg->header.type = type;
-	msg->header.prio = PCN_KMSG_PRIO_NORMAL;
-	msg->header.size = size;
-	msg->header.from_nid = my_nid;
-	return 0;
-}
-
-#ifdef POPCORN_ENCRYPTION_ON
-static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message_encrypted *encrypted_msg, size_t size)
-{
 	int error;
 	int ret;
 	struct scatterlist sg;
 	struct message_node* node = get_node(to);
 
+	msg->header.type = type;
+	msg->header.prio = PCN_KMSG_PRIO_NORMAL;
+	msg->header.size = size;
+	msg->header.from_nid = my_nid;
+
+
+#ifdef POPCORN_ENCRYPTION_ON
     DECLARE_CRYPTO_WAIT(wait);
 
 	if (get_node(to) == NULL) {
@@ -154,31 +150,32 @@ static inline int __build_and_check_msg_encrypted(enum pcn_kmsg_type type, int t
 		goto encryption_fail;
 	}
 
-	encrypted_msg->from_nid = my_nid;
 	msg = kmalloc(GFP_KERNEL, )
 	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH);
 
-	//build the message as normal
-	if ((ret = __build_and_check_msg(type, to, encrypted_msg->data, size))) return ret;
-
 	//encrypt the message (setup is done on node initialisation, enable_node function, to save time)
-	sg_init_one(&sg, encrypted_msg->data, POPCORN_AES_IV_LENGTH);
+	sg_init_one(&sg, msg->data, POPCORN_AES_IV_LENGTH);
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
-			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, encrypted_msg->from_nid);
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->header.from_nid);
 			goto encryption_fail;
 	}
-	encrypted_msg->data = msg; //copy the encrypted data to the msg for processing
 
-	//now ready to send message (is encrypted) as normal
+	//now ready to send message the message as normal
+	//message is now encrypted
+#endif
 
+
+	return 0
+
+#ifdef POPCORN_ENCRYPTION_ON
 encryption_fail:
 	printk(KERN_ERR "Error encrypting, abort message!\n");
 	return 1;
-}
 #endif
+}
 
 int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {
