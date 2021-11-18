@@ -77,7 +77,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	}
 	
 	//the input here is only from kernel modules so shouldn't be vulnerable to injection so safe to use sizeof
-	sg_init_one(&sg, msg->data, sizeof(msg->data));
+	sg_init_one(&sg, msg->payload, sizeof(msg->payload));
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
 	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
@@ -150,13 +150,12 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 		goto encryption_fail;
 	}
 
-	msg = kmalloc(GFP_KERNEL, )
-	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH);
+	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH); //fill with random bytes for each message
 
 	//encrypt the message (setup is done on node initialisation, enable_node function, to save time)
-	sg_init_one(&sg, msg->data, POPCORN_AES_IV_LENGTH);
+	sg_init_one(&sg, msg->payload, POPCORN_AES_IV_LENGTH);
 	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
-	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(msg->payload), msg->iv);
 	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
 	if (error) {
 			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->header.from_nid);
@@ -167,14 +166,11 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	//message is now encrypted
 #endif
 
+	return 0;
 
-	return 0
-
-#ifdef POPCORN_ENCRYPTION_ON
 encryption_fail:
 	printk(KERN_ERR "Error encrypting, abort message!\n");
 	return 1;
-#endif
 }
 
 int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
