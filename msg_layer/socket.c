@@ -85,11 +85,7 @@ static int recv_handler(void* arg0)
 		if (ret < 0) break;
 
 		/* Call pcn_kmsg upper layer */
-		#ifdef POPCORN_ENCRYPTION_ON
-		pcn_kmsg_process((struct pcn_kmsg_message_encrypted *)data);
-		#else
 		pcn_kmsg_process((struct pcn_kmsg_message *)data);
-		#endif
 	}
 	return 0;
 }
@@ -237,33 +233,6 @@ EXPORT_SYMBOL(sock_kmsg_put);
 /***********************************************
  * This is the interface for message layer
  ***********************************************/
-#ifdef POPCORN_ENCRYPTION_ON
-int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size)
-{
-	DECLARE_COMPLETION_ONSTACK(done);
-	enq_send(dest_nid, msg, 0, &done);
-
-	if (!try_wait_for_completion(&done)) { 
-		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
-		if (!ret) return -EAGAIN;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(sock_kmsg_send);
-
-int sock_kmsg_post(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size)
-{
-	enq_send(dest_nid, msg, 1 << SEND_FLAG_POSTED, NULL);
-	return 0;
-}
-EXPORT_SYMBOL(sock_kmsg_post);
-
-void sock_kmsg_done(struct pcn_kmsg_message_encrypted *msg)
-{
-	kfree(msg);
-}
-EXPORT_SYMBOL(sock_kmsg_done);
-#else
 int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 {
 	DECLARE_COMPLETION_ONSTACK(done);
@@ -289,7 +258,7 @@ void sock_kmsg_done(struct pcn_kmsg_message *msg)
 	kfree(msg);
 }
 EXPORT_SYMBOL(sock_kmsg_done);
-#endif
+
 
 void sock_kmsg_stat(struct seq_file *seq, void *v)
 {
