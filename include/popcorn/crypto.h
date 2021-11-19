@@ -2,6 +2,7 @@
 #define __POPCORN_CRYPTO__
 
 #include <crypto/skcipher.h>
+#include <linux/crypto.h>
 
 /**
  * Header file for encryption used by the popcorn subsystem
