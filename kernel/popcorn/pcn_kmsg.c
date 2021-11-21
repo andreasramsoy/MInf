@@ -271,7 +271,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	unsigned int secs;
 	struct cipher_speed_template *template;
 	unsigned int tcount;
-	u8 *keysize;
+	u8 keysize;
 	struct scatterlist ciphertext;
 	struct scatterlist plaintext;
 

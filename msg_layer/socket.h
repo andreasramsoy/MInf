@@ -21,15 +21,9 @@ extern void sock_kmsg_put(struct pcn_kmsg_message *msg);
 /***********************************************
  * This is the interface for message layer
  ***********************************************/
-#ifdef POPCORN_ENCRYPTION_ON
-extern int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size);
-extern int sock_kmsg_post(int dest_nid, struct pcn_kmsg_message_encrypted *msg, size_t size);
-extern void sock_kmsg_done(struct pcn_kmsg_message_encrypted *msg);
-#else
 extern int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size);
 extern int sock_kmsg_post(int dest_nid, struct pcn_kmsg_message *msg, size_t size);
 extern void sock_kmsg_done(struct pcn_kmsg_message *msg);
-#endif
 
 extern void sock_kmsg_stat(struct seq_file *seq, void *v);
 extern int __sock_connect_to_server(struct message_node* node);
