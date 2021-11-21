@@ -113,7 +113,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 
 	//perform decryption
 	memcpy(&ciphertext, msg->payload, sizeof(msg->payload));
-	ret = crypto_blkcipher_decrypt(&plaintext, &ciphertext, sizeof(ciphertext));
+	ret = crypto_blkcipher_decrypt(tfm, &plaintext, &ciphertext, sizeof(ciphertext));
 	if (ret != 0) {
 		printk(KERN_ERR "Failed to decrypt, error: %d\n", ret);
 	}
