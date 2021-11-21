@@ -97,8 +97,6 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 		goto decryption_fail;
 	}
 
-	struct scatterlist sg[PCN_KMSG_MAX_PAYLOAD_SIZE]; //will contain the encrypted data
-
 	//set key
 	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
 	if (ret != 0) {
@@ -302,8 +300,6 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 		printk(KERN_ERR "Could not get node %d to encrypt message\n", msg->header.from_nid);
 		goto encryption_fail;
 	}
-
-	struct scatterlist sg[PCN_KMSG_MAX_PAYLOAD_SIZE]; //will contain the encrypted data
 
 	//set key
 	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
