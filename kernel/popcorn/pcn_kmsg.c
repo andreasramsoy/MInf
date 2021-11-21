@@ -238,7 +238,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 	int error;
 	struct scatterlist sg;
-	struct crypto_wait wait;
+	//struct crypto_wait wait;
 	struct message_node* node = get_node(to);
 
 	msg->header.type = type;
