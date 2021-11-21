@@ -243,6 +243,8 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 
 #ifdef POPCORN_ENCRYPTION_ON
+	/*
+	//wrong encrption for kernel version
     DECLARE_CRYPTO_WAIT(wait);
 
 	if (get_node(to) == NULL) {
@@ -264,6 +266,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 	//now ready to send message the message as normal
 	//message is now encrypted
+	*/
 #endif
 
 	return 0;
