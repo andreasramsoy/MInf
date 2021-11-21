@@ -81,7 +81,7 @@ void generate_symmetric_key(int index) {
     if (node) {
         #ifdef POPCORN_ENCRYPTION_ON
         printk(KERN_DEBUG "Randomly generating key and IV for node %d\n", index);
-        get_random_bytes(node->key, sizeof(node->key));
+        get_random_bytes(node->key, POPCORN_AES_KEY_SIZE_BYTES);
         printk(KERN_DEBUG "Done key generation for node %d", index);
         #endif
     }
@@ -230,8 +230,10 @@ EXPORT_SYMBOL(create_instigator_node);
 
 
 int find_first_null_pointer(void) {
+    int i;
     printk(KERN_DEBUG "Find first null pointer called\n");
-    int i = 0;
+
+    i = 0;
     
     //keep going until you find a gap
     while (get_node(i) != NULL) i++;
@@ -291,6 +293,10 @@ bool enable_node(struct message_node* node) {
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
 #ifdef POPCORN_ENCRYPTION_ON
+    generate_symmetric_key(node->index);
+
+
+/* //following code is for wrong kernel version
 	//encryption setup
     node->cipher_request = NULL;
     node->transform_obj = NULL;
@@ -319,7 +325,7 @@ bool enable_node(struct message_node* node) {
 encryption_fail:
     printk(KERN_ERR "Failed encryption, cannot enable node\n");
     //TODO: add any deinitialisations 
-    return false;
+    return false;*/
 #endif
     printk(KERN_DEBUG "Now initialise individual node\n");
 

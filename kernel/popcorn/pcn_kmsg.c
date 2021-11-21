@@ -8,14 +8,11 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/err.h>
-#include <linux/crypto.h>
-#include <linux/scatterlist.h>
 
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/debug.h>
 #include <popcorn/stat.h>
 #include <popcorn/bundle.h>
-#include <popcorn/crypto.h>
 #include <popcorn/node_list.h> //to access the node list
 
 static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
@@ -57,8 +54,111 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 {
 	pcn_kmsg_cbftn ftn;
 
+
 #ifdef POPCORN_ENCRYPTION_ON
 
+	unsigned int ret, i, j, iv_len;
+	const char *key;
+	char iv[POPCORN_AES_KEY_SIZE];
+	struct crypto_blkcipher *tfm;
+	struct blkcipher_desc desc;
+	u32 *b_size;
+	const char *algo;
+	unsigned int secs;
+	struct cipher_speed_template *template;
+	unsigned int tcount;
+	u8 *keysize;
+	struct message_node* node;
+
+
+	keysize = POPCORN_AES_KEY_SIZE;
+	algo = "xts(aes)";
+
+	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
+
+	if (IS_ERR(tfm)) {
+		printk("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		return;
+	}
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	node = get_node(msg->from_nid);
+	if (!node) {
+		printk("Could not get node %d to decrypt message", msg->from_nid);
+		goto decryption_fail;
+	}
+
+	struct scatterlist sg[PCN_KMSG_MAX_PAYLOAD_SIZE]; //will contain the encrypted data
+
+	//set key
+	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to set the cipher key, error: %d", ret);
+		goto decryption_fail;
+	}
+
+	//generate an IV
+	//iv_len = crypto_blkcipher_ivsize(tfm); //for encryption
+	crypto_blkcipher_set_iv(tfm, msg->iv, sizeof(msg->iv));
+
+
+	/*if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+		printk("template (%u) too big for "
+				"tvmem (%lu)\n", *keysize + *b_size,
+				TVMEMSIZE * PAGE_SIZE);
+		goto decryption_fail;
+	}
+
+	printk("test %u (%d bit key, %d byte blocks): ", i,
+			*keysize * 8, *b_size);
+
+	memset(tvmem[0], 0xff, PAGE_SIZE);
+
+	//set key, plain text and IV
+	key = tvmem[0];
+	for (j = 0; j < tcount; j++) {
+		if (template[j].klen == *keysize) {
+			key = template[j].key;
+			break;
+		}
+	}
+
+	ret = crypto_blkcipher_setkey(tfm, key, *keysize);
+	if (ret) {
+		printk("setkey() failed flags=%x\n",
+				crypto_blkcipher_get_flags(tfm));
+		goto decryption_fail;
+	}
+
+	sg_init_table(sg, TVMEMSIZE);
+	sg_set_buf(sg, tvmem[0] + *keysize,
+			PAGE_SIZE - *keysize);
+	for (j = 1; j < TVMEMSIZE; j++) {
+		sg_set_buf(sg + j, tvmem[j], PAGE_SIZE);
+		memset (tvmem[j], 0xff, PAGE_SIZE);
+	}
+
+	iv_len = crypto_blkcipher_ivsize(tfm);
+	if (iv_len) {
+		memset(&iv, 0xff, iv_len);
+		crypto_blkcipher_set_iv(tfm, iv, iv_len);
+	}
+
+	if (secs)
+		ret = test_cipher_jiffies(&desc, "decryption", sg,
+						*b_size, secs);
+	else
+		ret = test_cipher_cycles(&desc, "decryption", sg,
+						*b_size);
+
+	if (ret) {
+		printk("%s() failed flags=%x\n", e, desc.flags);
+		break;
+	}*/
+
+	/* //wrong kernel version encryption
 	int error;
 	struct scatterlist sg;
 	struct crypto_wait wait;
@@ -87,6 +187,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	}
 
 	//now ready to process msg as normal
+	*/
 #endif
 
 #ifdef CONFIG_POPCORN_CHECK_SANITY
@@ -114,6 +215,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 
 	#ifdef POPCORN_ENCRYPTION_ON
 decryption_fail:
+	crypto_free_blkcipher(tfm);
 	pcn_kmsg_done(msg);
 	#endif
 }
