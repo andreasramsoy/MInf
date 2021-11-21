@@ -13,7 +13,7 @@
 
 // encryption
 #define POPCORN_AES_KEY_SIZE 256 //currently considered safe (written in 2021), but will increase in future
-#define POPCORN_AES_KEY_SIZE_BYTES = POPCORN_AES_KEY_SIZE / 8
+#define POPCORN_AES_KEY_SIZE_BYTES POPCORN_AES_KEY_SIZE / 8
 #define POPCORN_AES_IV_LENGTH 16
 
 
