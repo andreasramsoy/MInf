@@ -84,9 +84,14 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	desc.tfm = tfm;
 	desc.flags = 0;
 
-	node = get_node(msg->from_nid);
+	if (!(msg->header)) {
+		printk(KERN_ERR "Could not decrypt message as it has no header\n");
+		goto decryption_fail;
+	}
+
+	node = get_node(msg->header.from_nid);
 	if (!node) {
-		printk("Could not get node %d to decrypt message", msg->from_nid);
+		printk(KERN_ERR "Could not get node %d to decrypt message\n", msg->from_nid);
 		goto decryption_fail;
 	}
 
@@ -95,7 +100,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	//set key
 	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to set the cipher key, error: %d", ret);
+		printk(KERN_ERR "Failed to set the cipher key, error: %d\n", ret);
 		goto decryption_fail;
 	}
 
