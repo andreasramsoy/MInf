@@ -261,6 +261,73 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 
 #ifdef POPCORN_ENCRYPTION_ON
+
+
+	unsigned int ret, i, j, iv_len;
+	const char *key;
+	char iv[POPCORN_AES_KEY_SIZE];
+	struct crypto_blkcipher *tfm;
+	struct blkcipher_desc desc;
+	u32 *b_size;
+	const char *algo;
+	unsigned int secs;
+	struct cipher_speed_template *template;
+	unsigned int tcount;
+	u8 *keysize;
+	struct message_node* node;
+	struct scatterlist ciphertext;
+	struct scatterlist plaintext;
+
+
+	keysize = POPCORN_AES_KEY_SIZE;
+	algo = "xts(aes)";
+
+	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
+
+	if (IS_ERR(tfm)) {
+		printk("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		return;
+	}
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	/*if (msg->header == NULL) {
+		printk(KERN_ERR "Could not encrypt message as it has no header\n");
+		goto encryption_fail;
+	}*/
+
+	node = get_node(msg->header.from_nid);
+	if (!node) {
+		printk(KERN_ERR "Could not get node %d to encrypt message\n", msg->header.from_nid);
+		goto encryption_fail;
+	}
+
+	struct scatterlist sg[PCN_KMSG_MAX_PAYLOAD_SIZE]; //will contain the encrypted data
+
+	//set key
+	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to set the cipher key, error: %d\n", ret);
+		goto encryption_fail;
+	}
+
+	//generate an IV
+	//iv_len = crypto_blkcipher_ivsize(tfm); //for encryption
+	crypto_blkcipher_set_iv(tfm, msg->iv, sizeof(msg->iv));
+	
+
+	//perform encryption
+	memcpy(&plaintext, msg->payload, sizeof(msg->payload));
+	ret = crypto_blkcipher_encrypt(tfm, &ciphertext, &plaintext, sizeof(plaintext));
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to encrypt, error: %d\n", ret);
+		goto encryption_fail;
+	}
+	memcpy(msg->payload, &ciphertext, sizeof(plaintext));
+
+	//message has now been replaced with ciphertext version of message 
+
 	/*
 	//wrong encrption for kernel version
     DECLARE_CRYPTO_WAIT(wait);
@@ -290,6 +357,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	return 0;
 
 encryption_fail:
+	crypto_free_blkcipher(tfm);
 	printk(KERN_ERR "Error encrypting, abort message!\n");
 	return 1;
 }
