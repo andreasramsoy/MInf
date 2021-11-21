@@ -69,6 +69,8 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	unsigned int tcount;
 	u8 *keysize;
 	struct message_node* node;
+	struct scatterlist ciphertext;
+	struct scatterlist plaintext;
 
 
 	keysize = POPCORN_AES_KEY_SIZE;
@@ -107,6 +109,17 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	//generate an IV
 	//iv_len = crypto_blkcipher_ivsize(tfm); //for encryption
 	crypto_blkcipher_set_iv(tfm, msg->iv, sizeof(msg->iv));
+	
+
+	//perform decryption
+	memcpy(&ciphertext, msg->payload, sizeof(msg->payload));
+	ret = crypto_blkcipher_decrypt(&plaintext, &ciphertext, sizeof(ciphertext));
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to decrypt, error: %d\n", ret);
+	}
+	memcpy(msg->payload, &plaintext, sizeof(plaintext));
+
+	//message has now been replaced with plaintext version of message 
 
 
 	/*if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
