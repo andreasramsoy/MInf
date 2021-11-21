@@ -91,7 +91,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 
 	node = get_node(msg->header.from_nid);
 	if (!node) {
-		printk(KERN_ERR "Could not get node %d to decrypt message\n", msg->from_nid);
+		printk(KERN_ERR "Could not get node %d to decrypt message\n", msg->header.from_nid);
 		goto decryption_fail;
 	}
 
