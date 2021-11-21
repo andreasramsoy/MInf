@@ -84,10 +84,10 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	desc.tfm = tfm;
 	desc.flags = 0;
 
-	if (msg->header == NULL) {
+	/*if (msg->header == NULL) {
 		printk(KERN_ERR "Could not decrypt message as it has no header\n");
 		goto decryption_fail;
-	}
+	}*/
 
 	node = get_node(msg->header.from_nid);
 	if (!node) {
