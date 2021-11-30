@@ -77,13 +77,15 @@ EXPORT_SYMBOL(get_node);
  * @param int index of node that shall get new encryption keys
  */
 void generate_symmetric_key(int index) {
+    printk(KERN_DEBUG "Generating symmetric key for node %d\n", index);
     struct message_node* node = get_node(index);
     #ifdef POPCORN_USE_STUB_SYMMETRIC_KEYS
+        printk(KERN_DEBUG "Using stub for AES keys\n");
         //for testing without using assymetric keys
-        if (index == 0) strncpy(node->index, "x/A?D(G+KbPeSgVkYp3s6v9y$B&E)H@M", POPCORN_AES_KEY_SIZE_BYTES);
-        if (index == 1) strncpy(node->index, "4u7x!A\%D*G-KaPdSgUkXp2s5v8y/B?E(", POPCORN_AES_KEY_SIZE_BYTES);
-        if (index == 2) strncpy(node->index, "mZq4t7w!z\%C*F-JaNdRgUjXn2r5u8x/A", POPCORN_AES_KEY_SIZE_BYTES);
-        if (index == 3) strncpy(node->index, "ShVmYq3t6w9z$C&F)J@NcRfTjWnZr4u7", POPCORN_AES_KEY_SIZE_BYTES);
+        if      (index == 0) strncpy(node->key, "x/A?D(G+KbPeSgVkYp3s6v9y$B&E)H@M", POPCORN_AES_KEY_SIZE_BYTES);
+        else if (index == 1) strncpy(node->key, "4u7x!A\%D*G-KaPdSgUkXp2s5v8y/B?E(", POPCORN_AES_KEY_SIZE_BYTES);
+        else if (index == 2) strncpy(node->key, "mZq4t7w!z\%C*F-JaNdRgUjXn2r5u8x/A", POPCORN_AES_KEY_SIZE_BYTES);
+        else if (index == 3) strncpy(node->key, "ShVmYq3t6w9z$C&F)J@NcRfTjWnZr4u7", POPCORN_AES_KEY_SIZE_BYTES);
     #elif
         if (node) {
             #ifdef POPCORN_ENCRYPTION_ON
