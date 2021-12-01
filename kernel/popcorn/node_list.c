@@ -77,6 +77,7 @@ EXPORT_SYMBOL(get_node);
  * @param int index of node that shall get new encryption keys
  */
 void generate_symmetric_key(struct message_node* node) {
+    int index;
     if (node->index == -1) {
         index = 0;
     }
