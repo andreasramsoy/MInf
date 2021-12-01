@@ -168,6 +168,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         return NULL;
     }
     node->address = address_p;
+    node->index = -1;
 
     //previously in bundle.c
     node->is_connected = false;
@@ -303,7 +304,12 @@ bool enable_node(struct message_node* node) {
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
 #ifdef POPCORN_ENCRYPTION_ON
-    generate_symmetric_key(node->index);
+    if (node->index != -1) {
+        generate_symmetric_key(node->index);
+    }
+    else {
+        generate_symmetric_key(0);
+    }
 
 
 /* //following code is for wrong kernel version
