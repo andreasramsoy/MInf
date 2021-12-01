@@ -108,7 +108,7 @@ void generate_symmetric_key(int index) {
  */
 struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
-    bool success;
+    bool success = true;
 
     printk(KERN_DEBUG "create_any_node called\n");
 
@@ -128,8 +128,6 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     printk(KERN_DEBUG "root transport: %p", transport_list_head->transport_structure);
     printk(KERN_DEBUG "transport: %p", transport);
     printk(KERN_DEBUG "transport name: %s", transport->name);
-
-    success = enable_node(node);
 
 create_any_node_failure:
     if (success) {
@@ -182,12 +180,6 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     //transport structure
     node->transport = transport;
     //now check in node list manager that the transport is not null
-
-    //setup comms
-    if (!enable_node(node)) {
-        successful = false;
-        printk(KERN_ERR "Failed to enable node\n");
-    }
 
 create_node_end:
     if (!successful) {
@@ -778,6 +770,7 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     int i;
 	int list_number;
 	struct node_list* list = root_node_list;
+    bool successful = true;
     printk(KERN_DEBUG "TOKEN: add_node_at_position: %s\n", token);
 
     printk(KERN_DEBUG "add_node_at_position called\n");
@@ -824,6 +817,13 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     printk(KERN_DEBUG "Setting the index of the node\n");
     node->index = index;
 
+    //setup comms
+    if (!enable_node(node)) {
+        successful = false;
+        printk(KERN_ERR "Failed to enable node\n");
+    }
+
+
     printk(KERN_DEBUG "Index: %d\n", node->index);
     printk(KERN_DEBUG "Address: %4pI\n", node->address);
     printk(KERN_DEBUG "Handle: %p\n", node->handle);
@@ -834,7 +834,7 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     set_popcorn_node_online(node->index, true);
     if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
 
-    return true;
+    return successful;
 }
 EXPORT_SYMBOL(add_node_at_position);
 
