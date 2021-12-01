@@ -76,9 +76,15 @@ EXPORT_SYMBOL(get_node);
  * only one thing can be returned at a time
  * @param int index of node that shall get new encryption keys
  */
-void generate_symmetric_key(int index) {
+void generate_symmetric_key(struct message_node* node) {
+    if (node->index == -1) {
+        index = 0;
+    }
+    else {
+        index = node->index;
+    }
     printk(KERN_DEBUG "Generating symmetric key for node %d\n", index);
-    struct message_node* node = get_node(index);
+    
     #ifdef POPCORN_USE_STUB_SYMMETRIC_KEYS
         printk(KERN_DEBUG "Using stub for AES keys\n");
         //for testing without using assymetric keys
@@ -304,12 +310,7 @@ bool enable_node(struct message_node* node) {
     node->transport->number_of_users++; //keep a count so that it is known when to unload the transport when no one is using it
 
 #ifdef POPCORN_ENCRYPTION_ON
-    if (node->index != -1) {
-        generate_symmetric_key(node->index);
-    }
-    else {
-        generate_symmetric_key(0);
-    }
+    generate_symmetric_key(node);
 
 
 /* //following code is for wrong kernel version
