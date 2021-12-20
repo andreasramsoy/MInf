@@ -81,7 +81,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	if (IS_ERR(tfm)) {
 		printk("failed to load transform for %s: %ld\n", algo,
 		       PTR_ERR(tfm));
-		return;
+		goto decryption_fail_no_tfm;
 	}
 	desc.tfm = tfm;
 	desc.flags = 0;
@@ -232,6 +232,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 	#ifdef POPCORN_ENCRYPTION_ON
 decryption_fail:
 	crypto_free_blkcipher(tfm);
+decryption_fail_no_tfm:
 	pcn_kmsg_done(msg);
 	#endif
 }
@@ -286,7 +287,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	if (IS_ERR(tfm)) {
 		printk("failed to load transform for %s: %ld\n", algo,
 		       PTR_ERR(tfm));
-		return;
+		goto encryption_fail_no_tfm;
 	}
 	desc.tfm = tfm;
 	desc.flags = 0;
@@ -355,6 +356,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 encryption_fail:
 	crypto_free_blkcipher(tfm);
+encryption_fail_no_tfm:
 	printk(KERN_ERR "Error encrypting, abort message!\n");
 	return 1;
 }

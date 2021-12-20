@@ -370,6 +370,10 @@ int __sock_connect_to_server(struct message_node* node)
 		return ret;
 	}
 
+	//use TLS for connection
+	printk(KERN_DEBUG "Configuring TLS...\n")
+	printk(KERN_DEBUG "Setting TLS return value %d\n", setsockopt(sock, SOL_TCP, TCP_ULP, "tls", sizeof("tls")));
+
 	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
 
 	addr.sin_family = AF_INET;
@@ -418,7 +422,21 @@ int __sock_accept_client(struct message_node* node)
 		return ret;
 	}
 
-	printk(KERN_DEBUG "Socket created, accepting incomming connections...\n");
+	printk(KERN_DEBUG "Socket created, setting up TLS...\n");
+
+	struct tls12_crypto_info_aes_gcm_128 crypto_info;
+
+	crypto_info.info.version = TLS_1_2_VERSION;
+	crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
+	memcpy(crypto_info.iv, iv_write, TLS_CIPHER_AES_GCM_128_IV_SIZE);
+	memcpy(crypto_info.rec_seq, seq_number_write,
+										TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
+	memcpy(crypto_info.key, cipher_key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
+	memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
+
+	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
+
+	printk(KERN_DEBUG "Listening for incoming connections...\n")
 
 	ret = kernel_accept(sock_listen, &sock, 0);
 	if (ret < 0) {
