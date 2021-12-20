@@ -354,10 +354,12 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 	return 0;
 
+#ifdef POPCORN_ENCRYPTION_ON
 encryption_fail:
 	crypto_free_blkcipher(tfm);
 encryption_fail_no_tfm:
 	printk(KERN_ERR "Error encrypting, abort message!\n");
+#endif
 	return 1;
 }
 
