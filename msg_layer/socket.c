@@ -370,9 +370,11 @@ int __sock_connect_to_server(struct message_node* node)
 		return ret;
 	}
 
+	/*
 	//use TLS for connection
 	printk(KERN_DEBUG "Configuring TLS...\n")
 	printk(KERN_DEBUG "Setting TLS return value %d\n", setsockopt(sock, SOL_TCP, TCP_ULP, "tls", sizeof("tls")));
+	*/
 
 	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
 
@@ -422,6 +424,7 @@ int __sock_accept_client(struct message_node* node)
 		return ret;
 	}
 
+	/*
 	printk(KERN_DEBUG "Socket created, setting up TLS...\n");
 
 	struct tls12_crypto_info_aes_gcm_128 crypto_info;
@@ -435,6 +438,7 @@ int __sock_accept_client(struct message_node* node)
 	memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
 
 	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
+	*/
 
 	printk(KERN_DEBUG "Listening for incoming connections...\n")
 
