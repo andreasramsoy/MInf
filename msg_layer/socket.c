@@ -440,7 +440,7 @@ int __sock_accept_client(struct message_node* node)
 	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
 	*/
 
-	printk(KERN_DEBUG "Listening for incoming connections...\n")
+	printk(KERN_DEBUG "Listening for incoming connections...\n");
 
 	ret = kernel_accept(sock_listen, &sock, 0);
 	if (ret < 0) {
