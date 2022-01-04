@@ -74,7 +74,7 @@ void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 
 
 	keysize = POPCORN_AES_KEY_SIZE;
-	algo = "cbc(aes)";
+	algo = "xts(aes)";
 
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
@@ -278,9 +278,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 
 	keysize = POPCORN_AES_KEY_SIZE;
-	algo = "cbc(aes)";
-
-	printk(KERN_DEBUG "Preparing to encrypt message to %d\n", to);
+	algo = "xts(aes)";
 
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
