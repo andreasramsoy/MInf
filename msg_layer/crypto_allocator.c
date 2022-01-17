@@ -1,5 +1,7 @@
 #include <sys/eventfd.h>
-
+#include <stdlib.h>
+#include <stdio.h>
+#include <stddef.h>
 
 // 1. generate file descriptor
 // 2. loop until a message appears
@@ -12,14 +14,15 @@
 
 
 //Daemon
-struct request {
-    ...
-    struct completion;
-};
+// struct request {
+//     ...
+//     struct completion;
+// };
 
 struct linked_list {
     struct crypto_blkcipher *value;
     struct linked_list *next;
+    int id;
 };
 
 struct linked_list *list_head;
@@ -31,20 +34,20 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     if (list_head == NULL) {
         list_head = malloc(sizeof(struct linked_list));
         if (list_head == NULL) {
-            print("Could not allocate first item to list\n");
+            printf("Could not allocate first item to list\n");
             return -1;
         }
         list_node = list_head;
     }
     else {
-        list_node = list_head
+        list_node = list_head;
         while (list_node->next == NULL) {
             list_node = list_node->next;
         }
         //at end of list so append
         list_node->next = malloc(sizeof(struct linked_list));
         if (list_node->next == NULL) {
-            print("Could not allocate new item to list\n");
+            printf("Could not allocate new item to list\n");
             return -1;
         }
         list_node = list_node->next;
@@ -54,20 +57,20 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     list_node->value = blkcipher;
     list_node->id = id;
     list_node->next = NULL; //end of list
-    return list_node;
+    return list_node->id;
 }
 
-int remove_from_list(id) {
+int remove_from_list(int id) {
     struct linked_list *node_list;
     struct linked_list *node_prev;
     struct crypto_blkcipher *return_value;
 
     if (list_head == NULL) {
-        print("There are no allocators to deallocate\n")
+        printf("There are no allocators to deallocate\n")
         return NULL;
     }
     else if (list_head->id != id && list_head->next == NULL) {
-        print("The only allocator did not have the id %d, do did not deallocate\n", id);
+        printf("The only allocator did not have the id %d, do did not deallocate\n", id);
         return NULL;
     }
     else if (list_head->next == NULL) {
@@ -97,7 +100,7 @@ int remove_from_list(id) {
 
         //check why you exitted the loop, either you're at the node or you checked all
         if (node_list->next != NULL) {
-            print("Did not find the node with id %d\n", id);
+            printf("Did not find the node with id %d\n", id);
             return NULL;
         }
         else {
@@ -105,7 +108,7 @@ int remove_from_list(id) {
             node_prev->next = node_list->next; //skip over the node to be deleted
             return_value = node_list->value;
             free(node_list);
-            print("Freed value from list\n");
+            printf("Freed value from list\n");
             return return_value;
         }
     }
@@ -118,7 +121,7 @@ struct crypto_blkcipher *allocate_blkcipher(void) {
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
-		printk("failed to load transform for %s: %ld\n", algo,
+		printf("failed to load transform for %s: %ld\n", algo,
 		       PTR_ERR(tfm));
 		return NULL;
 	}
