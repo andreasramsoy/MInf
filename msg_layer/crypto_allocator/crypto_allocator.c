@@ -194,7 +194,7 @@ static int __init allocator_init(void) {
                     //return error
                 }
                 else {
-                    deallocate_blk_cipher(blk_cipher);
+                    deallocate_blkcipher(blk_cipher);
                 }
         }
         // r=get_request(requests_list);
