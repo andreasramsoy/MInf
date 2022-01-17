@@ -6,6 +6,7 @@
 #include<linux/slab.h>
 #include <linux/init.h> 
 #include <crypto/skcipher.h>
+#include <stdio.h>
 #include <linux/crypto.h>
 #include <linux/scatterlist.h>
 
@@ -145,6 +146,7 @@ int deallocate_blkcipher(struct crypto_blkcipher *tfm) {
 
 int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
     //send message to popcorn proc
+    return 0;
 }
 
 //popcorn thread:
@@ -154,7 +156,7 @@ int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
 
 
 static int __init allocator_init(void) {
-    struct list_head requests_list;
+    // struct list_head requests_list;
     // spinlock_t requests_lock;
     int command, id;
     // char message[MAX_MESSAGE_SIZE_BYTES];
