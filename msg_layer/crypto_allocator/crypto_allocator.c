@@ -5,6 +5,9 @@
 #include <linux/module.h>
 #include<linux/slab.h>
 #include <linux/init.h> 
+#include <crypto/skcipher.h>
+#include <linux/crypto.h>
+#include <linux/scatterlist.h>
 
 // 1. generate file descriptor
 // 2. loop until a message appears
@@ -121,10 +124,8 @@ struct crypto_blkcipher *remove_from_list(int id) {
 }
 
 struct crypto_blkcipher *allocate_blkcipher(void) {
-    keysize = POPCORN_AES_KEY_SIZE;
-	algo = "xts(aes)";
 
-	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
+	tfm = crypto_alloc_blkcipher("xts(aes)", 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
 		printk(KERN_ERR "failed to load transform for %s: %ld\n", algo,
