@@ -6,7 +6,6 @@
 #include<linux/slab.h>
 #include <linux/init.h> 
 #include <crypto/skcipher.h>
-#include <stdio.h>
 #include <linux/crypto.h>
 #include <linux/scatterlist.h>
 
@@ -176,7 +175,7 @@ static int __init allocator_init(void) {
     //     spin_lock(requests_lock);
         //s = read(efd, &message, MAX_MESSAGE_SIZE_BYTES);
         printk(KERN_ERR "Message was: %s", message);
-        snscanf(message, "%d %d", &command, &id);
+        sscanf(message, "%d %d", &command, &id);
 
         switch(command) {
             case ALLOCATE_COMMAND:
