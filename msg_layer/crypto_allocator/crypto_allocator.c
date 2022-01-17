@@ -155,17 +155,18 @@ int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
 
 static int __init allocator_init(void) {
     struct list_head requests_list;
-    spinlock_t requests_lock;
+    // spinlock_t requests_lock;
+    int command, id;
     // char message[MAX_MESSAGE_SIZE_BYTES];
     char *message = "0 0\0"; //allocate node 0
     struct crypto_blkcipher* blk_cipher;
     // eventfd_t efd = eventfd(0, 0);
     list_head = NULL;
 
-    if (efd == -1) {
-        printk(KERN_ERR "Could not create event file descriptor\n");
-        return efd;
-    }
+    // if (efd == -1) {
+    //     printk(KERN_ERR "Could not create event file descriptor\n");
+    //     return efd;
+    // }
 
     printk(KERN_ERR "Starting crypto allocator, do not stop before all allocators have been deallocated\n");
 
@@ -188,7 +189,7 @@ static int __init allocator_init(void) {
             case DEALLOCATE_COMMAND:
                 blk_cipher = remove_from_list(id);
                 if (blk_cipher == NULL) {
-                    print("This block cipher was not already allocated, failed to deallocate\n");
+                    printk(KERN_ERR "This block cipher was not already allocated, failed to deallocate\n");
                     //return error
                 }
                 else {
