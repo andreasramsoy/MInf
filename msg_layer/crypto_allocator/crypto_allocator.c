@@ -37,7 +37,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     struct linked_list *list_node;
 
     if (list_head == NULL) {
-        list_head = malloc(sizeof(struct linked_list));
+        list_head = kmalloc(GFP_KERNEL, sizeof(struct linked_list));
         if (list_head == NULL) {
             printk(KERN_ERR "Could not allocate first item to list\n");
             return -1;
@@ -50,7 +50,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
             list_node = list_node->next;
         }
         //at end of list so append
-        list_node->next = malloc(sizeof(struct linked_list));
+        list_node->next = kmalloc(GFP_KERNEL, sizeof(struct linked_list));
         if (list_node->next == NULL) {
             printk(KERN_ERR "Could not allocate new item to list\n");
             return -1;
@@ -65,7 +65,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     return list_node->id;
 }
 
-int remove_from_list(int id) {
+struct crypto_blkcipher *remove_from_list(int id) {
     struct linked_list *node_list;
     struct linked_list *node_prev;
     struct crypto_blkcipher *return_value;
@@ -81,7 +81,7 @@ int remove_from_list(int id) {
     else if (list_head->next == NULL) {
         //must have the correct id and no other nodes
         return_value = list_head->value;
-        free(list_head);
+        kfree(list_head);
         list_head = NULL;
         return return_value;
     }
@@ -90,7 +90,7 @@ int remove_from_list(int id) {
         return_value = list_head->value;
         node_list = list_head;
         list_head = node_list->next; //move along one
-        free(node_list);
+        kfree(node_list);
         return return_value;
     }
     else {
@@ -112,7 +112,7 @@ int remove_from_list(int id) {
             //you've found it
             node_prev->next = node_list->next; //skip over the node to be deleted
             return_value = node_list->value;
-            free(node_list);
+            kfree(node_list);
             printk(KERN_ERR "Freed value from list\n");
             return return_value;
         }
