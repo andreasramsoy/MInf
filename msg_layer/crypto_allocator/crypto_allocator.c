@@ -124,8 +124,8 @@ struct crypto_blkcipher *remove_from_list(int id) {
 }
 
 struct crypto_blkcipher *allocate_blkcipher(void) {
-
-	tfm = crypto_alloc_blkcipher("xts(aes)", 0, CRYPTO_ALG_ASYNC);
+    char *algo = "xts(aes)";
+    struct crypto_blkcipher *tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
 		printk(KERN_ERR "failed to load transform for %s: %ld\n", algo,
@@ -148,9 +148,9 @@ int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
 }
 
 //popcorn thread:
-spin_lock(requests_lock);
-queue_request(r, requests_list);
-wait_completion(r.wait);
+// spin_lock(requests_lock);
+// queue_request(r, requests_list);
+// wait_completion(r.wait);
 
 
 static int __init allocator_init(void) {
@@ -168,10 +168,10 @@ static int __init allocator_init(void) {
 
     printk(KERN_ERR "Starting crypto allocator, do not stop before all allocators have been deallocated\n");
 
-    while (epoll(epd)) {
-        spin_lock(requests_lock);
-
-        s = read(efd, &message, MAX_MESSAGE_SIZE_BYTES);
+    // while (epoll(epd)) {
+    //     spin_lock(requests_lock);
+        message = "0 0"; //allocate node 0
+        //s = read(efd, &message, MAX_MESSAGE_SIZE_BYTES);
         printk(KERN_ERR "Message was: %s", message);
         snscanf(message, "%d %d", &command, &id);
 
@@ -198,8 +198,8 @@ static int __init allocator_init(void) {
         // r=get_request(requests_list);
         // handle(r);
         // complete(r->wait)
-        spin_unlock(requests_lock);
-    }
+    //     spin_unlock(requests_lock);
+    // }
     return 0;
 }
 
