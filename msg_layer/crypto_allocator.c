@@ -1,7 +1,9 @@
 #include <sys/eventfd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
+//#include <stdlib.h>
+#include <linux/kernel.h>
+//#include <stddef.h>
+#include <linux/module.h> 
+#include <linux/init.h> 
 
 // 1. generate file descriptor
 // 2. loop until a message appears
@@ -10,8 +12,11 @@
 #define POPCORN_AES_KEY_SIZE 256
 #define MAX_MESSAGE_SIZE_BYTES 200
 #define ALLOCATE_COMMAND 0
-#define DELLOCATE_COMMAND 1
+#define DEALLOCATE_COMMAND 1
 
+
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("A test module to ensure encryption works");
 
 //Daemon
 // struct request {
@@ -34,7 +39,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     if (list_head == NULL) {
         list_head = malloc(sizeof(struct linked_list));
         if (list_head == NULL) {
-            printf("Could not allocate first item to list\n");
+            printk(KERN_ERR "Could not allocate first item to list\n");
             return -1;
         }
         list_node = list_head;
@@ -47,7 +52,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
         //at end of list so append
         list_node->next = malloc(sizeof(struct linked_list));
         if (list_node->next == NULL) {
-            printf("Could not allocate new item to list\n");
+            printk(KERN_ERR "Could not allocate new item to list\n");
             return -1;
         }
         list_node = list_node->next;
@@ -66,11 +71,11 @@ int remove_from_list(int id) {
     struct crypto_blkcipher *return_value;
 
     if (list_head == NULL) {
-        printf("There are no allocators to deallocate\n")
+        printk(KERN_ERR "There are no allocators to deallocate\n");
         return NULL;
     }
     else if (list_head->id != id && list_head->next == NULL) {
-        printf("The only allocator did not have the id %d, do did not deallocate\n", id);
+        printk(KERN_ERR "The only allocator did not have the id %d, do did not deallocate\n", id);
         return NULL;
     }
     else if (list_head->next == NULL) {
@@ -100,7 +105,7 @@ int remove_from_list(int id) {
 
         //check why you exitted the loop, either you're at the node or you checked all
         if (node_list->next != NULL) {
-            printf("Did not find the node with id %d\n", id);
+            printk(KERN_ERR "Did not find the node with id %d\n", id);
             return NULL;
         }
         else {
@@ -108,7 +113,7 @@ int remove_from_list(int id) {
             node_prev->next = node_list->next; //skip over the node to be deleted
             return_value = node_list->value;
             free(node_list);
-            printf("Freed value from list\n");
+            printk(KERN_ERR "Freed value from list\n");
             return return_value;
         }
     }
@@ -121,7 +126,7 @@ struct crypto_blkcipher *allocate_blkcipher(void) {
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
-		printf("failed to load transform for %s: %ld\n", algo,
+		printk(KERN_ERR "failed to load transform for %s: %ld\n", algo,
 		       PTR_ERR(tfm));
 		return NULL;
 	}
@@ -146,7 +151,7 @@ queue_request(r, requests_list);
 wait_completion(r.wait);
 
 
-int main(int argc, void* argv[]) {
+static int __init allocator_init(void) {
     struct list_head requests_list;
     spinlock_t requests_lock;
     char message[MAX_MESSAGE_SIZE_BYTES];
@@ -155,17 +160,17 @@ int main(int argc, void* argv[]) {
     list_head = NULL;
 
     if (efd == -1) {
-        printf("Could not create event file descriptor\n");
+        printk(KERN_ERR "Could not create event file descriptor\n");
         return efd;
     }
 
-    printf("Starting crypto allocator, do not stop before all allocators have been deallocated\n");
+    printk(KERN_ERR "Starting crypto allocator, do not stop before all allocators have been deallocated\n");
 
     while (epoll(epd)) {
         spin_lock(requests_lock);
 
         s = read(efd, &message, MAX_MESSAGE_SIZE_BYTES);
-        printf("Message was: %s", message);
+        printk(KERN_ERR "Message was: %s", message);
         snscanf(message, "%d %d", &command, &id);
 
         switch(command) {
@@ -196,4 +201,14 @@ int main(int argc, void* argv[]) {
     return 0;
 }
 
+static void __exit allocator_cleanup(void)
+{
+    printk(KERN_INFO "Stub for stop\n");
+}
+
+
 ///////////////// needs to send a reply to a proc
+
+
+module_init(allocator_init);
+module_exit(allocator_cleanup);
