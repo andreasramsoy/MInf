@@ -156,9 +156,10 @@ int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
 static int __init allocator_init(void) {
     struct list_head requests_list;
     spinlock_t requests_lock;
-    char message[MAX_MESSAGE_SIZE_BYTES];
+    // char message[MAX_MESSAGE_SIZE_BYTES];
+    char *message = "0 0\0"; //allocate node 0
     struct crypto_blkcipher* blk_cipher;
-    eventfd_t efd = eventfd(0, 0);
+    // eventfd_t efd = eventfd(0, 0);
     list_head = NULL;
 
     if (efd == -1) {
@@ -170,7 +171,6 @@ static int __init allocator_init(void) {
 
     // while (epoll(epd)) {
     //     spin_lock(requests_lock);
-        message = "0 0"; //allocate node 0
         //s = read(efd, &message, MAX_MESSAGE_SIZE_BYTES);
         printk(KERN_ERR "Message was: %s", message);
         snscanf(message, "%d %d", &command, &id);
