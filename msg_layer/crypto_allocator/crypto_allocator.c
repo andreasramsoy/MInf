@@ -19,9 +19,6 @@
 #define DEALLOCATE_COMMAND 1
 
 
-MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("A test module to ensure encryption works");
-
 //Daemon
 // struct request {
 //     ...
@@ -41,7 +38,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
     struct linked_list *list_node;
 
     if (list_head == NULL) {
-        list_head = kmalloc(GFP_KERNEL, sizeof(struct linked_list));
+        list_head = malloc(sizeof(struct linked_list));
         if (list_head == NULL) {
             printk(KERN_ERR "Could not allocate first item to list\n");
             return -1;
@@ -54,7 +51,7 @@ int add_to_list(struct crypto_blkcipher *blkcipher, int id) {
             list_node = list_node->next;
         }
         //at end of list so append
-        list_node->next = kmalloc(GFP_KERNEL, sizeof(struct linked_list));
+        list_node->next = malloc(sizeof(struct linked_list));
         if (list_node->next == NULL) {
             printk(KERN_ERR "Could not allocate new item to list\n");
             return -1;
@@ -85,7 +82,7 @@ struct crypto_blkcipher *remove_from_list(int id) {
     else if (list_head->next == NULL) {
         //must have the correct id and no other nodes
         return_value = list_head->value;
-        kfree(list_head);
+        free(list_head);
         list_head = NULL;
         return return_value;
     }
@@ -94,7 +91,7 @@ struct crypto_blkcipher *remove_from_list(int id) {
         return_value = list_head->value;
         node_list = list_head;
         list_head = node_list->next; //move along one
-        kfree(node_list);
+        free(node_list);
         return return_value;
     }
     else {
@@ -116,7 +113,7 @@ struct crypto_blkcipher *remove_from_list(int id) {
             //you've found it
             node_prev->next = node_list->next; //skip over the node to be deleted
             return_value = node_list->value;
-            kfree(node_list);
+            free(node_list);
             printk(KERN_ERR "Freed value from list\n");
             return return_value;
         }
@@ -154,7 +151,7 @@ int message_popcorn(char* message[MAX_MESSAGE_SIZE_BYTES]) {
 // wait_completion(r.wait);
 
 
-static int __init allocator_init(void) {
+int main(int argc, void *argv) {
     // struct list_head requests_list;
     // spinlock_t requests_lock;
     int command, id;
@@ -205,14 +202,4 @@ static int __init allocator_init(void) {
     return 0;
 }
 
-static void __exit allocator_cleanup(void)
-{
-    printk(KERN_INFO "Stub for stop\n");
-}
-
-
 ///////////////// needs to send a reply to a proc
-
-
-module_init(allocator_init);
-module_exit(allocator_cleanup);
