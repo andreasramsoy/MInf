@@ -14,6 +14,9 @@ struct node_list_info_list_item* root_node_list_info_list;
 int after_last_node_index;
 int number_of_nodes_to_be_added;
 char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+struct neighbour_node_list* previous_neighbour;
+struct neighbour_node_list* next_neighbour;
+struct neighbour_node_list* updated_nodes;
 
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
@@ -70,6 +73,94 @@ struct message_node* get_node(int index) {
 	return list->nodes[index % MAX_NUM_NODES_PER_LIST];
 }
 EXPORT_SYMBOL(get_node);
+
+/**
+ * Runs a check on the neighbouring nodes, can send only 
+ * changes since last check or a full list
+ * 
+ */
+void check_and_repair_popcorn(void) {
+    struct message_node* previous_neighbour;
+    struct message_node* next_neighbour;
+    struct neighbour_node_list* command;
+    int i;
+    bool first_pass;
+
+    printk(KERN_INFO "Running a check and repair on Popcorn\n")
+
+
+    //get previous node
+    i = my_nid - 1;
+    first_pass = true;
+    while (first_pass || i > my_nid) {
+        if (i < 0) {
+            i = after_last_node_index - 1; //reset to the end of the list
+            first_pass = false;
+        }
+        previous_neighbour = get_node(i);
+        if (previous_neighbour != NULL) {
+            break;
+        }
+
+        i--;
+    }
+
+    //get next node
+    i = my_nid + 1;
+    first_pass = true;
+    while (first_pass || i < my_nid) {
+        if (i > after_last_node_index - 1) {
+            i = 0; //reset to the end of the list
+            first_pass = false;
+        }
+        next_neighbour = get_node(i);
+        if (next_neighbour != NULL) {
+            break;
+        }
+
+        i--;
+    }
+
+    if (previous_neighbour == NULL || next_neighbour == NULL) {
+        printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p", previous_neighbour, next_neighbour);
+        return; //cannot check (not an error just need more nodes)
+    }
+
+    if (previous_neighbour == next_neighbour) {
+        printk(KERN_INFO "Both neighbours are the same");
+    }
+
+
+    //TODO: store the node list of the previous and the next node (not full just key data), then you can see if it has changed
+    //TODO: use a linked list for a data structure for a node list for neighbours
+    //TODO: since checks take place one at a time then you only need one list for the changes
+    //TODO: a connected node needs to tell the other node to open connection
+    //TODO: set a maximum of checks that occur in one message - reduces message size as this must be fixed size - does this? Means you just send more messages if there are more to check
+
+
+    //measure changes since last check
+
+
+
+    //just send all the changes then delete them all (if there are differences then re-add them)
+    command = updated_nodes;
+    if is_new
+
+    while (command->next != NULL) {
+        //check
+    
+        command = command->next;
+    }
+
+
+    //send the changes to the node
+
+
+    //free memory from the changes list
+
+}
+EXPORT_SYMBOL(check_and_repair_popcorn)
+
 
 /**
  * Generates the key and IV for AES for the given node. Nothing is returned since 

@@ -69,6 +69,15 @@ struct node_list {
 	struct node_list* next_list;
 };
 
+
+//data structures for the neighbours
+struct neighbour_node_list {
+    uint64_t index;
+    uint32_t address;
+	struct neighbour_node_list* next;
+};
+
+
 /* Per-node handle for socket */
 struct sock_handle {
 	int nid;
@@ -104,6 +113,7 @@ extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 extern struct message_node* get_node(int index);
+extern void check_and_repair_popcorn(void);
 extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport);
 extern struct message_node* create_instigator_node(uint32_t address_p);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
