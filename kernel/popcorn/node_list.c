@@ -29,6 +29,7 @@ node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
+DEFINE_SEMAPHORE(node_neighbours_check_sem);
 
 bool registered_on_popcorn_network;
 
@@ -142,6 +143,7 @@ void check_and_repair_popcorn(void) {
     //TODO: a connected node needs to tell the other node to open connection
     //TODO: set a maximum of checks that occur in one message - reduces message size as this must be fixed size - does this? Means you just send more messages if there are more to check
     //TODO: fills in dummy values into data structure if all have been sent, then sends multiple messages
+    //TODO: if there is an error but the other node should update then send your correct value back to them (they may have resolved it by then)
 
 
     //measure changes since last check (send full)
@@ -1115,6 +1117,97 @@ void send_node_list_info(int their_index, char* random_token) {
 EXPORT_SYMBOL(send_node_list_info);
 
 /**
+ * @param msg message recieved
+ * Takes a message and processes to check if there are changes to the node list
+ * @return int 
+ */
+static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
+    int ret, i;
+    struct message_node* node;
+    bool i_am_right;
+
+    printk(KERN_DEBUG "Recieved request to check neighbour's node list\n");
+
+
+	do {
+		ret = down_interruptible(&node_neighbours_check_sem);
+	} while (ret);
+
+    //recieve the message
+    node_check_neighbours *info = (node_check_neighbours *)msg;
+
+    //for each check
+    for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
+
+        if (i == my_nid || my_nid < msg->header.from_nid) {
+            i_am_right = true;
+        }
+        else if (i == msg->header.from_nid || my_nid > msg->header.from_nid) {
+            i_am_right = false;
+        }
+        else {
+            printk(KERN_ERR "Unresolved error when deciding which neighbour is correct\n");
+            //this is a santity check
+            i_am_right = true;
+        }
+
+        //check if there is a difference
+        if (info->nid[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
+            node = get_node(info->nids[i])
+            if (node == NULL && !(info->remove)) {
+                printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
+                //there should be a not here
+
+                //resolve whether it should be added
+                if (i_am_right) {
+                    //add this node to our node list and send it back to them
+                    //TODO:
+                }
+                else {
+                    
+                }
+            }
+            else {
+                //the node exists on our list
+                if (node->address != info->addresses[i] && !(info->remove)) {
+                    printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
+
+                    //resolve incorrect node
+                    if (i_am_right) {
+
+                    }
+                    else {
+                        //add this node to our node list and send it back to them
+                    }
+                }
+                else if (node->address == info->addresses[i] && info->remove) {
+                    printk(KERN_DEBUG "The node that is in the list has been requested to be removed\n");
+
+                    //resolve node that shouldn't be there
+                    if (i_am_right) {
+
+                    }
+                    else {
+                        //add this node to our node list and send it back to them
+                    }
+                }
+                
+            }
+
+            //resolve differences
+            //add/remove node according to this (must remove and then add node if the address is different)
+        }
+    }
+
+	pcn_kmsg_done(msg);
+    up(&node_neighbours_check_sem);
+
+    printk(KERN_DEBUG "Done handling request to check neighbour's node list\n")
+}
+EXPORT_SYMBOL(handle_node_check_neighbours);
+
+
+/**
  * Function to handle incoming messages to adjust node list from other nodes
  * @param struct pcn_kmsg_message
  */
@@ -1124,12 +1217,12 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     int ret;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
-    node_list_info *info = (node_list_info *)msg;
 
 
 	do {
 		ret = down_interruptible(&node_list_info_sem);
 	} while (ret);
+    node_list_info *info = (node_list_info *)msg;
 
     if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
