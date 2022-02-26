@@ -70,10 +70,14 @@ struct node_list {
 };
 
 
+#define REMOVED_NODE -1
+#define END_OF_NODE_CHANGES -2
+
 //data structures for the neighbours
 struct neighbour_node_list {
     uint64_t index;
     uint32_t address;
+	bool remove;
 	struct neighbour_node_list* next;
 };
 

@@ -319,7 +319,8 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 #define NODE_CHECK_NEIGHBOURS_FIELDS \
 	int your_nid; \
 	int nids[MAX_CHECKS_AT_ONCE]; \
-	uint32_t addresses[MAX_CHECKS_AT_ONCE]
+	uint32_t addresses[MAX_CHECKS_AT_ONCE] \
+	bool remove[MAX_CHECKS_AT_ONCE]
 DEFINE_PCN_KMSG(node_check_neighbours, NODE_CHECK_NEIGHBOURS_FIELDS);
 
 

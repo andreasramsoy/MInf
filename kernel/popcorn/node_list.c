@@ -18,6 +18,8 @@ struct neighbour_node_list* previous_neighbour;
 struct neighbour_node_list* next_neighbour;
 struct neighbour_node_list* updated_nodes;
 
+void add_to_update_list(int node_id, uint32_t address, bool remove);
+
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
 int command_queue_start;
@@ -145,7 +147,7 @@ void check_and_repair_popcorn(void) {
     //measure changes since last check (send full)
     command = updated_nodes;
 
-    if (command->index != -1) {
+    if (command != NULL) {
 
         node_check = kmalloc(sizeof(node_check), GFP_KERNEL)
         node_check->your_nid = ;
@@ -157,11 +159,13 @@ void check_and_repair_popcorn(void) {
                 if (end_not_reached) {
                     node_check->index[i] = command->index;
                     node_check->address[i] = command->address;
+                    node_check->remove[i] = command->remove;
                 }
                 else {
                     //fill with dummy values as nothing to check
-                    node_check->index[i] = -1;
+                    node_check->index[i] = END_OF_NODE_CHANGES;
                     node_check->address[i] = 0;
+                    node_check->remove[i] = false;
                 }
 
                 //check if we've reached the end of the data structure
@@ -558,11 +562,13 @@ void remove_node(int index) {
     bool no_nodes;
     struct node_list* prev_list;
     struct node_list* list = root_node_list;
+    uint32_t address;
     struct message_node* node = get_node(index);
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
     set_popcorn_node_online(node->index, false);
+    address = node->address;
 
     if (!is_myself(node)) {
         printk(KERN_DEBUG "Killing connections for this node\n");
@@ -624,6 +630,8 @@ void remove_node(int index) {
         printk(KERN_DEBUG "Removing the item from list\n");
         kfree(list);
     }
+
+    add_to_update_list(index, address, true);
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -960,6 +968,38 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
 }
 EXPORT_SYMBOL(add_node_at_position);
 
+
+/**
+ * @param node_id id of node
+ * @param address address of the node (even if it is to be removed)
+ * @param remove bool, true if the node has now been removed
+ */
+void add_to_update_list(int node_id, uint32_t address, bool remove) {
+    struct neighbour_node_list* update_list;
+
+    printk(KERN_INFO "add_to_update_list called\n");
+    //add to the list of updated nodes
+    update_list = updated_nodes;
+    if (update_list != NULL) {
+        while (update_list->next != NULL) {
+            update_list = update_list->next;
+        }
+        update_list->next = kmalloc(size(struct neighbour_node_list), GFP_KERNEL);
+        update_list = update_list->next;
+    }
+    else {
+        update_list = kmalloc(size(struct neighbour_node_list), GFP_KERNEL);
+    }
+
+    //now update_list contains a newly allocated structure, in the list, that we can store the details of this list
+    update_list->index = node_id;
+    update_list->address = address;
+    update_list->remove = remove;
+    update_list->next = NULL; //end of the list
+
+    printk(KERN_INFO "add_to_update_list finished\n");
+}
+
 /**
  * Takes a node and adds it to the node list.
  * @param message_node* node the node that will be added to the list
@@ -993,8 +1033,10 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     
     printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
 
-    //now add to the list of updated nodes
-    
+
+
+    add_to_update_list(node->index, node->address, false); //store in the node list
+
 
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
