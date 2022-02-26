@@ -83,6 +83,9 @@ void check_and_repair_popcorn(void) {
     struct message_node* previous_neighbour;
     struct message_node* next_neighbour;
     struct neighbour_node_list* command;
+    struct neighbour_node_list* command_prev;
+    node_check_neighbours* node_check;
+    bool end_not_reached;
     int i;
     bool first_pass;
 
@@ -136,28 +139,48 @@ void check_and_repair_popcorn(void) {
     //TODO: since checks take place one at a time then you only need one list for the changes
     //TODO: a connected node needs to tell the other node to open connection
     //TODO: set a maximum of checks that occur in one message - reduces message size as this must be fixed size - does this? Means you just send more messages if there are more to check
+    //TODO: fills in dummy values into data structure if all have been sent, then sends multiple messages
 
 
-    //measure changes since last check
-
-
-
-    //just send all the changes then delete them all (if there are differences then re-add them)
+    //measure changes since last check (send full)
     command = updated_nodes;
-    if is_new
 
-    while (command->next != NULL) {
-        //check
-    
-        command = command->next;
+    if (command->index != -1) {
+
+        node_check = kmalloc(sizeof(node_check), GFP_KERNEL)
+        node_check->your_nid = ;
+        end_not_reached = true;
+        while(end_not_reached) {
+            for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
+
+                //fill up a data structure to be sent to the neighbouring node
+                if (end_not_reached) {
+                    node_check->index[i] = command->index;
+                    node_check->address[i] = command->address;
+                }
+                else {
+                    //fill with dummy values as nothing to check
+                    node_check->index[i] = -1;
+                    node_check->address[i] = 0;
+                }
+
+                //check if we've reached the end of the data structure
+                if (command->next == NULL) {
+                    end_not_reached = false;
+                }
+                else {
+                    command_prev = command;
+                    command = command->next;
+                    kfree(command_prev);
+                }
+            }
+            //send the node check
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, neighbour_node_id, &node_check, sizeof(node_check));
+        }
     }
-
-
-    //send the changes to the node
-
-
-    //free memory from the changes list
-
+    else {
+        printk(KERN_INFO "There was nothing to send in the check\n");
+    }
 }
 EXPORT_SYMBOL(check_and_repair_popcorn)
 
@@ -969,6 +992,10 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
     }
     
     printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
+
+    //now add to the list of updated nodes
+    
+
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
