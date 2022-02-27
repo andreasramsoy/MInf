@@ -665,6 +665,8 @@ void remove_node(int index) {
     }
 
     add_to_update_list(index, address, true);
+
+    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -879,7 +881,7 @@ void send_to_child(int parent_node_index, enum node_list_command_type node_comma
         index = 2 * (parent_node_index + 1) + i; //note that nid starts at 0, binary trees index from 1 (add one to correct this, take away later)
         node = get_node(index -1);
         if (node) {
-            if (node_command_type == NODE_LIST_ADD_NODE_COMMAND) {
+            if (node_command_type == NODE_LIST_ADD_NODE_COMMAND || node_command_type == NODE_LIST_REMOVE_NODE_COMMAND) {
                 printk(KERN_DEBUG "my_nid: %d\n", my_nid);
                 printk(KERN_DEBUG "I am: %d\n", address);
                 printk(KERN_DEBUG "Wanting to send to: %d\n", node->address);
@@ -1074,14 +1076,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
-    if (node->index != my_nid) {
-        printk(KERN_DEBUG "Propagate command to other nodes\n");
-        propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
-        printk(KERN_DEBUG "Sent messages to other nodes\n");
-    }
-    else {
-        printk(KERN_DEBUG "Did not propagate this node as it is myself\n");
-    }
+    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
 
 	return node->index;
 }
