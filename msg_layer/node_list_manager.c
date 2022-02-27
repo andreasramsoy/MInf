@@ -184,6 +184,13 @@ void stop_listening_threads(void) {
 }
 EXPORT_SYMBOL(stop_listening_threads);
 
+void full_check(void) {
+    printk("A full check on the node list has been requested\n");
+
+    run_full_check();
+}
+EXPORT_SYMBOL(full_check)
+
 /**
  * Adds a new node to the node list.
  * @param char* address address of the node

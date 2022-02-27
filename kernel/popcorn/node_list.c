@@ -77,6 +77,36 @@ struct message_node* get_node(int index) {
 }
 EXPORT_SYMBOL(get_node);
 
+
+/**
+ * Runs a complete check of the node list
+ * 
+ */
+void run_full_check(void) {
+    //load the entire node list into the update list
+    //then trigger a chack and repair
+    int i;
+    struct message_node* node;
+
+
+
+    for (i = 0; i < after_last_node_index; i++) {
+        node  = get_node(i);
+
+        //add the value to the update list
+        if (node != NULL) {
+            add_to_update_list(node->index, node->address, false);
+        }
+        else {
+            add_to_update_list(REMOVED_NODE, 0, true);
+        }
+    }
+
+    //now that the full list exists, send the update
+    check_and_repair_popcorn();
+}
+EXPORT_SYMBOL(run_full_check)
+
 /**
  * Runs a check on the neighbouring nodes, can send only 
  * changes since last check or a full list
@@ -144,7 +174,8 @@ void check_and_repair_popcorn(void) {
     //TODO: set a maximum of checks that occur in one message - reduces message size as this must be fixed size - does this? Means you just send more messages if there are more to check
     //TODO: fills in dummy values into data structure if all have been sent, then sends multiple messages
     //TODO: if there is an error but the other node should update then send your correct value back to them (they may have resolved it by then)
-
+    //TODO: ensures an independent transport structure as created last year so this information also needs to be sent
+    //TODO: function that runs a full check of the node lsit, this can be triggered from the node list manager
 
     //measure changes since last check (send full)
     command = updated_nodes;
@@ -1124,6 +1155,7 @@ EXPORT_SYMBOL(send_node_list_info);
 static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     int ret, i;
     struct message_node* node;
+    struct pcn_kmsg_transport* protocol;
     bool i_am_right;
 
     printk(KERN_DEBUG "Recieved request to check neighbour's node list\n");
@@ -1153,31 +1185,51 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
         //check if there is a difference
         if (info->nid[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
+
+            //manage the protocol
+            protocol = string_to_transport(protocol_string);
+            if (protocol == NULL) {
+                printk(KERN_ERR "Protocol that appeared in the check does not exist\n");
+                continue; //skip this item in the check
+            }
+
             node = get_node(info->nids[i])
-            if (node == NULL && !(info->remove)) {
+            if (node == NULL && !(info->remove[i])) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
 
                 //resolve whether it should be added
                 if (i_am_right) {
-                    //add this node to our node list and send it back to them
-                    //TODO:
+                    add_to_update_list(info->nids[i], info->addresses[i], true);
+                    printk(KERN_DEBUG "Neighbour had node that shouldn't be there, triggering check\n");
+                    check_and_repair_popcorn();
                 }
                 else {
-                    
+                    new_node = create_node(info->addresses[i], protocol);
+                    add_node_at_position(new_node, info->nids[i], token);
                 }
             }
             else {
                 //the node exists on our list
-                if (node->address != info->addresses[i] && !(info->remove)) {
+                if (node->address != info->addresses[i] && !(info->remove[i])) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
 
                     //resolve incorrect node
                     if (i_am_right) {
-
+                        add_to_update_list(node->index, node->address, false);
+                        add_to_update_list(info->nids[i], info->addresses[i], true);
+                        printk(KERN_DEBUG "Neighbour was wrong so triggering new check\n");
+                        check_and_repair_popcorn();
                     }
                     else {
                         //add this node to our node list and send it back to them
+                        remove_node(node->index); //remove your old node
+                        new_node = create_node(info->addresses[i], protocol);
+                        add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
+                        add_to_update_list(node->index, node->address, true);
+                        add_to_update_list(info->nids[i], info->addresses[i], false);
+                        printk(KERN_DEBUG "Replaced an old node so triggering new check\n");
+                        check_and_repair_popcorn();
                     }
                 }
                 else if (node->address == info->addresses[i] && info->remove) {
@@ -1185,10 +1237,16 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
                     //resolve node that shouldn't be there
                     if (i_am_right) {
+                        //add this node to our node list and send it back to them
+                        add_to_update_list(node->index, node->address, false);
 
+                        printk(KERN_DEBUG "Mistake was found in other node list so triggering check\n");
+                        check_and_repair_popcorn();
                     }
                     else {
-                        //add this node to our node list and send it back to them
+                        //remove the node
+                        remove_node(node->index);
+                        add_to_update_list(node->index, node->address, true); //note the change as other neighbours may want to know
                     }
                 }
                 
