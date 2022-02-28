@@ -192,15 +192,15 @@ void check_and_repair_popcorn(void) {
 
                 //fill up a data structure to be sent to the neighbouring node
                 if (end_not_reached) {
-                    node_check->index[i] = command->index;
-                    node_check->address[i] = command->address;
+                    node_check->nids[i] = command->index;
+                    node_check->addresses[i] = command->address;
                     node_check->remove[i] = command->remove;
                     strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
                 }
                 else {
                     //fill with dummy values as nothing to check
-                    node_check->index[i] = END_OF_NODE_CHANGES;
-                    node_check->address[i] = 0;
+                    node_check->nids[i] = END_OF_NODE_CHANGES;
+                    node_check->addresses[i] = 0;
                     node_check->remove[i] = false;
                     strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
                 }
@@ -218,8 +218,8 @@ void check_and_repair_popcorn(void) {
 
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
             memcpy(node_check_copy, node_check, sizeof(node_check));
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour, &node_check, sizeof(node_check));
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour, &node_check_copy, sizeof(node_check_copy));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
         }
     }
     else {
@@ -1155,6 +1155,7 @@ EXPORT_SYMBOL(send_node_list_info);
 static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     int ret, i;
     struct message_node* node;
+    struct message_node* new_node;
     struct pcn_kmsg_transport* protocol;
     bool i_am_right;
 
@@ -1225,7 +1226,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         //add this node to our node list and send it back to them
                         remove_node(node->index); //remove your old node
                         new_node = create_node(info->addresses[i], protocol);
-                        add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
+                        add_node_at_position(new_node, info->nids[i], ""); //add the new node
                         add_to_update_list(node->index, node->address, node->transport->name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");

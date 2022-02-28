@@ -79,6 +79,7 @@ struct neighbour_node_list {
     uint64_t index;
     uint32_t address;
 	bool remove;
+	char transport[MAX_TRANSPORT_STRING_LENGTH];
 	struct neighbour_node_list* next;
 };
 

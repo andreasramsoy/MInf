@@ -248,8 +248,6 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	BUG_ON(to == my_nid);
 #endif
 
-	int error;
-	//struct crypto_wait wait;
 
 	msg->header.type = type;
 	msg->header.prio = PCN_KMSG_PRIO_NORMAL;
@@ -258,6 +256,8 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 
 #ifdef POPCORN_ENCRYPTION_ON
+	int error;
+	//struct crypto_wait wait;
 	struct scatterlist sg;
 
 	struct message_node* node = get_node(to);
