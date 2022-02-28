@@ -18,7 +18,7 @@ struct neighbour_node_list* previous_neighbour;
 struct neighbour_node_list* next_neighbour;
 struct neighbour_node_list* updated_nodes;
 
-void add_to_update_list(int node_id, uint32_t address, bool remove);
+void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove);
 void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 
 
@@ -96,10 +96,10 @@ void run_full_check(void) {
 
         //add the value to the update list
         if (node != NULL) {
-            add_to_update_list(node->index, node->address, false);
+            add_to_update_list(node->index, node->address, node->transport->name, false);
         }
         else {
-            add_to_update_list(REMOVED_NODE, 0, true);
+            add_to_update_list(REMOVED_NODE, 0, "", true);
         }
     }
 
@@ -119,11 +119,12 @@ void check_and_repair_popcorn(void) {
     struct neighbour_node_list* command;
     struct neighbour_node_list* command_prev;
     node_check_neighbours* node_check;
+    node_check_neighbours* node_check_copy;
     bool end_not_reached;
     int i;
     bool first_pass;
 
-    printk(KERN_INFO "Running a check and repair on Popcorn\n")
+    printk(KERN_INFO "Running a check and repair on Popcorn\n");
 
 
     //get previous node
@@ -184,8 +185,7 @@ void check_and_repair_popcorn(void) {
 
     if (command != NULL) {
 
-        node_check = kmalloc(sizeof(node_check), GFP_KERNEL)
-        node_check->your_nid = ;
+        node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
         end_not_reached = true;
         while(end_not_reached) {
             for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
@@ -195,12 +195,14 @@ void check_and_repair_popcorn(void) {
                     node_check->index[i] = command->index;
                     node_check->address[i] = command->address;
                     node_check->remove[i] = command->remove;
+                    strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
                 }
                 else {
                     //fill with dummy values as nothing to check
                     node_check->index[i] = END_OF_NODE_CHANGES;
                     node_check->address[i] = 0;
                     node_check->remove[i] = false;
+                    strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
                 }
 
                 //check if we've reached the end of the data structure
@@ -213,8 +215,11 @@ void check_and_repair_popcorn(void) {
                     kfree(command_prev);
                 }
             }
-            //send the node check
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, neighbour_node_id, &node_check, sizeof(node_check));
+
+            //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
+            memcpy(node_check_copy, node_check, sizeof(node_check));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour, &node_check, sizeof(node_check));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour, &node_check_copy, sizeof(node_check_copy));
         }
     }
     else {
@@ -239,6 +244,7 @@ void generate_symmetric_key(struct message_node* node) {
     }
     printk(KERN_DEBUG "Generating symmetric key for node %d\n", index);
     
+    #ifdef POPCORN_ENCRYPTION_ON
     #ifdef POPCORN_USE_STUB_SYMMETRIC_KEYS
         printk(KERN_DEBUG "Using stub for AES keys\n");
         //for testing without using assymetric keys
@@ -246,17 +252,16 @@ void generate_symmetric_key(struct message_node* node) {
         else if (index == 1) strncpy(node->key, "4u7x!A\%D*G-KaPdSgUkXp2s5v8y/B?E(", POPCORN_AES_KEY_SIZE_BYTES);
         else if (index == 2) strncpy(node->key, "mZq4t7w!z\%C*F-JaNdRgUjXn2r5u8x/A", POPCORN_AES_KEY_SIZE_BYTES);
         else if (index == 3) strncpy(node->key, "ShVmYq3t6w9z$C&F)J@NcRfTjWnZr4u7", POPCORN_AES_KEY_SIZE_BYTES);
-    #elif
+    #else
         if (node) {
-            #ifdef POPCORN_ENCRYPTION_ON
             printk(KERN_DEBUG "Randomly generating key and IV for node %d\n", index);
             get_random_bytes(node->key, POPCORN_AES_KEY_SIZE_BYTES);
             printk(KERN_DEBUG "Done key generation for node %d", index);
-            #endif
         }
         else {
             printk(KERN_ERR "Cannot generate symmetric keys for node %d as it does not exist\n", index);
         }
+    #endif
     #endif
 }
 
@@ -663,9 +668,9 @@ void remove_node(int index) {
         kfree(list);
     }
 
-    add_to_update_list(index, address, true);
+    add_to_update_list(index, address, node->transport->name, true);
 
-    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, token); //one max connection (replace later)
+    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -832,15 +837,15 @@ EXPORT_SYMBOL(handle_node_list_command);
  * @param int max_connections
  */
 void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* random_token) {
-
-    printk(KERN_DEBUG "Sending node command message\n");
-
 	node_list_command command = {
 		.sender = my_nid,
 		.node_command_type = command_type,
         .address = address,
         .max_connections = max_connections,
 	};
+
+    printk(KERN_DEBUG "Sending node command message\n");
+
     strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
     if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
         printk(KERN_DEBUG "Copied the token: %s\n", random_token);
@@ -1008,7 +1013,7 @@ EXPORT_SYMBOL(add_node_at_position);
  * @param address address of the node (even if it is to be removed)
  * @param remove bool, true if the node has now been removed
  */
-void add_to_update_list(int node_id, uint32_t address, bool remove) {
+void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove) {
     struct neighbour_node_list* update_list;
 
     printk(KERN_INFO "add_to_update_list called\n");
@@ -1022,12 +1027,13 @@ void add_to_update_list(int node_id, uint32_t address, bool remove) {
         update_list = update_list->next;
     }
     else {
-        update_list = kmalloc(size(struct neighbour_node_list), GFP_KERNEL);
+        update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
     }
 
     //now update_list contains a newly allocated structure, in the list, that we can store the details of this list
     update_list->index = node_id;
     update_list->address = address;
+    strncpy(update_list->transport, transport, MAX_TRANSPORT_STRING_LENGTH);
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
 
@@ -1069,7 +1075,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
 
 
-    add_to_update_list(node->index, node->address, false); //store in the node list
+    add_to_update_list(node->index, node->address, node->transport->name, false); //store in the node list
 
 
 
@@ -1194,7 +1200,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
                 //resolve whether it should be added
                 if (i_am_right) {
-                    add_to_update_list(info->nids[i], info->addresses[i], true);
+                    add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                     printk(KERN_DEBUG "Neighbour had node that shouldn't be there, triggering check\n");
                     check_and_repair_popcorn();
                 }
@@ -1210,8 +1216,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
                     //resolve incorrect node
                     if (i_am_right) {
-                        add_to_update_list(node->index, node->address, false);
-                        add_to_update_list(info->nids[i], info->addresses[i], true);
+                        add_to_update_list(node->index, node->address, node->transport->name, false);
+                        add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                         printk(KERN_DEBUG "Neighbour was wrong so triggering new check\n");
                         check_and_repair_popcorn();
                     }
@@ -1220,8 +1226,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         remove_node(node->index); //remove your old node
                         new_node = create_node(info->addresses[i], protocol);
                         add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
-                        add_to_update_list(node->index, node->address, true);
-                        add_to_update_list(info->nids[i], info->addresses[i], false);
+                        add_to_update_list(node->index, node->address, node->transport->name, true);
+                        add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");
                         check_and_repair_popcorn();
                     }
@@ -1232,7 +1238,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     //resolve node that shouldn't be there
                     if (i_am_right) {
                         //add this node to our node list and send it back to them
-                        add_to_update_list(node->index, node->address, false);
+                        add_to_update_list(node->index, node->address, node->transport->name, false);
 
                         printk(KERN_DEBUG "Mistake was found in other node list so triggering check\n");
                         check_and_repair_popcorn();
@@ -1240,7 +1246,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     else {
                         //remove the node
                         remove_node(node->index);
-                        add_to_update_list(node->index, node->address, true); //note the change as other neighbours may want to know
+                        add_to_update_list(node->index, node->address, node->transport->name, true); //note the change as other neighbours may want to know
                     }
                 }
                 

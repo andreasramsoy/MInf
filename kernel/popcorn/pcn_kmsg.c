@@ -249,9 +249,7 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 #endif
 
 	int error;
-	struct scatterlist sg;
 	//struct crypto_wait wait;
-	struct message_node* node = get_node(to);
 
 	msg->header.type = type;
 	msg->header.prio = PCN_KMSG_PRIO_NORMAL;
@@ -260,7 +258,9 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 
 
 #ifdef POPCORN_ENCRYPTION_ON
+	struct scatterlist sg;
 
+	struct message_node* node = get_node(to);
 
 	unsigned int ret, i, j, iv_len;
 	const char *key;
