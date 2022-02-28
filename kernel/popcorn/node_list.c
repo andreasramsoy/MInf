@@ -19,6 +19,7 @@ struct neighbour_node_list* next_neighbour;
 struct neighbour_node_list* updated_nodes;
 
 void add_to_update_list(int node_id, uint32_t address, bool remove);
+void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
@@ -105,7 +106,7 @@ void run_full_check(void) {
     //now that the full list exists, send the update
     check_and_repair_popcorn();
 }
-EXPORT_SYMBOL(run_full_check)
+EXPORT_SYMBOL(run_full_check);
 
 /**
  * Runs a check on the neighbouring nodes, can send only 
@@ -176,6 +177,7 @@ void check_and_repair_popcorn(void) {
     //TODO: if there is an error but the other node should update then send your correct value back to them (they may have resolved it by then)
     //TODO: ensures an independent transport structure as created last year so this information also needs to be sent
     //TODO: function that runs a full check of the node lsit, this can be triggered from the node list manager
+    //TODO: the token is needed is used to ensure nodes know to accept forgeign connections (i.e. an unknown node connects). There we use a token that is passed through the network so we know that the connection is from the network, if we are being told of a node from within the network then this means the token is not required but instead the mutual node must notify both
 
     //measure changes since last check (send full)
     command = updated_nodes;
@@ -219,7 +221,7 @@ void check_and_repair_popcorn(void) {
         printk(KERN_INFO "There was nothing to send in the check\n");
     }
 }
-EXPORT_SYMBOL(check_and_repair_popcorn)
+EXPORT_SYMBOL(check_and_repair_popcorn);
 
 
 /**
@@ -348,7 +350,6 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_ERR "Failed to enable node\n");
     }
 
-create_node_end:
     if (!successful) {
         kfree(node);
         printk(KERN_ERR "Failed to create the node\n");
@@ -386,7 +387,6 @@ struct message_node* create_instigator_node(uint32_t address_p) {
     }
     node->bundle_id = -1;
 
-create_node_end:
     if (!successful) {
         kfree(node);
         printk(KERN_ERR "Failed to create the node\n");
@@ -431,7 +431,6 @@ EXPORT_SYMBOL(disable_node);
 
 //enable and connect
 bool enable_node(struct message_node* node) {
-    int error;
     printk(KERN_DEBUG "Initialising communications for node\n");
 
     if (node == NULL || node->transport == NULL) {
@@ -518,7 +517,7 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
     printk(KERN_DEBUG "string_to_transport called\n");
     transport = transport_list_head;
 
-    if (strcmp(transport->transport_structure->name, protocol) == 0) {
+    if (strncmp(transport->transport_structure->name, protocol, MAX_TRANSPORT_STRING_LENGTH) == 0) {
         printk(KERN_DEBUG "string_to_transport called 1.5\n");
         return transport->transport_structure;
     }
@@ -527,7 +526,7 @@ struct pcn_kmsg_transport* string_to_transport(char* protocol) {
     while (transport->next != NULL) {
         printk(KERN_DEBUG "Checking if this is %s transport\n", transport->transport_structure->name);
         transport = transport->next;
-        if (strcmp(transport->transport_structure->name, protocol) == 0) return transport->transport_structure;
+        if (strncmp(transport->transport_structure->name, protocol, MAX_TRANSPORT_STRING_LENGTH) == 0) return transport->transport_structure;
     }
 
     //exited so must have not found a suitable protocol
@@ -666,7 +665,7 @@ void remove_node(int index) {
 
     add_to_update_list(index, address, true);
 
-    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
+    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, token); //one max connection (replace later)
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -1019,7 +1018,7 @@ void add_to_update_list(int node_id, uint32_t address, bool remove) {
         while (update_list->next != NULL) {
             update_list = update_list->next;
         }
-        update_list->next = kmalloc(size(struct neighbour_node_list), GFP_KERNEL);
+        update_list->next = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         update_list = update_list->next;
     }
     else {
@@ -1179,16 +1178,16 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
         }
 
         //check if there is a difference
-        if (info->nid[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
+        if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
 
             //manage the protocol
-            protocol = string_to_transport(protocol_string);
+            protocol = string_to_transport(info->transports[i]);
             if (protocol == NULL) {
                 printk(KERN_ERR "Protocol that appeared in the check does not exist\n");
                 continue; //skip this item in the check
             }
 
-            node = get_node(info->nids[i])
+            node = get_node(info->nids[i]);
             if (node == NULL && !(info->remove[i])) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
@@ -1201,7 +1200,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 }
                 else {
                     new_node = create_node(info->addresses[i], protocol);
-                    add_node_at_position(new_node, info->nids[i], token);
+                    add_node_at_position(new_node, info->nids[i], ""); //no token is needed as 
                 }
             }
             else {
@@ -1255,7 +1254,9 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 	pcn_kmsg_done(msg);
     up(&node_neighbours_check_sem);
 
-    printk(KERN_DEBUG "Done handling request to check neighbour's node list\n")
+    printk(KERN_DEBUG "Done handling request to check neighbour's node list\n");
+
+    return 0;
 }
 EXPORT_SYMBOL(handle_node_check_neighbours);
 
@@ -1268,6 +1269,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     struct node_list_info_list_item* new_info;
     struct node_list_info_list_item* node_list_info_list;
     int ret;
+    node_list_info *info;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
 
@@ -1275,7 +1277,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 	do {
 		ret = down_interruptible(&node_list_info_sem);
 	} while (ret);
-    node_list_info *info = (node_list_info *)msg;
+    info = (node_list_info *)msg;
 
     if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)

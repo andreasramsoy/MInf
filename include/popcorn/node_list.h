@@ -40,6 +40,7 @@
 #define MAX_NUM_NODES_PER_LIST 64 //absolute maximum number of nodes
 #define NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES 16
 #define NODE_LIST_INITAL_TOKEN_ATTEMPTS 5 //number of connections that can attempt to connect before aborting
+#define DEFAULT_MAX_CONNECTIONS 20
 
 enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 
