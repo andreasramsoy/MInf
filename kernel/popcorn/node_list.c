@@ -88,11 +88,20 @@ void run_full_check(void) {
     //then trigger a chack and repair
     int i;
     struct message_node* node;
+    char* transport_name;
 
 
 
     for (i = 0; i < after_last_node_index; i++) {
         node  = get_node(i);
+
+        //for when this node does not have a transport structure
+        if (node->transport) {
+            transport_name = node->transport->name;
+        }
+        else {
+            transport_name = "";
+        }
 
         //add the value to the update list
         if (node != NULL) {
