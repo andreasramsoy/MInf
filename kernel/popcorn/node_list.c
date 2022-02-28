@@ -96,7 +96,7 @@ void run_full_check(void) {
 
         //add the value to the update list
         if (node != NULL) {
-            add_to_update_list(node->index, node->address, node->transport->name, false);
+            add_to_update_list(node->index, node->address, transport_name, false);
         }
         else {
             add_to_update_list(REMOVED_NODE, 0, "", true);
@@ -179,6 +179,7 @@ void check_and_repair_popcorn(void) {
     //TODO: ensures an independent transport structure as created last year so this information also needs to be sent
     //TODO: function that runs a full check of the node lsit, this can be triggered from the node list manager
     //TODO: the token is needed is used to ensure nodes know to accept forgeign connections (i.e. an unknown node connects). There we use a token that is passed through the network so we know that the connection is from the network, if we are being told of a node from within the network then this means the token is not required but instead the mutual node must notify both
+    //TODO: transport structure is not always set, to avoid null pointer dereference you must test first
 
     //measure changes since last check (send full)
     command = updated_nodes;
@@ -1046,6 +1047,8 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
  * @return int index of the location of the new node (-1 if it could not be added)
 */
 int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
+    char* transport_name;
+    
     printk(KERN_DEBUG "TOKEN in add_node: %s\n", token);
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");
@@ -1065,23 +1068,25 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     printk(KERN_DEBUG "Transport for node %d is %p", node->index, node->transport);
     if (node->transport) {
+        transport_name = node->transport->name;
         printk(KERN_DEBUG "Transport type is: %s", node->transport->name);
     }
     else {
         printk(KERN_DEBUG "Transport is null so must be instigator node\n");
+        transport_name = "";
     }
     
     printk(KERN_DEBUG "Node index before sending node list info: %d", node->index);
 
 
 
-    add_to_update_list(node->index, node->address, node->transport->name, false); //store in the node list
+    add_to_update_list(node->index, node->address, transport_name, false); //store in the node list
 
 
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
-    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, node->transport->name, max_connections, token); //one max connection (replace later)
+    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, transport_name, max_connections, token); //one max connection (replace later)
 
 	return node->index;
 }
@@ -1158,6 +1163,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     struct message_node* new_node;
     struct pcn_kmsg_transport* protocol;
     bool i_am_right;
+    char* transport_name;
 
     printk(KERN_DEBUG "Recieved request to check neighbour's node list\n");
 
@@ -1195,6 +1201,15 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             }
 
             node = get_node(info->nids[i]);
+
+            //in case the transport structure is not set
+            if (node->transport) {
+                transport_name = node->transport->name;
+            }
+            else {
+                transport_name = "";
+            }
+
             if (node == NULL && !(info->remove[i])) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
@@ -1217,7 +1232,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
                     //resolve incorrect node
                     if (i_am_right) {
-                        add_to_update_list(node->index, node->address, node->transport->name, false);
+                        add_to_update_list(node->index, node->address, transport_name, false);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                         printk(KERN_DEBUG "Neighbour was wrong so triggering new check\n");
                         check_and_repair_popcorn();
@@ -1227,7 +1242,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         remove_node(node->index); //remove your old node
                         new_node = create_node(info->addresses[i], protocol);
                         add_node_at_position(new_node, info->nids[i], ""); //add the new node
-                        add_to_update_list(node->index, node->address, node->transport->name, true);
+                        add_to_update_list(node->index, node->address, transport_name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");
                         check_and_repair_popcorn();
@@ -1239,7 +1254,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     //resolve node that shouldn't be there
                     if (i_am_right) {
                         //add this node to our node list and send it back to them
-                        add_to_update_list(node->index, node->address, node->transport->name, false);
+                        add_to_update_list(node->index, node->address, transport_name, false);
 
                         printk(KERN_DEBUG "Mistake was found in other node list so triggering check\n");
                         check_and_repair_popcorn();
@@ -1247,7 +1262,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     else {
                         //remove the node
                         remove_node(node->index);
-                        add_to_update_list(node->index, node->address, node->transport->name, true); //note the change as other neighbours may want to know
+                        add_to_update_list(node->index, node->address, transport_name, true); //note the change as other neighbours may want to know
                     }
                 }
                 
