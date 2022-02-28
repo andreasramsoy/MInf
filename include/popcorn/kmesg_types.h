@@ -316,7 +316,6 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
  * For error detection and correction
  */
 #define MAX_CHECKS_AT_ONCE 10
-#define MAX_TRANSPORT_STRING_LENGTH 15
 #define NODE_CHECK_NEIGHBOURS_FIELDS \
 	int your_nid; \
 	int nids[MAX_CHECKS_AT_ONCE]; \

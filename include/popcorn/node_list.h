@@ -73,6 +73,7 @@ struct node_list {
 
 #define REMOVED_NODE -1
 #define END_OF_NODE_CHANGES -2
+#define MAX_TRANSPORT_STRING_LENGTH 15
 
 //data structures for the neighbours
 struct neighbour_node_list {
