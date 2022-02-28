@@ -189,7 +189,7 @@ void full_check(void) {
 
     run_full_check();
 }
-EXPORT_SYMBOL(full_check)
+EXPORT_SYMBOL(full_check);
 
 /**
  * Adds a new node to the node list.
