@@ -232,13 +232,17 @@ void check_and_repair_popcorn(void) {
             printk(KERN_INFO "Sending message\n");
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
             memcpy(node_check_copy, node_check, sizeof(node_check));
+            printk(KERN_INFO "done copying message\n");
             pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
+            printk(KERN_INFO "Sent message 1\n");
             pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
+            printk(KERN_INFO "Sent message 2\n");
         }
     }
     else {
         printk(KERN_INFO "There was nothing to send in the check\n");
     }
+    printk(KERN_INFO "Done running check and repair\n");
 }
 EXPORT_SYMBOL(check_and_repair_popcorn);
 
