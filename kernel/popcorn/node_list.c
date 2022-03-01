@@ -1038,7 +1038,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     }
     else {
         update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
-        update_nodes = update_list; //update the head of the list
+        updated_nodes = update_list; //update the head of the list
     }
 
     //now update_list contains a newly allocated structure, in the list, that we can store the details of this list
