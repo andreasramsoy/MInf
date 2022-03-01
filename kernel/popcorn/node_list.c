@@ -194,6 +194,7 @@ void check_and_repair_popcorn(void) {
     command = updated_nodes;
 
     if (command != NULL) {
+        printk(KERN_INFO "Preparing to send updates\n");
 
         node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
         end_not_reached = true;
@@ -202,12 +203,14 @@ void check_and_repair_popcorn(void) {
 
                 //fill up a data structure to be sent to the neighbouring node
                 if (end_not_reached) {
+                    printk(KERN_INFO "More to send\n");
                     node_check->nids[i] = command->index;
                     node_check->addresses[i] = command->address;
                     node_check->remove[i] = command->remove;
                     strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
                 }
                 else {
+                    printk(KERN_INFO "End of list reached filling with dummy values\n");
                     //fill with dummy values as nothing to check
                     node_check->nids[i] = END_OF_NODE_CHANGES;
                     node_check->addresses[i] = 0;
@@ -226,6 +229,7 @@ void check_and_repair_popcorn(void) {
                 }
             }
 
+            printk(KERN_INFO "Sending message\n");
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
             memcpy(node_check_copy, node_check, sizeof(node_check));
             pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
