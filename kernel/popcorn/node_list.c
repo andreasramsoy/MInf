@@ -1035,16 +1035,20 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
         }
         update_list->next = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         update_list = update_list->next;
+        printk(KERN_INFO "End of list reached\n");
     }
     else {
         update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         updated_nodes = update_list; //update the head of the list
+        printk(KERN_INFO "Added a new list head\n");
     }
 
     //now update_list contains a newly allocated structure, in the list, that we can store the details of this list
     update_list->index = node_id;
     update_list->address = address;
+    printk(KERN_INFO "Adding transport structure string\n");
     strncpy(update_list->transport, transport, MAX_TRANSPORT_STRING_LENGTH);
+    printk(KERN_INFO "Added transport structure string\n");
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
 
@@ -1503,6 +1507,7 @@ bool initialise_node_list(void) {
 
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_INFO, node_list_info);
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_CHECK, node_check_neighbours);
 
     return true;
 }
