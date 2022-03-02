@@ -254,6 +254,8 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	msg->header.size = size;
 	msg->header.from_nid = my_nid;
 
+	printk(KERN_DEBUG "Filled in msg parameters\n");
+
 
 #ifdef POPCORN_ENCRYPTION_ON
 	int error;
@@ -365,6 +367,7 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {
 	int ret;
 	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
+	printk(KERN_INFO "Message built\n");
 
 	account_pcn_message_sent(msg);
 	
