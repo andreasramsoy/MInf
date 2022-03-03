@@ -131,7 +131,7 @@ void check_and_repair_popcorn(void) {
     node_check_neighbours* node_check;
     node_check_neighbours* node_check_copy;
     bool end_not_reached;
-    int i;
+    int i, ret;
     bool first_pass;
 
     printk(KERN_INFO "Running a check and repair on Popcorn\n");
