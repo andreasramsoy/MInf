@@ -31,6 +31,7 @@ node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
+DEFINE_SEMAPHORE(update_list_sem);
 
 bool registered_on_popcorn_network;
 
@@ -189,8 +190,14 @@ void check_and_repair_popcorn(void) {
     //TODO: function that runs a full check of the node lsit, this can be triggered from the node list manager
     //TODO: the token is needed is used to ensure nodes know to accept forgeign connections (i.e. an unknown node connects). There we use a token that is passed through the network so we know that the connection is from the network, if we are being told of a node from within the network then this means the token is not required but instead the mutual node must notify both
     //TODO: transport structure is not always set, to avoid null pointer dereference you must test first
+    //TODO: needed semaphore to manage the handling of the update list
 
     //measure changes since last check (send full)
+
+	do {
+		ret = down_interruptible(&node_neighbours_check_sem);
+	} while (ret);
+
     command = updated_nodes;
 
     if (command != NULL) {
@@ -248,6 +255,10 @@ void check_and_repair_popcorn(void) {
     else {
         printk(KERN_INFO "There was nothing to send in the check\n");
     }
+
+
+	up(&update_list_sem);
+
     printk(KERN_INFO "Done running check and repair\n");
 }
 EXPORT_SYMBOL(check_and_repair_popcorn);
@@ -1040,6 +1051,10 @@ EXPORT_SYMBOL(add_node_at_position);
 void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove) {
     struct neighbour_node_list* update_list;
 
+	do {
+		ret = down_interruptible(&update_list_sem);
+	} while (ret);
+
     printk(KERN_INFO "add_to_update_list called\n");
     //add to the list of updated nodes
     update_list = updated_nodes;
@@ -1068,6 +1083,9 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     printk(KERN_INFO "Added transport structure string\n");
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
+
+
+	up(&update_list_sem);
 
     printk(KERN_INFO "add_to_update_list finished\n");
 }
