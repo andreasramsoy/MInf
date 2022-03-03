@@ -33,6 +33,8 @@ DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
 DEFINE_SEMAPHORE(update_list_sem);
 
+#define DEFAULT_TRANSPORT transport_list_head->transport_structure->name //for when there is no transport structure
+
 bool registered_on_popcorn_network;
 
 EXPORT_SYMBOL(transport_list_head);
@@ -222,7 +224,12 @@ void check_and_repair_popcorn(void) {
                     node_check->nids[i] = END_OF_NODE_CHANGES;
                     node_check->addresses[i] = 0;
                     node_check->remove[i] = false;
-                    strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
+                    if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
+                        strncpy(command->transport, DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
+                    }
+                    else {
+                        strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
+                    }
                 }
 
                 //check if we've reached the end of the data structure
@@ -1079,7 +1086,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     //now update_list contains a newly allocated structure, in the list, that we can store the details of this list
     update_list->index = node_id;
     update_list->address = address;
-    printk(KERN_INFO "Adding transport structure string\n");
+    printk(KERN_INFO "Adding transport structure string: %s\n", transport);
     strncpy(update_list->transport, transport, MAX_TRANSPORT_STRING_LENGTH);
     printk(KERN_INFO "Added transport structure string\n");
     update_list->remove = remove;
@@ -1122,7 +1129,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
         printk(KERN_DEBUG "Transport type is: %s", node->transport->name);
     }
     else {
-        printk(KERN_DEBUG "Transport is null so must be instigator node\n");
+        printk(KERN_DEBUG "Transport is null so must be myself\n");
         transport_name = "";
     }
     
