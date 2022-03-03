@@ -190,6 +190,7 @@ void full_check(void) {
     run_full_check();
 
     strncpy(output_buffer, "0", sizeof(output_buffer));
+    printk("Finished running full check\n");
 }
 EXPORT_SYMBOL(full_check);
 
