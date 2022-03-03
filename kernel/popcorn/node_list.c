@@ -1044,14 +1044,17 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     //add to the list of updated nodes
     update_list = updated_nodes;
     if (update_list != NULL) {
+        printk(KERN_INFO "Update list exists\n");
         while (update_list->next != NULL) {
             update_list = update_list->next;
         }
         update_list->next = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         update_list = update_list->next;
+        update_list->next = NULL; //end of the list
         printk(KERN_INFO "End of list reached\n");
     }
     else {
+        printk(KERN_INFO "No existing update list\n");
         update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         updated_nodes = update_list; //update the head of the list
         printk(KERN_INFO "Added a new list head\n");

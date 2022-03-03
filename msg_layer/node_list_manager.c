@@ -188,6 +188,8 @@ void full_check(void) {
     printk("A full check on the node list has been requested\n");
 
     run_full_check();
+
+    strncpy(output_buffer, "0", sizeof(output_buffer));
 }
 EXPORT_SYMBOL(full_check);
 
