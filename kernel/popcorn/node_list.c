@@ -195,7 +195,7 @@ void check_and_repair_popcorn(void) {
     //measure changes since last check (send full)
 
 	do {
-		ret = down_interruptible(&node_neighbours_check_sem);
+		ret = down_interruptible(&update_list_sem);
 	} while (ret);
 
     command = updated_nodes;
@@ -1050,6 +1050,7 @@ EXPORT_SYMBOL(add_node_at_position);
  */
 void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove) {
     struct neighbour_node_list* update_list;
+    int ret;
 
 	do {
 		ret = down_interruptible(&update_list_sem);
