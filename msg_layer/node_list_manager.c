@@ -184,6 +184,17 @@ void stop_listening_threads(void) {
 }
 EXPORT_SYMBOL(stop_listening_threads);
 
+void force_remove(int index) {
+    //function is for debugging and testing the error detection system
+    printk(KERN_DEBUG "Force removing node %d\n");
+
+    force_remove_node(index);
+
+    strncpy(output_buffer, "0", sizeof(output_buffer));
+    printk("Finished kicking node\n");
+}
+EXPORT_SYMBOL(force_remove);
+
 void full_check(void) {
     printk("A full check on the node list has been requested\n");
 

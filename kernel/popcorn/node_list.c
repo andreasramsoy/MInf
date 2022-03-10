@@ -636,6 +636,11 @@ bool is_myself(struct message_node* node)
 EXPORT_SYMBOL(is_myself);
 
 void remove_node(int index) {
+    remove_node_core(index, true);
+}
+EXPORT_SYMBOL(remove_node);
+
+void remove_node_core(int index, bool normal_removal) {
     int i;
     int list_number;
     bool no_nodes;
@@ -712,9 +717,11 @@ void remove_node(int index) {
 
     add_to_update_list(index, address, node->transport->name, true);
 
-    propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
+    if (normal_removal) {
+        //should always do this unless you are debugging and allow for forcefully removing nodes
+        propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
+    }
 }
-EXPORT_SYMBOL(remove_node);
 
 /**
  * Pushes command to the queue
@@ -1049,6 +1056,11 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
 }
 EXPORT_SYMBOL(add_node_at_position);
 
+void force_remove_node(int index) {
+    //removes a node without propagating the message
+    remove_node_core(index, false);
+}
+EXPORT_SYMBOL(force_remove_node):
 
 /**
  * @param node_id id of node
@@ -1066,7 +1078,18 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     printk(KERN_INFO "add_to_update_list called\n");
     //add to the list of updated nodes
     update_list = updated_nodes;
-    if (update_list != NULL) {
+    if (update_list == NULL) {
+        printk(KERN_INFO "No existing update list\n");
+        update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
+        if (update_list == NULL) {
+            printk(KERN_ERR "Could not allocate memory for update_list 2\n");
+            return;
+        }
+        update_list->next = NULL;
+        updated_nodes = update_list; //update the head of the list
+        printk(KERN_INFO "Added a new list head\n");
+    }
+    else {
         printk(KERN_INFO "Update list exists %p\n", update_list);
         while (update_list->next != NULL) {
             printk(KERN_DEBUG "Penguin 0 loop\n");
@@ -1084,17 +1107,6 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
         printk(KERN_DEBUG "Penguin 3\n");
         update_list->next = NULL; //end of the list
         printk(KERN_INFO "End of list reached\n");
-    }
-    else {
-        printk(KERN_INFO "No existing update list\n");
-        update_list = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
-        if (update_list == NULL) {
-            printk(KERN_ERR "Could not allocate memory for update_list 2\n");
-            return;
-        }
-        update_list->next = NULL;
-        updated_nodes = update_list; //update the head of the list
-        printk(KERN_INFO "Added a new list head\n");
     }
 
     //now update_list contains a newly allocated structure, in the list, that we can store the details of this list

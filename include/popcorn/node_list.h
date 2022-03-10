@@ -119,8 +119,10 @@ extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
+void remove_node_core(int index, bool normal_removal);
 extern struct message_node* get_node(int index);
 extern void run_full_check(void);
+extern void force_remove_node(int index);
 extern void check_and_repair_popcorn(void);
 extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport);
 extern struct message_node* create_instigator_node(uint32_t address_p);

@@ -31,5 +31,6 @@ extern void node_get_address(int index, char address[INET_ADDRSTRLEN]);
 extern char* node_get_protocol(int index);
 extern void node_update_protocol(int index, char* protocol);
 extern void node_highest_index(void);
+extern void force_remove(int index);
 
 #endif
