@@ -258,6 +258,8 @@ void check_and_repair_popcorn(void) {
                 node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
             }
         }
+
+        updated_nodes = command; //update the list head
     }
     else {
         printk(KERN_INFO "There was nothing to send in the check\n");
