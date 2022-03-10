@@ -247,6 +247,7 @@ void check_and_repair_popcorn(void) {
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
             node_check_copy = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
             memcpy(node_check_copy, node_check, sizeof(node_check));
+            printk(KERN_DEBUG "Transport string in the first message: %s\n", node_check_copy->transports[0]);
             printk(KERN_INFO "done copying message\n");
             pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
             printk(KERN_INFO "Sent message 1\n");
@@ -1273,9 +1274,11 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
         //check if there is a difference
         if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
 
+            printk(KERN_INFO "Check for index: %d, address: %d, transport: %s\n", info->nids[i], info->addresses[i], info->transports[i]);
+
             //manage the protocol
-            protocol = string_to_transport(info->transports[i]);
-            if (protocol == NULL) {
+            transport_name = string_to_transport(info->transports[i]);
+            if (transport_name == NULL) {
                 printk(KERN_ERR "Protocol that appeared in the check does not exist\n");
                 continue; //skip this item in the check
             }
@@ -1301,7 +1304,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     check_and_repair_popcorn();
                 }
                 else {
-                    new_node = create_node(info->addresses[i], protocol);
+                    new_node = create_node(info->addresses[i], transport_name);
                     add_node_at_position(new_node, info->nids[i], ""); //no token is needed as 
                 }
             }
@@ -1320,7 +1323,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     else {
                         //add this node to our node list and send it back to them
                         remove_node(node->index); //remove your old node
-                        new_node = create_node(info->addresses[i], protocol);
+                        new_node = create_node(info->addresses[i], transport_name);
                         add_node_at_position(new_node, info->nids[i], ""); //add the new node
                         add_to_update_list(node->index, node->address, transport_name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
