@@ -225,10 +225,10 @@ void check_and_repair_popcorn(void) {
                     node_check->addresses[i] = 0;
                     node_check->remove[i] = false;
                     if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
-                        strncpy(command->transport, DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
+                        strncpy(node_check->transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
                     }
                     else {
-                        strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
+                        strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     }
                 }
 
@@ -1094,19 +1094,14 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     else {
         printk(KERN_INFO "Update list exists %p\n", update_list);
         while (update_list->next != NULL) {
-            printk(KERN_DEBUG "Penguin 0 loop\n");
             update_list = update_list->next;
-            printk(KERN_DEBUG "Penguin 0.1 loop %p\n", update_list);
         }
-        printk(KERN_DEBUG "Penguin 1\n");
         update_list->next = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
         if (update_list->next == NULL) {
             printk(KERN_ERR "Could not allocate memory for update_list\n");
             return;
         }
-        printk(KERN_DEBUG "Penguin 2\n");
         update_list = update_list->next;
-        printk(KERN_DEBUG "Penguin 3\n");
         update_list->next = NULL; //end of the list
         printk(KERN_INFO "End of list reached\n");
     }
