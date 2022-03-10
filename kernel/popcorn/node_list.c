@@ -1062,7 +1062,7 @@ void force_remove_node(int index) {
     //removes a node without propagating the message
     remove_node_core(index, false);
 }
-EXPORT_SYMBOL(force_remove_node):
+EXPORT_SYMBOL(force_remove_node);
 
 /**
  * @param node_id id of node
