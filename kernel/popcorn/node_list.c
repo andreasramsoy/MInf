@@ -1274,7 +1274,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
         //check if there is a difference
         if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
 
-            printk(KERN_INFO "Check for index: %d, address: %d, transport: %s\n", info->nids[i], info->addresses[i], info->transports[i]);
+            printk(KERN_INFO "Check for index: %d, address: %d, transport: %s, remove: %d\n", info->nids[i], info->addresses[i], info->transports[i], info->remove[i]);
 
             //manage the protocol
             transport_name = string_to_transport(info->transports[i]);
