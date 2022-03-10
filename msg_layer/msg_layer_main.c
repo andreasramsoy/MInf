@@ -108,7 +108,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
         case 1:
             //if (strncmp("save", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_save();
             if (strncmp("help", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) show_help();
-            else if (sscanf(buffer, "check") == number_of_parameters - 1) full_check();
+            else if (sscanf(buffer, "check") == 0) full_check();
             else if (strncmp("highest", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_highest_index();
             else parse_error(number_of_parameters, buffer);
             break;

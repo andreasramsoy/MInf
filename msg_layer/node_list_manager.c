@@ -190,7 +190,7 @@ void force_remove(int index) {
 
     force_remove_node(index);
 
-    strncpy(output_buffer, "0", sizeof(output_buffer));
+    strncpy(output_buffer, "0 FORCE_REMOVED_A_NODE", sizeof(output_buffer));
     printk("Finished kicking node\n");
 }
 EXPORT_SYMBOL(force_remove);
@@ -200,7 +200,7 @@ void full_check(void) {
 
     run_full_check();
 
-    strncpy(output_buffer, "0", sizeof(output_buffer));
+    strncpy(output_buffer, "0 FULL_CHECK_REQUESTED", sizeof(output_buffer));
     printk("Finished running full check\n");
 }
 EXPORT_SYMBOL(full_check);
