@@ -1067,9 +1067,11 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     //add to the list of updated nodes
     update_list = updated_nodes;
     if (update_list != NULL) {
-        printk(KERN_INFO "Update list exists\n");
+        printk(KERN_INFO "Update list exists %p\n", update_list);
         while (update_list->next != NULL) {
+            printk(KERN_DEBUG "Penguin 0 loop\n");
             update_list = update_list->next;
+            printk(KERN_DEBUG "Penguin 0.1 loop %p\n", update_list);
         }
         printk(KERN_DEBUG "Penguin 1\n");
         update_list->next = kmalloc(sizeof(struct neighbour_node_list), GFP_KERNEL);
@@ -1090,6 +1092,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
             printk(KERN_ERR "Could not allocate memory for update_list 2\n");
             return;
         }
+        update_list->next = NULL;
         updated_nodes = update_list; //update the head of the list
         printk(KERN_INFO "Added a new list head\n");
     }
