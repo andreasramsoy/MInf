@@ -121,7 +121,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
             #ifdef POPCORN_DEBUG_COMMANDS
-            else if (sscanf(buffer, "kick %d", index) == number_of_parameters - 1) force_remove(index);
+            else if (sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);
             #endif
             //else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
             else parse_error(number_of_parameters, buffer);
