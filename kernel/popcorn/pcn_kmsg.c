@@ -380,6 +380,13 @@ int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 	printk(KERN_DEBUG "Node address: %p", get_node(to));
 	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport);
 	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport->send);*/
+
+
+	printk(KERN_DEBUG "Sending to node index %d\n", to);
+	printk(KERN_DEBUG "Sending to node pointer %p\n", get_node(to));
+	printk(KERN_DEBUG "Sending to node transport %p\n", get_node(to)->transport);
+	printk(KERN_DEBUG "Sending to node transport name %s\n", get_node(to)->transport->name);
+	printk(KERN_DEBUG "Sending to node function %p\n", get_node(to)->transport->send);
 	
 	return get_node(to)->transport->send(to, msg, size);
 }

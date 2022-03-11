@@ -526,16 +526,21 @@ bool kill_node_sock(struct message_node* node) {
 
 	sh = node->handle;
 	if (sh->send_handler) {
+		printk(KERN_INFO "Sock ending 1.1\n");
 		kthread_stop(sh->send_handler);
 	} else {
+		printk(KERN_INFO "Sock ending 1.2\n");
 		if (sh->msg_q) kfree(sh->msg_q);
 	}
+	printk(KERN_INFO "Sock ending 2\n");
 	if (sh->recv_handler) {
 		kthread_stop(sh->recv_handler);
 	}
+	printk(KERN_INFO "Sock ending 3\n");
 	if (sh->sock) {
 		sock_release(sh->sock);
 	}
+	printk(KERN_INFO "Sock ending 4\n");
 	return true;
 }
 EXPORT_SYMBOL(kill_node_sock);
