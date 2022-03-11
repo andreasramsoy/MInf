@@ -52,14 +52,21 @@ static int recv_handler(void* arg0)
 		size_t offset;
 		struct pcn_kmsg_hdr header;
 		char *data;
+		struct pollfd fd;
 
 		/* compose header */
 		offset = 0;
 		len = sizeof(header);
+		fd.fd = sock; // your socket handler 
+		fd.events = POLLIN;
 		while (len > 0) {
 			do {
-				if (!kthread_should_stop()) return 0;
-				ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
+				if (!kthread_should_stop()) return 0; //will exit if it timesout
+				ret = poll(&fd, 1, 1000); //polls then continues
+				if (ret > 0) {
+						ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
+						break;
+				}
 			} while (ret == -1);
 			offset += ret;
 			len -= ret;
