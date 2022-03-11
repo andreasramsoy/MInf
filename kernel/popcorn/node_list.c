@@ -232,6 +232,8 @@ void check_and_repair_popcorn(void) {
                     }
                 }
 
+                printk(KERN_DEBUG "node_check idx: %d, addr: %d, rem: %d, tran: %s\n", node_check->nids[i], node_check->addresses[i], node_check->remove[i], node_check->transports[i]);
+
                 //check if we've reached the end of the data structure
                 if (command->next == NULL) {
                     end_not_reached = false;
@@ -1116,6 +1118,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
 
+    printk(KERN_DEBUG "Added to the update list idx: %d, addr: %d, rem: %d, tran: %s\n", update_list->index, update_list->address, update_list->remove, update_list->transport);
 
 	up(&update_list_sem);
 
