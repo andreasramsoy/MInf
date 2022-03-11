@@ -117,7 +117,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
             else if (sscanf(buffer, "check %s", protocol) == number_of_parameters - 1) {
-                if (strncmp(protocol, "full") == 0) {
+                if (strncmp(protocol, "full", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
                     full_check();
                 }
             }
