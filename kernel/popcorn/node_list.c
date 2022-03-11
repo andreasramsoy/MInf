@@ -216,7 +216,7 @@ void check_and_repair_popcorn(void) {
                     node_check->nids[i] = command->index;
                     node_check->addresses[i] = command->address;
                     node_check->remove[i] = command->remove;
-                    strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
+                    strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
                         strncpy(node_check->transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
                     }
@@ -230,6 +230,7 @@ void check_and_repair_popcorn(void) {
                     node_check->nids[i] = END_OF_NODE_CHANGES;
                     node_check->addresses[i] = 0;
                     node_check->remove[i] = false;
+                    strncpy(node_check->transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
                 }
 
                 printk(KERN_DEBUG "node_check idx: %d, addr: %d, rem: %d, tran: %s\n", node_check->nids[i], node_check->addresses[i], node_check->remove[i], node_check->transports[i]);
