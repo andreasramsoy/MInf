@@ -1250,7 +1250,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     bool i_am_right;
     char* transport_name;
 
-    printk(KERN_DEBUG "Recieved request to check neighbour's node list\n");
+    printk(KERN_DEBUG "Recieved request to check neighbour's node list\n\n\n");
 
 
 	do {
@@ -1278,7 +1278,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
         //check if there is a difference
         if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
 
-            printk(KERN_INFO "Check for index: %d, address: %d, transport: %s, remove: %d\n", info->nids[i], info->addresses[i], info->transports[i], info->remove[i]);
+            printk(KERN_INFO "Message: %d; Check for index: %d, address: %d, transport: %s, remove: %d\n", i, info->nids[i], info->addresses[i], info->transports[i], info->remove[i]);
 
             //manage the protocol
             protocol = string_to_transport(info->transports[i]);
@@ -1287,6 +1287,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 printk(KERN_ERR "Protocol that appeared in the check does not exist\n");
                 continue; //skip this item in the check
             }
+
+            printk(KERN_DEBUG "Processing command\n");
 
             node = get_node(info->nids[i]);
 
