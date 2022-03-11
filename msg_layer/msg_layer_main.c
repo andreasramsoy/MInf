@@ -108,10 +108,6 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
         case 1:
             //if (strncmp("save", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_save();
             if (strncmp("help", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) show_help();
-            else if (sscanf(buffer, "check") == 0) {
-                full_check();
-                strncpy(buffer, "kcehc", 5); //try removing the old value in the buffer to stop infinite loop
-            }
             else if (strncmp("highest", buffer, sizeof(COMMAND_BUFFER_SIZE)) == 0) node_highest_index();
             else parse_error(number_of_parameters, buffer);
             break;
@@ -120,6 +116,11 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else if (sscanf(buffer, "activate %s", address) == number_of_parameters - 1) activate_popcorn(address);
             else if (sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
             else if (sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
+            else if (sscanf(buffer, "check %s", protocol) == number_of_parameters - 1) {
+                if (strncmp(protocol, "full") == 0) {
+                    full_check();
+                }
+            }
             #ifdef POPCORN_DEBUG_COMMANDS
             else if (sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);
             #endif
