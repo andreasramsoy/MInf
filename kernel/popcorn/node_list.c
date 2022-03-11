@@ -249,7 +249,7 @@ void check_and_repair_popcorn(void) {
             printk(KERN_INFO "Sending message\n");
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
             // node_check_copy = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
-            memcpy(node_check_copy, node_check, sizeof(node_check_neighbours));
+            memcpy(&node_check_copy, &node_check, sizeof(node_check_neighbours));
             printk(KERN_DEBUG "Transport string in the first message: %s\n", node_check_copy.transports[0]);
             for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
                 printk(KERN_DEBUG "o%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i]);
