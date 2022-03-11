@@ -15,6 +15,8 @@
 #include "socket.h"
 #include "ring_buffer.h"
 
+#define SOCKET_TIMEOUT 5
+
 static struct socket *sock_listen = NULL;
 static struct ring_buffer send_buffer = {};
 
@@ -55,8 +57,10 @@ static int recv_handler(void* arg0)
 		offset = 0;
 		len = sizeof(header);
 		while (len > 0) {
-			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
-			if (ret == -1) break;
+			do {
+				if (!kthread_should_stop()) return 0;
+				ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
+			} while (ret == -1);
 			offset += ret;
 			len -= ret;
 		}
@@ -375,6 +379,10 @@ int __sock_connect_to_server(struct message_node* node)
 	printk(KERN_DEBUG "Configuring TLS...\n")
 	printk(KERN_DEBUG "Setting TLS return value %d\n", setsockopt(sock, SOL_TCP, TCP_ULP, "tls", sizeof("tls")));
 	*/
+	struct timeval tv;
+	tv.tv_sec = SOCKET_TIMEOUT;
+	tv.tv_usec = 0;
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
 	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
 
