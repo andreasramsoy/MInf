@@ -1304,7 +1304,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 transport_name = "";
             }
 
-            if (node == NULL && !(info->remove[i])) {
+            if (node == NULL && info->remove[i] == 0) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
 
@@ -1321,7 +1321,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             }
             else {
                 //the node exists on our list
-                if (node->address != info->addresses[i] && !(info->remove[i])) {
+                if (node->address != info->addresses[i] && info->remove[i] == 0) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
 
                     //resolve incorrect node
@@ -1342,7 +1342,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         check_and_repair_popcorn();
                     }
                 }
-                else if (node->address == info->addresses[i] && info->remove) {
+                else if (node->address == info->addresses[i] && info->remove == 1) {
                     printk(KERN_DEBUG "The node that is in the list has been requested to be removed\n");
 
                     //resolve node that shouldn't be there
