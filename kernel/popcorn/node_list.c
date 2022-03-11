@@ -256,9 +256,9 @@ void check_and_repair_popcorn(void) {
                 printk(KERN_DEBUG "c%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check_copy->nids[i], node_check_copy->addresses[i], node_check_copy->remove[i], node_check_copy->transports[i]);
             }
             printk(KERN_INFO "done copying message\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
             printk(KERN_INFO "Sent message 1\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_copy));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
             printk(KERN_INFO "Sent message 2\n");
 
             if (command != NULL) {
