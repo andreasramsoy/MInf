@@ -217,6 +217,12 @@ void check_and_repair_popcorn(void) {
                     node_check->addresses[i] = command->address;
                     node_check->remove[i] = command->remove;
                     strncpy(command->transport, node_check->transports[i], MAX_TRANSPORT_STRING_LENGTH);
+                    if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
+                        strncpy(node_check->transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
+                    }
+                    else {
+                        strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
+                    }
                 }
                 else {
                     printk(KERN_INFO "End of list reached filling with dummy values\n");
@@ -224,12 +230,6 @@ void check_and_repair_popcorn(void) {
                     node_check->nids[i] = END_OF_NODE_CHANGES;
                     node_check->addresses[i] = 0;
                     node_check->remove[i] = false;
-                    if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
-                        strncpy(node_check->transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
-                    }
-                    else {
-                        strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
-                    }
                 }
 
                 printk(KERN_DEBUG "node_check idx: %d, addr: %d, rem: %d, tran: %s\n", node_check->nids[i], node_check->addresses[i], node_check->remove[i], node_check->transports[i]);
@@ -1282,7 +1282,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             //manage the protocol
             protocol = string_to_transport(info->transports[i]);
             transport_name = info->transports[i];
-            if (transport_name == NULL) {
+            if (protocol == NULL) {
                 printk(KERN_ERR "Protocol that appeared in the check does not exist\n");
                 continue; //skip this item in the check
             }
