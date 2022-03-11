@@ -130,8 +130,8 @@ void check_and_repair_popcorn(void) {
     struct message_node* next_neighbour;
     struct neighbour_node_list* command;
     struct neighbour_node_list* command_prev;
-    node_check_neighbours* node_check;
-    node_check_neighbours* node_check_copy;
+    node_check_neighbours node_check;
+    node_check_neighbours node_check_copy;
     bool end_not_reached;
     int i, ret;
     bool first_pass;
@@ -205,7 +205,7 @@ void check_and_repair_popcorn(void) {
     if (command != NULL) {
         printk(KERN_INFO "Preparing to send updates\n");
 
-        node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
+        // node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
         end_not_reached = true;
         while(end_not_reached) {
             for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
@@ -213,27 +213,27 @@ void check_and_repair_popcorn(void) {
                 //fill up a data structure to be sent to the neighbouring node
                 if (end_not_reached) {
                     printk(KERN_INFO "More to send\n");
-                    node_check->nids[i] = command->index;
-                    node_check->addresses[i] = command->address;
-                    node_check->remove[i] = command->remove;
-                    strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
-                    if (strncmp(node_check->transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
-                        strncpy(node_check->transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
+                    node_check.nids[i] = command->index;
+                    node_check.addresses[i] = command->address;
+                    node_check.remove[i] = command->remove;
+                    strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
+                    if (strncmp(node_check.transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
+                        strncpy(node_check.transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
                     }
                     else {
-                        strncpy(node_check->transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
+                        strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     }
                 }
                 else {
                     printk(KERN_INFO "End of list reached filling with dummy values\n");
                     //fill with dummy values as nothing to check
-                    node_check->nids[i] = END_OF_NODE_CHANGES;
-                    node_check->addresses[i] = 0;
-                    node_check->remove[i] = false;
-                    strncpy(node_check->transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
+                    node_check.nids[i] = END_OF_NODE_CHANGES;
+                    node_check.addresses[i] = 0;
+                    node_check.remove[i] = false;
+                    strncpy(node_check.transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
                 }
 
-                printk(KERN_DEBUG "node_check idx: %d, addr: %d, rem: %d, tran: %s\n", node_check->nids[i], node_check->addresses[i], node_check->remove[i], node_check->transports[i]);
+                printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i]);
 
                 //check if we've reached the end of the data structure
                 if (command->next == NULL) {
@@ -248,23 +248,23 @@ void check_and_repair_popcorn(void) {
 
             printk(KERN_INFO "Sending message\n");
             //copy message and then send to each neighbour (memory is freed afer message is sent so must copy)
-            node_check_copy = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
-            memcpy(node_check_copy, node_check, sizeof(node_check_neighbours));
-            printk(KERN_DEBUG "Transport string in the first message: %s\n", node_check_copy->transports[0]);
+            // node_check_copy = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
+            // memcpy(node_check_copy, node_check, sizeof(node_check_neighbours));
+            // printk(KERN_DEBUG "Transport string in the first message: %s\n", node_check_copy->transports[0]);
             for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
-                printk(KERN_DEBUG "o%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check->nids[i], node_check->addresses[i], node_check->remove[i], node_check->transports[i]);
-                printk(KERN_DEBUG "c%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check_copy->nids[i], node_check_copy->addresses[i], node_check_copy->remove[i], node_check_copy->transports[i]);
+                printk(KERN_DEBUG "o%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i]);
+                // printk(KERN_DEBUG "c%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check_copy->nids[i], node_check_copy->addresses[i], node_check_copy->remove[i], node_check_copy->transports[i]);
             }
             printk(KERN_INFO "done copying message\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check_neighbours));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check));
             printk(KERN_INFO "Sent message 1\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
-            printk(KERN_INFO "Sent message 2\n");
+            // pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
+            // printk(KERN_INFO "Sent message 2\n");
 
-            if (command != NULL) {
-                //allocate a new block of memory for the next round of conflicts to be sent
-                node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
-            }
+            // if (command != NULL) {
+            //     //allocate a new block of memory for the next round of conflicts to be sent
+            //     node_check = kmalloc(sizeof(node_check_neighbours), GFP_KERNEL);
+            // }
         }
 
         updated_nodes = command; //update the list head
