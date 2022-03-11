@@ -398,7 +398,12 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     node->bundle_id = -1;
 
     //transport structure
-    node->transport = transport;
+    if (transport == NULL) {
+        node->transport = DEFAULT_TRANSPORT;
+    }
+    else {
+        node->transport = transport;
+    }
     //now check in node list manager that the transport is not null
 
     //setup comms
