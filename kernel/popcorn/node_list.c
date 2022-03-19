@@ -33,7 +33,8 @@ DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
 DEFINE_SEMAPHORE(update_list_sem);
 
-#define DEFAULT_TRANSPORT transport_list_head->transport_structure->name //for when there is no transport structure
+#define DEFAULT_TRANSPORT_POINTER transport_list_head->transport_structure //for when there is no transport structure
+#define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
 
 bool registered_on_popcorn_network;
 
@@ -219,7 +220,7 @@ void check_and_repair_popcorn(void) {
                     node_check.remove[i] = command->remove;
                     strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     if (strncmp(node_check.transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
-                        strncpy(node_check.transports[i], DEFAULT_TRANSPORT, MAX_TRANSPORT_STRING_LENGTH);
+                        strncpy(node_check.transports[i], DEFAULT_TRANSPORT_NAME, MAX_TRANSPORT_STRING_LENGTH);
                     }
                     else {
                         strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
@@ -400,7 +401,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
 
     //transport structure
     if (transport == NULL) {
-        node->transport = DEFAULT_TRANSPORT;
+        node->transport = DEFAULT_TRANSPORT_POINTER;
     }
     else {
         node->transport = transport;
