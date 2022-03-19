@@ -15,8 +15,6 @@
 #include "socket.h"
 #include "ring_buffer.h"
 
-#define SOCKET_TIMEOUT 5
-
 static struct socket *sock_listen = NULL;
 static struct ring_buffer send_buffer = {};
 
@@ -52,22 +50,13 @@ static int recv_handler(void* arg0)
 		size_t offset;
 		struct pcn_kmsg_hdr header;
 		char *data;
-		struct pollfd fd;
 
 		/* compose header */
 		offset = 0;
 		len = sizeof(header);
-		fd.fd = sock; // your socket handler 
-		fd.events = POLLIN;
 		while (len > 0) {
-			do {
-				if (!kthread_should_stop()) return 0; //will exit if it timesout
-				ret = poll(&fd, 1, 1000); //polls then continues
-				if (ret > 0) {
-						ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
-						break;
-				}
-			} while (ret == -1);
+			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
+			if (ret == -1) break;
 			offset += ret;
 			len -= ret;
 		}
@@ -386,10 +375,6 @@ int __sock_connect_to_server(struct message_node* node)
 	printk(KERN_DEBUG "Configuring TLS...\n")
 	printk(KERN_DEBUG "Setting TLS return value %d\n", setsockopt(sock, SOL_TCP, TCP_ULP, "tls", sizeof("tls")));
 	*/
-	struct timeval tv;
-	tv.tv_sec = SOCKET_TIMEOUT;
-	tv.tv_usec = 0;
-	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
 	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
 
@@ -441,9 +426,7 @@ int __sock_accept_client(struct message_node* node)
 
 	/*
 	printk(KERN_DEBUG "Socket created, setting up TLS...\n");
-
 	struct tls12_crypto_info_aes_gcm_128 crypto_info;
-
 	crypto_info.info.version = TLS_1_2_VERSION;
 	crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
 	memcpy(crypto_info.iv, iv_write, TLS_CIPHER_AES_GCM_128_IV_SIZE);
@@ -451,7 +434,6 @@ int __sock_accept_client(struct message_node* node)
 										TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
 	memcpy(crypto_info.key, cipher_key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
 	memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
-
 	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
 	*/
 
@@ -541,21 +523,16 @@ bool kill_node_sock(struct message_node* node) {
 
 	sh = node->handle;
 	if (sh->send_handler) {
-		printk(KERN_INFO "Sock ending 1.1\n");
 		kthread_stop(sh->send_handler);
 	} else {
-		printk(KERN_INFO "Sock ending 1.2\n");
 		if (sh->msg_q) kfree(sh->msg_q);
 	}
-	printk(KERN_INFO "Sock ending 2\n");
 	if (sh->recv_handler) {
 		kthread_stop(sh->recv_handler);
 	}
-	printk(KERN_INFO "Sock ending 3\n");
 	if (sh->sock) {
 		sock_release(sh->sock);
 	}
-	printk(KERN_INFO "Sock ending 4\n");
 	return true;
 }
 EXPORT_SYMBOL(kill_node_sock);

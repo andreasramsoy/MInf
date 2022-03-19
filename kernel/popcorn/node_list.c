@@ -5,7 +5,6 @@
 
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
-#include <poll.h>
 
 #include <popcorn/kmesg_types.h>
 
