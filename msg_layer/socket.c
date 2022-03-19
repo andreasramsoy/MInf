@@ -1,674 +1,519 @@
-/**
- * msg_socket.c
- *  Messaging transport layer over TCP/IP
- *
- * Authors:
- *  Ho-Ren (Jack) Chuang <horenc@vt.edu>
- *  Sang-Hoon Kim <sanghoon@vt.edu>
+/*
+ * pcn_kmesg.c - Kernel Module for Popcorn Messaging Layer over Socket
  */
-#include <linux/seq_file.h>
-#include <linux/proc_fs.h>
-#include <linux/kthread.h>
+
+#include <linux/kernel.h>
+#include <linux/delay.h>
+#include <linux/errno.h>
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
+#include <linux/err.h>
+
 #include <popcorn/pcn_kmsg.h>
+#include <popcorn/debug.h>
 #include <popcorn/stat.h>
+#include <popcorn/bundle.h>
+#include <popcorn/node_list.h> //to access the node list
 
-#include "socket.h"
-#include "ring_buffer.h"
+static pcn_kmsg_cbftn pcn_kmsg_cbftns[PCN_KMSG_TYPE_MAX] = { NULL };
 
-static struct socket *sock_listen = NULL;
-static struct ring_buffer send_buffer = {};
-
+static struct pcn_kmsg_transport *transport = NULL;
 
 /**
- * Handle inbound messages
+ * TODO: Remove following function (it should no longer be being used)
  */
-static int ksock_recv(struct socket *sock, char *buf, size_t len)
+void pcn_kmsg_set_transport(struct pcn_kmsg_transport *tr)
 {
-	struct msghdr msg = {
-		.msg_flags = 0,
-		.msg_control = NULL,
-		.msg_controllen = 0,
-		.msg_name = NULL,
-		.msg_namelen = 0,
-	};
-	struct kvec iov = {
-		.iov_base = buf,
-		.iov_len = len,
-	};
-
-	return kernel_recvmsg(sock, &msg, &iov, 1, len, MSG_WAITALL);
+	if (transport && tr) {
+		printk(KERN_ERR "Replace hot transport at your own risk.\n");
+	}
+	transport = tr;
 }
+EXPORT_SYMBOL(pcn_kmsg_set_transport);
 
-static int recv_handler(void* arg0)
+int pcn_kmsg_register_callback(enum pcn_kmsg_type type, pcn_kmsg_cbftn callback)
 {
-	struct sock_handle *sh = arg0;
-	printk(KERN_INFO "RECV handler for %d is ready\n", sh->nid);
+	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
 
-	while (!kthread_should_stop()) {
-		int len;
-		int ret;
-		size_t offset;
-		struct pcn_kmsg_hdr header;
-		char *data;
+	pcn_kmsg_cbftns[type] = callback;
+	return 0;
+}
+EXPORT_SYMBOL(pcn_kmsg_register_callback);
 
-		/* compose header */
-		offset = 0;
-		len = sizeof(header);
-		while (len > 0) {
-			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
-			if (ret == -1) break;
-			offset += ret;
-			len -= ret;
-		}
-		if (ret < 0) break;
+int pcn_kmsg_unregister_callback(enum pcn_kmsg_type type)
+{
+	return pcn_kmsg_register_callback(type, (pcn_kmsg_cbftn)NULL);
+}
+EXPORT_SYMBOL(pcn_kmsg_unregister_callback);
 
 #ifdef CONFIG_POPCORN_CHECK_SANITY
-		BUG_ON(header.type < 0 || header.type >= PCN_KMSG_TYPE_MAX);
-		BUG_ON(header.size < 0 || header.size >  PCN_KMSG_MAX_SIZE);
+static atomic_t __nr_outstanding_requests[PCN_KMSG_TYPE_MAX] = { ATOMIC_INIT(0) };
 #endif
 
-		/* compose body */
-		data = kmalloc(header.size, GFP_KERNEL);
-		BUG_ON(!data && "Unable to alloc a message");
-
-		memcpy(data, &header, sizeof(header));
-
-		offset = sizeof(header);
-		len = header.size - offset;
-
-		while (len > 0) {
-			ret = ksock_recv(sh->sock, data + offset, len);
-			if (ret == -1) break;
-			offset += ret;
-			len -= ret;
-		}
-		if (ret < 0) break;
-
-		/* Call pcn_kmsg upper layer */
-		pcn_kmsg_process((struct pcn_kmsg_message *)data);
-	}
-	return 0;
-}
-
-
-/**
- * Handle outbound messages
- */
-static int ksock_send(struct socket *sock, char *buf, size_t len)
+void pcn_kmsg_process(struct pcn_kmsg_message *msg)
 {
-	struct msghdr msg = {
-		.msg_flags = 0,
-		.msg_control = NULL,
-		.msg_controllen = 0,
-		.msg_name = NULL,
-		.msg_namelen = 0,
-	};
-	struct kvec iov = {
-		.iov_base = buf,
-		.iov_len = len,
-	};
+	pcn_kmsg_cbftn ftn;
 
-	return kernel_sendmsg(sock, &msg, &iov, 1, len);
-}
 
-static int enq_send(int dest_nid, struct pcn_kmsg_message *msg, unsigned long flags, struct completion *done)
-{
-	int ret;
-	unsigned long at;
-	struct sock_handle *sh = get_node(dest_nid)->handle;
-	struct q_item *qi;
-	do {
-		ret = down_interruptible(&sh->q_full);
-	} while (ret);
+#ifdef POPCORN_ENCRYPTION_ON
 
-	spin_lock(&sh->q_lock);
-	at = sh->q_tail;
-	qi = sh->msg_q + at;
-	sh->q_tail = (at + 1) & (MAX_SEND_DEPTH - 1);
+	unsigned int ret, i, j, iv_len;
+	const char *key;
+	char iv[POPCORN_AES_KEY_SIZE];
+	struct crypto_blkcipher *tfm;
+	struct blkcipher_desc desc;
+	u32 *b_size;
+	const char *algo;
+	unsigned int secs;
+	struct cipher_speed_template *template;
+	unsigned int tcount;
+	u8 *keysize;
+	struct message_node* node;
+	struct scatterlist ciphertext;
+	struct scatterlist plaintext;
 
-	qi->msg = msg;
-	qi->flags = flags;
-	qi->done = done;
-	spin_unlock(&sh->q_lock);
-	up(&sh->q_empty);
 
-	return at;
-}
+	keysize = POPCORN_AES_KEY_SIZE;
+	algo = "xts(aes)";
 
-void sock_kmsg_put(struct pcn_kmsg_message *msg);
+	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
-static int deq_send(struct sock_handle *sh)
-{
-	int ret;
-	char *p;
-	unsigned long from;
-	size_t remaining;
-	struct pcn_kmsg_message *msg;
-	struct q_item *qi;
-	unsigned long flags;
-	struct completion *done;
-
-	do {
-		ret = down_interruptible(&sh->q_empty);
-	} while (ret);
-
-	spin_lock(&sh->q_lock);
-	from = sh->q_head;
-	qi = sh->msg_q + from;
-	sh->q_head = (from + 1) & (MAX_SEND_DEPTH - 1);
-
-	msg = qi->msg;
-	flags = qi->flags;
-	done = qi->done;
-	spin_unlock(&sh->q_lock);
-	up(&sh->q_full);
-
-	p = (char *)msg;
-	remaining = msg->header.size;
-
-	while (remaining > 0) {
-		int sent = ksock_send(sh->sock, p, remaining);
-		if (sent < 0) {
-			printk(KERN_INFO "send interrupted, %d\n", sent);
-			io_schedule();
-			continue;
-		}
-		p += sent;
-		remaining -= sent;
-		//printk("Sent %d remaining %d\n", sent, remaining);
+	if (IS_ERR(tfm)) {
+		printk("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		goto decryption_fail_no_tfm;
 	}
-	if (test_bit(SEND_FLAG_POSTED, &flags)) {
-		sock_kmsg_put(msg);
-	}
-	if (done) complete(done);
-
-	return 0;
-}
-
-static int send_handler(void* arg0)
-{
-	struct sock_handle *sh = arg0;
-	printk(KERN_INFO "SEND handler for %d is ready\n", sh->nid);
-
-	while (!kthread_should_stop()) {
-		deq_send(sh);
-	}
-	kfree(sh->msg_q);
-	return 0;
-}
-
-
-#define WORKAROUND_POOL
-/***********************************************
- * Manage send buffer
- ***********************************************/
-struct pcn_kmsg_message *sock_kmsg_get(size_t size)
-{
-	struct pcn_kmsg_message *msg;
-	might_sleep();
-
-#ifdef WORKAROUND_POOL
-	msg = kmalloc(size, GFP_KERNEL);
-#else
-	while (!(msg = ring_buffer_get(&send_buffer, size))) {
-		WARN_ON_ONCE("ring buffer is full\n");
-		schedule();
-	}
-#endif
-	return msg;
-}
-EXPORT_SYMBOL(sock_kmsg_get);
-
-void sock_kmsg_put(struct pcn_kmsg_message *msg)
-{
-#ifdef WORKAROUND_POOL
-	kfree(msg);
-#else
-	ring_buffer_put(&send_buffer, msg);
-#endif
-}
-EXPORT_SYMBOL(sock_kmsg_put);
-
-
-/***********************************************
- * This is the interface for message layer
- ***********************************************/
-int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
-{
-	DECLARE_COMPLETION_ONSTACK(done);
-	enq_send(dest_nid, msg, 0, &done);
-
-	if (!try_wait_for_completion(&done)) { 
-		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
-        if (!ret) return -EAGAIN;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(sock_kmsg_send);
-
-int sock_kmsg_post(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
-{
-	enq_send(dest_nid, msg, 1 << SEND_FLAG_POSTED, NULL);
-	return 0;
-}
-EXPORT_SYMBOL(sock_kmsg_post);
-
-void sock_kmsg_done(struct pcn_kmsg_message *msg)
-{
-	kfree(msg);
-}
-EXPORT_SYMBOL(sock_kmsg_done);
-
-
-void sock_kmsg_stat(struct seq_file *seq, void *v)
-{
-	if (seq) {
-		seq_printf(seq, POPCORN_STAT_FMT,
-				(unsigned long long)ring_buffer_usage(&send_buffer),
-#ifdef CONFIG_POPCORN_STAT
-				(unsigned long long)send_buffer.peak_usage,
-#else
-				0ULL,
-#endif
-                                "socket");
-	}
-}
-EXPORT_SYMBOL(sock_kmsg_stat);
-
-
-static int __show_peers(struct seq_file *seq, void *v)
-{	
-	int i;
-	char* myself = " ";	
-	for (i = 0; i < after_last_node_index; i++) 
-	{
-		if (i == my_nid) myself = "*";
-		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n", myself,
-		           i, NIPQUAD(get_node(i)->address), "NODE_IP");
-		myself = " ";
-	}
-	return 0;
-}
-
-
-static int __open_peers(struct inode *inode, struct file *file)
-{
-        return single_open(file, &__show_peers, NULL);
-}
-
-
-
-static struct file_operations peers_ops = {
-        .owner = THIS_MODULE,
-        .open = __open_peers,
-        .read = seq_read,
-        .llseek  = seq_lseek,
-        .release = single_release,
-};
-static struct proc_dir_entry *proc_entry = NULL;
-static int peers_init(void)
-{
-	proc_entry = proc_create("popcorn_peers",  0444, NULL, &peers_ops);
-        if (proc_entry == NULL) {
-                printk(KERN_ERR"cannot create proc_fs entry for popcorn stats\n");
-                return -ENOMEM;
-        }
-        return 0;
-}
-
-static struct task_struct * __sock_start_handler(struct message_node* node, const char *type, int (*handler)(void *data))
-{
-	char name[40];
-	struct task_struct *tsk;
-
-	sprintf(name, "pcn_%s_%lld", type, node->index);
-	tsk = kthread_run(handler, node->handle, name);
-	if (IS_ERR(tsk)) {
-		printk(KERN_ERR "Cannot create %s handler, %ld\n", name, PTR_ERR(tsk));
-		return tsk;
-	}
-
-	/* TODO: support prioritized msg handler
-	struct sched_param param = {
-		sched_priority = 10};
-	};
-	sched_setscheduler(tsk, SCHED_FIFO, &param);
-	set_cpus_allowed_ptr(tsk, cpumask_of(i%NR_CPUS));
-	*/
-	return tsk;
-}
-
-static int __sock_start_handlers(struct message_node* node)
-{
-	struct task_struct *tsk_send, *tsk_recv;
-	tsk_send = __sock_start_handler(node, "send", send_handler);
-	if (IS_ERR(tsk_send)) {
-		return PTR_ERR(tsk_send);
-	}
-
-	tsk_recv = __sock_start_handler(node, "recv", recv_handler);
-	if (IS_ERR(tsk_recv)) {
-		kthread_stop(tsk_send);
-		return PTR_ERR(tsk_recv);
-	}
-	node->handle->send_handler = tsk_send;
-	node->handle->recv_handler = tsk_recv;
-	return 0;
-}
-
-int __sock_connect_to_server(struct message_node* node)
-{
-	int ret;
-	struct sockaddr_in addr;
-	struct socket *sock;
-
-	printk(KERN_DEBUG "sock_connect_to_server called\n");
-
-	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
-	if (ret < 0) {
-		printk(KERN_INFO "Failed to create socket, %d\n", ret);
-		return ret;
-	}
-
-	/*
-	//use TLS for connection
-	printk(KERN_DEBUG "Configuring TLS...\n")
-	printk(KERN_DEBUG "Setting TLS return value %d\n", setsockopt(sock, SOL_TCP, TCP_ULP, "tls", sizeof("tls")));
-	*/
-
-	printk(KERN_DEBUG "sock_connect_to_server called 2\n");
-
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(PORT);
-	addr.sin_addr.s_addr = node->address;
-
-	printk(KERN_DEBUG "sock_connect_to_server called 3\n");
-
-	do {
-		printk(KERN_DEBUG "Attempting connection...\n");
-		ret = kernel_connect(sock, (struct sockaddr *)&addr, sizeof(addr), 0);
-		if (ret < 0) {
-			printk(KERN_INFO "Failed to connect the socket for node %d (%4pI), error: %d. Attempt again!!\n", node->index, node->address, ret);
-			msleep(1000);
-		}
-		else printk(KERN_DEBUG "Connected\n");
-	} while (ret < 0);
-
-	printk(KERN_DEBUG "Finished connecting\n");
-
-	node->handle->sock = sock;
-	ret = __sock_start_handlers(node);
-
-	if (ret) return ret;
-
-	return 0;
-}
-EXPORT_SYMBOL(__sock_connect_to_server);
-
-int __sock_accept_client(struct message_node* node)
-{
-	int ret;
-	int retry = 0;
-	bool found = false;
-	struct socket *sock;
-	struct sockaddr_in addr;
-	int addr_len = sizeof(addr);
-
-	printk(KERN_DEBUG "sock_accept_client called\n");
-
-	printk(KERN_DEBUG "Attempting to connect, try: %d\n", retry);
-
-	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock);
-	if (ret < 0) {
-		printk(KERN_INFO "Failed to create socket, %d\n", ret);
-		return ret;
-	}
-
-	/*
-	printk(KERN_DEBUG "Socket created, setting up TLS...\n");
-	struct tls12_crypto_info_aes_gcm_128 crypto_info;
-	crypto_info.info.version = TLS_1_2_VERSION;
-	crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
-	memcpy(crypto_info.iv, iv_write, TLS_CIPHER_AES_GCM_128_IV_SIZE);
-	memcpy(crypto_info.rec_seq, seq_number_write,
-										TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
-	memcpy(crypto_info.key, cipher_key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
-	memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
-	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
-	*/
-
-	printk(KERN_DEBUG "Listening for incoming connections...\n");
-
-	ret = kernel_accept(sock_listen, &sock, 0);
-	if (ret < 0) {
-		printk(KERN_INFO "Failed to accept, %d\n", ret);
-		goto out_release;
-	}
-	printk(KERN_DEBUG "Accepted connection\n");
-
-	ret = kernel_getpeername(sock, (struct sockaddr *)&addr, &addr_len);
-	if (ret < 0) {
-		goto out_release;
-	}
-
-	printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
-	printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
-
-    node->address = addr.sin_addr.s_addr;
-
-	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
-
-	//if (!found) return -EAGAIN;
-	node->handle->sock = sock;
-
-	ret = __sock_start_handlers(node);
-	if (ret) goto out_release;
-
-	return 0;
-
-out_release:
-	sock_release(sock);
-	return ret;
-}
-EXPORT_SYMBOL(__sock_accept_client);
-
-int __sock_listen_to_connection(void)
-{
-	int ret;
-	struct sockaddr_in addr;
-
-	ret = sock_create(PF_INET, SOCK_STREAM, IPPROTO_TCP, &sock_listen);
-	if (ret < 0) {
-		printk(KERN_ERR "Failed to create socket, %d", ret);
-		return ret;
-	}
-
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons(PORT);
-
-	ret = kernel_bind(sock_listen, (struct sockaddr *)&addr, sizeof(addr));
-	if (ret < 0) {
-		printk(KERN_ERR "Failed to bind socket, %d\n", ret);
-		goto out_release;
-	}
-
-	/**
-	 * TODO: Check the after last node index for this function
-	 */
-	ret = kernel_listen(sock_listen, 5000); /**  TODO: The second parameter is the number of SYN connections, this will need to be decided dynamically in future */
-	if (ret < 0) {
-		printk(KERN_ERR "Failed to listen to connections, %d\n", ret);
-		goto out_release;
-	}
-
-	printk(KERN_INFO "Ready to accept incoming connections\n");
-	return 0;
-
-out_release:
-	sock_release(sock_listen);
-	sock_listen = NULL;
-	return ret;
-}
-EXPORT_SYMBOL(__sock_listen_to_connection);
-
-/**
- * Function to stop and remove an individual node
- * @param struct message_node* node to be removed
- */
-bool kill_node_sock(struct message_node* node) {
-	struct sock_handle* sh;
-
-	printk(KERN_INFO "Deinitialising node %d\n", node->index);
-
-	sh = node->handle;
-	if (sh->send_handler) {
-		kthread_stop(sh->send_handler);
-	} else {
-		if (sh->msg_q) kfree(sh->msg_q);
-	}
-	if (sh->recv_handler) {
-		kthread_stop(sh->recv_handler);
-	}
-	if (sh->sock) {
-		sock_release(sh->sock);
-	}
-	return true;
-}
-EXPORT_SYMBOL(kill_node_sock);
-
-struct pcn_kmsg_transport transport_socket = {
-	.name = "socket",
-	.features = 0,
-
-	.is_initialised = false,
-	.number_of_users = 0,
-	.init_transport = init_sock,
-	.exit_transport = exit_sock,
-	.init_node = init_node_sock,
-	.kill_node = kill_node_sock,
-	.connect = __sock_connect_to_server,
-	.accept = __sock_accept_client,
-
-	.get = sock_kmsg_get,
-	.put = sock_kmsg_put,
-	.stat = sock_kmsg_stat,
-
-	.send = sock_kmsg_send,
-	.post = sock_kmsg_post,
-	.done = sock_kmsg_done,
-};
-EXPORT_SYMBOL(transport_socket);
-
-/**
- * Function to start communications with a node
- * @param struct message_node* node to be added
- */
-bool init_node_sock(struct message_node* node) {
-	struct sock_handle* sh;
-	int ret;
-
-	printk(KERN_DEBUG "Initialising node %d for socket\n", node->index);
-
-	if (node == NULL) {
-		printk(KERN_DEBUG "NULL node cannot be initialised\n");
-		return false;
-	}
-
-	node->handle = kmalloc(sizeof(struct sock_handle), GFP_KERNEL);
-	if (node->handle == NULL) {
-		printk(KERN_ERR "Could not create handle\n");
-		return false;
-	}
-	sh = node->handle;
-
-	sh->msg_q = kmalloc(sizeof(*sh->msg_q) * MAX_SEND_DEPTH, GFP_KERNEL);
-	if (!sh->msg_q) {
-		printk(KERN_ERR "There was not enough memory for the message node struct for the new node to be created\n");
-		return false;
-	}
-
-	//sh->nid = node->index;
-	sh->q_head = 0;
-	sh->q_tail = 0;
-	spin_lock_init(&sh->q_lock);
-
-	sema_init(&sh->q_empty, 0);
-	sema_init(&sh->q_full, MAX_SEND_DEPTH);
-
-	printk(KERN_DEBUG "Node initialised, estabilishing connection...\n");
-
-	// if the node is earlier than you in the node list then accept a connection from it
-	// if the node is after you, then you need to make a connection with it
-	// you don't need to make a connection to yourself
-
-	printk(KERN_DEBUG "my_nid: %lld, node->index: %lld", my_nid, node->index);
-	printk(KERN_DEBUG "Registered on popcorn network? %s\n", registered_on_popcorn_network ? "True" : "False");
-	/*if (node->index == my_nid) {
-		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
-		ret = 0; //zero is no error (for when nid == my_nid)
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	/*if (msg->header == NULL) {
+		printk(KERN_ERR "Could not decrypt message as it has no header\n");
+		goto decryption_fail;
 	}*/
-	if (registered_on_popcorn_network) {
-		ret = __sock_connect_to_server(node); //connect to any node that wants to
+
+	node = get_node(msg->header.from_nid);
+	if (!node) {
+		printk(KERN_ERR "Could not get node %d to decrypt message\n", msg->header.from_nid);
+		goto decryption_fail;
 	}
-	else {
-		ret = __sock_accept_client(node);
+
+	//set key
+	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to set the cipher key, error: %d\n", ret);
+		goto decryption_fail;
+	}
+
+	//generate an IV
+	//iv_len = crypto_blkcipher_ivsize(tfm); //for encryption
+	crypto_blkcipher_set_iv(tfm, msg->iv, sizeof(msg->iv));
+	
+
+	//perform decryption
+	memcpy(&ciphertext, msg->payload, sizeof(msg->payload));
+	ret = crypto_blkcipher_decrypt(tfm, &plaintext, &ciphertext, sizeof(ciphertext));
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to decrypt, error: %d\n", ret);
+	}
+	memcpy(msg->payload, &plaintext, sizeof(plaintext));
+
+	//message has now been replaced with plaintext version of message 
+
+
+	/*if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+		printk("template (%u) too big for "
+				"tvmem (%lu)\n", *keysize + *b_size,
+				TVMEMSIZE * PAGE_SIZE);
+		goto decryption_fail;
+	}
+
+	printk("test %u (%d bit key, %d byte blocks): ", i,
+			*keysize * 8, *b_size);
+
+	memset(tvmem[0], 0xff, PAGE_SIZE);
+
+	//set key, plain text and IV
+	key = tvmem[0];
+	for (j = 0; j < tcount; j++) {
+		if (template[j].klen == *keysize) {
+			key = template[j].key;
+			break;
+		}
+	}
+
+	ret = crypto_blkcipher_setkey(tfm, key, *keysize);
+	if (ret) {
+		printk("setkey() failed flags=%x\n",
+				crypto_blkcipher_get_flags(tfm));
+		goto decryption_fail;
+	}
+
+	sg_init_table(sg, TVMEMSIZE);
+	sg_set_buf(sg, tvmem[0] + *keysize,
+			PAGE_SIZE - *keysize);
+	for (j = 1; j < TVMEMSIZE; j++) {
+		sg_set_buf(sg + j, tvmem[j], PAGE_SIZE);
+		memset (tvmem[j], 0xff, PAGE_SIZE);
+	}
+
+	iv_len = crypto_blkcipher_ivsize(tfm);
+	if (iv_len) {
+		memset(&iv, 0xff, iv_len);
+		crypto_blkcipher_set_iv(tfm, iv, iv_len);
+	}
+
+	if (secs)
+		ret = test_cipher_jiffies(&desc, "decryption", sg,
+						*b_size, secs);
+	else
+		ret = test_cipher_cycles(&desc, "decryption", sg,
+						*b_size);
+
+	if (ret) {
+		printk("%s() failed flags=%x\n", e, desc.flags);
+		break;
+	}*/
+
+	/* //wrong kernel version encryption
+	int error;
+	struct scatterlist sg;
+	struct crypto_wait wait;
+	struct message_node* node;
+	
+	if (!(msg->header)) {
+		printk(KERN_ERR "Message does not have a header (cannot get sender)\n");
+		goto decryption_fail;
+	}
+	node = get_node(msg->header.from_nid);
+
+    DECLARE_CRYPTO_WAIT(wait);
+	if (node == NULL) {
+		printk(KERN_ERR "The message could not be encrypted as it was sent from node %d which does not exist\n", msg->header.from_nid);
+		goto decryption_fail;
 	}
 	
-	printk(KERN_DEBUG "Node initialisation, connections done\n");
-
-	if (ret == 0) { //if no error
-		return true;
+	//the input here is only from kernel modules so shouldn't be vulnerable to injection so safe to use sizeof
+	sg_init_one(&sg, msg->payload, sizeof(msg->payload));
+	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(struct pcn_kmsg_message), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
+	if (error) {
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->header.from_nid);
+			goto decryption_fail;
 	}
 
-	printk(KERN_ERR "Failed to create connection\n");
-	return false;
+	//now ready to process msg as normal
+	*/
+#endif
+
+#ifdef CONFIG_POPCORN_CHECK_SANITY
+	BUG_ON(msg->header.type < 0 || msg->header.type >= PCN_KMSG_TYPE_MAX);
+	BUG_ON(msg->header.size < 0 || msg->header.size > PCN_KMSG_MAX_SIZE);
+	if (atomic_inc_return(__nr_outstanding_requests + msg->header.type) > 64) {
+		if (WARN_ON_ONCE("leaking received messages, ")) {
+			printk("type %d\n", msg->header.type);
+		}
+	}
+#endif
+
+	account_pcn_message_recv(msg);
+
+	ftn = pcn_kmsg_cbftns[msg->header.type];
+
+	if (ftn != NULL) {
+		ftn(msg);
+	} else {
+		printk(KERN_ERR"No callback registered for %d\n", msg->header.type);
+		#ifndef POPCORN_ENCRYPTION_ON
+		pcn_kmsg_done(msg);
+		#endif
+	}
+
+	#ifdef POPCORN_ENCRYPTION_ON
+decryption_fail:
+	crypto_free_blkcipher(tfm);
+decryption_fail_no_tfm:
+	pcn_kmsg_done(msg);
+	#endif
 }
-EXPORT_SYMBOL(init_node_sock);
+EXPORT_SYMBOL(pcn_kmsg_process);
 
-int exit_sock(void)
+
+static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct pcn_kmsg_message* msg, size_t size)
 {
-	transport_socket.is_initialised = false;
-	proc_remove(proc_entry);
+#ifdef CONFIG_POPCORN_CHECK_SANITY
+	BUG_ON(type < 0 || type >= PCN_KMSG_TYPE_MAX);
+	BUG_ON(size > PCN_KMSG_MAX_SIZE);
+	BUG_ON(to < 0 || to >= MAX_POPCORN_NODES);
+	BUG_ON(to == my_nid);
+#endif
 
-	if (sock_listen) sock_release(sock_listen);
-	sock_listen = NULL;
 
-	ring_buffer_destroy(&send_buffer);
+	msg->header.type = type;
+	msg->header.prio = PCN_KMSG_PRIO_NORMAL;
+	msg->header.size = size;
+	msg->header.from_nid = my_nid;
 
-	printk(KERN_INFO "Successfully unloaded TCP/IP transport\n");
+	printk(KERN_DEBUG "Filled in msg parameters\n");
+
+
+#ifdef POPCORN_ENCRYPTION_ON
+	int error;
+	//struct crypto_wait wait;
+	struct scatterlist sg;
+
+	struct message_node* node = get_node(to);
+
+	unsigned int ret, i, j, iv_len;
+	const char *key;
+	char iv[POPCORN_AES_KEY_SIZE];
+	struct crypto_blkcipher *tfm;
+	struct blkcipher_desc desc;
+	u32 *b_size;
+	const char *algo;
+	unsigned int secs;
+	struct cipher_speed_template *template;
+	unsigned int tcount;
+	u8 keysize;
+	struct scatterlist ciphertext;
+	struct scatterlist plaintext;
+
+
+	keysize = POPCORN_AES_KEY_SIZE;
+	algo = "xts(aes)";
+
+	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
+
+	if (IS_ERR(tfm)) {
+		printk("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		goto encryption_fail_no_tfm;
+	}
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	/*if (msg->header == NULL) {
+		printk(KERN_ERR "Could not encrypt message as it has no header\n");
+		goto encryption_fail;
+	}*/
+
+	node = get_node(msg->header.from_nid);
+	if (!node) {
+		printk(KERN_ERR "Could not get node %d to encrypt message\n", msg->header.from_nid);
+		goto encryption_fail;
+	}
+
+	//set key
+	ret = crypto_cipher_setkey(tfm, node->key, POPCORN_AES_KEY_SIZE_BYTES);
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to set the cipher key, error: %d\n", ret);
+		goto encryption_fail;
+	}
+
+	//generate an IV
+	//iv_len = crypto_blkcipher_ivsize(tfm); //for encryption
+	crypto_blkcipher_set_iv(tfm, msg->iv, sizeof(msg->iv));
+	
+
+	//perform encryption
+	memcpy(&plaintext, msg->payload, sizeof(msg->payload));
+	ret = crypto_blkcipher_encrypt(tfm, &ciphertext, &plaintext, sizeof(plaintext));
+	if (ret != 0) {
+		printk(KERN_ERR "Failed to encrypt, error: %d\n", ret);
+		goto encryption_fail;
+	}
+	memcpy(msg->payload, &ciphertext, sizeof(plaintext));
+
+	//message has now been replaced with ciphertext version of message 
+
+	/*
+	//wrong encrption for kernel version
+    DECLARE_CRYPTO_WAIT(wait);
+
+	if (get_node(to) == NULL) {
+		printk(KERN_ERR "Trying to build message for node that does not exist\n");
+		goto encryption_fail;
+	}
+
+	get_random_bytes(msg->iv, POPCORN_AES_IV_LENGTH); //fill with random bytes for each message
+
+	//encrypt the message (setup is done on node initialisation, enable_node function, to save time)
+	sg_init_one(&sg, msg->payload, POPCORN_AES_IV_LENGTH);
+	skcipher_request_set_callback(node->cipher_request, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP, crypto_req_done, &wait);
+	skcipher_request_set_crypt(node->cipher_request, &sg, &sg, sizeof(msg->payload), msg->iv);
+	error = crypto_wait_req(crypto_skcipher_decrypt(node->cipher_request), &wait);
+	if (error) {
+			printk(KERN_ERR "Error decrypting data: %d, from node %d\n", error, msg->header.from_nid);
+			goto encryption_fail;
+	}
+
+	//now ready to send message the message as normal
+	//message is now encrypted
+	*/
+#endif
 
 	return 0;
-}
-EXPORT_SYMBOL(exit_sock);
 
-int init_sock(void)
+#ifdef POPCORN_ENCRYPTION_ON
+encryption_fail:
+	crypto_free_blkcipher(tfm);
+encryption_fail_no_tfm:
+	printk(KERN_ERR "Error encrypting, abort message!\n");
+#endif
+	return 1;
+}
+
+int pcn_kmsg_send(enum pcn_kmsg_type type, int to, void *msg, size_t size)
 {
 	int ret;
-	printk(KERN_INFO "Loading Popcorn messaging layer over TCP/IP...\n");
+	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
+	printk(KERN_INFO "Message built\n");
 
-	//my_nid = -1;
-	//if (!identify_myself()) return -EINVAL; //sets the my_nid /////////////////////////////////////////////
-	pcn_kmsg_set_transport(&transport_socket); //////////////////////////////////////not needed any more because each node is independent
-
-	if ((ret = ring_buffer_init(&send_buffer, "sock_send"))) goto out_exit;
-
-	if ((ret = __sock_listen_to_connection())) return ret;
-
-	/* Wait for a while so that nodes are ready to listen to connections */
-	msleep(100);
+	account_pcn_message_sent(msg);
 	
-	//broadcast_my_node_info(my_nid); ////////////////////////////////////////////////
+	/*if (to == my_nid) {
+		printk(KERN_ERR "Sending a message to myself, transport does not exist - skip layer\n");
+		printk(KERN_ERR "Message type: %d, to: %d", type, to);
+		return 1;
+	}*/
+	/*printk(KERN_DEBUG "Sending to: %d", to);
+	printk(KERN_DEBUG "Node address: %p", get_node(to));
+	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport);
+	printk(KERN_DEBUG "Node address: %p", get_node(to)->transport->send);*/
 
-	printk(KERN_INFO "Ready on TCP/IP\n");
-	peers_init();
-	
-	transport_socket.is_initialised = true;
-	
-	return 0;
 
-out_exit:
-	exit_sock();
-	return ret;
+	printk(KERN_DEBUG "Sending to node index %d\n", to);
+	printk(KERN_DEBUG "Sending to node pointer %p\n", get_node(to));
+	printk(KERN_DEBUG "Sending to node transport %p\n", get_node(to)->transport);
+	printk(KERN_DEBUG "Sending to node transport name %s\n", get_node(to)->transport->name);
+	printk(KERN_DEBUG "Sending to node function %p\n", get_node(to)->transport->send);
+	
+	return get_node(to)->transport->send(to, msg, size);
 }
-EXPORT_SYMBOL(init_sock);
+EXPORT_SYMBOL(pcn_kmsg_send);
+
+int pcn_kmsg_post(enum pcn_kmsg_type type, int to, void *msg, size_t size)
+{
+	int ret;
+	if ((ret = __build_and_check_msg(type, to, msg, size))) return ret;
+
+	account_pcn_message_sent(msg);
+	/*printk(KERN_DEBUG "PCN_KMSG_POST!\n");
+	if (to == my_nid) {
+		printk(KERN_ERR "Should never post message to yourself! Abort message.\n");
+		return 1;
+	}*/
+	
+	return get_node(to)->transport->post(to, msg, size);
+}
+EXPORT_SYMBOL(pcn_kmsg_post);
+
+void *pcn_kmsg_get(size_t size)
+{
+
+	if (transport && transport->get)
+		return transport->get(size);
+	
+	return kmalloc(size, GFP_KERNEL);
+}
+EXPORT_SYMBOL(pcn_kmsg_get);
+
+void pcn_kmsg_put(void *msg)
+{
+	if (transport && transport->put) {
+		transport->put(msg);
+	} else {
+		kfree(msg);
+	}
+}
+EXPORT_SYMBOL(pcn_kmsg_put);
+
+
+void pcn_kmsg_done(void *msg)
+{
+#ifdef CONFIG_POPCORN_CHECK_SANITY
+	struct pcn_kmsg_hdr *h = msg;;
+	if (atomic_dec_return(__nr_outstanding_requests + h->type) < 0) {
+		printk(KERN_ERR "Over-release message type %d\n", h->type);
+	}
+#endif
+	if (get_node(find_first_null_pointer())) {
+		get_node(find_first_null_pointer())->transport->done(msg);
+	} else {
+		kfree(msg);
+	}
+}
+EXPORT_SYMBOL(pcn_kmsg_done);
+
+
+void pcn_kmsg_stat(struct seq_file *seq, void *v)
+{
+	if (transport && transport->stat) {
+		transport->stat(seq, v);
+	}
+}
+EXPORT_SYMBOL(pcn_kmsg_stat);
+
+bool pcn_kmsg_has_features(unsigned int features)
+{
+	if (!transport) return false;
+
+	return (transport->features & features) == features;
+}
+EXPORT_SYMBOL(pcn_kmsg_has_features);
+
+
+int pcn_kmsg_rdma_read(int from_nid, void *addr, dma_addr_t rdma_addr, size_t size, u32 rdma_key)
+{
+#ifdef CONFIG_POPCORN_CHECK_SANITY
+	if (!transport || !transport->rdma_read) return -EPERM;
+#endif
+
+	account_pcn_rdma_read(size);
+	return transport->rdma_read(from_nid, addr, rdma_addr, size, rdma_key);
+}
+EXPORT_SYMBOL(pcn_kmsg_rdma_read);
+
+int pcn_kmsg_rdma_write(int dest_nid, dma_addr_t rdma_addr, void *addr, size_t size, u32 rdma_key)
+{
+#ifdef CONFIG_POPCORN_CHECK_SANITY
+	if (!transport || !transport->rdma_write) return -EPERM;
+#endif
+
+	account_pcn_rdma_write(size);
+    return transport->rdma_write(dest_nid, rdma_addr, addr, size, rdma_key);
+}
+EXPORT_SYMBOL(pcn_kmsg_rdma_write);
+
+
+struct pcn_kmsg_rdma_handle *pcn_kmsg_pin_rdma_buffer(void *buffer, size_t size)
+{
+	if (transport && transport->pin_rdma_buffer) {
+		return transport->pin_rdma_buffer(buffer, size);
+	}
+	return ERR_PTR(-EINVAL);
+}
+EXPORT_SYMBOL(pcn_kmsg_pin_rdma_buffer);
+
+void pcn_kmsg_unpin_rdma_buffer(struct pcn_kmsg_rdma_handle *handle)
+{
+	if (transport && transport->unpin_rdma_buffer) {
+		transport->unpin_rdma_buffer(handle);
+	}
+}
+EXPORT_SYMBOL(pcn_kmsg_unpin_rdma_buffer);
+
+
+void pcn_kmsg_dump(struct pcn_kmsg_message *msg)
+{
+	struct pcn_kmsg_hdr *h = &msg->header;
+	printk("MSG %p: from=%d type=%d size=%lu\n",
+			msg, h->from_nid, h->type, h->size);
+}
+EXPORT_SYMBOL(pcn_kmsg_dump);
+
+
+int __init pcn_kmsg_init(void)
+{
+	return 0;
+}
