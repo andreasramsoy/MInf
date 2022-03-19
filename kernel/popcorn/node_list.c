@@ -193,6 +193,7 @@ void check_and_repair_popcorn(void) {
     //TODO: the token is needed is used to ensure nodes know to accept forgeign connections (i.e. an unknown node connects). There we use a token that is passed through the network so we know that the connection is from the network, if we are being told of a node from within the network then this means the token is not required but instead the mutual node must notify both
     //TODO: transport structure is not always set, to avoid null pointer dereference you must test first
     //TODO: needed semaphore to manage the handling of the update list
+    //TODO: needed to add timeout to socket as otherwise you would need to wait until a message appears before the thread would stop, problem again here with the normal timeout being for a future version of linux so used a file descriptor poll instead
 
     //measure changes since last check (send full)
 
