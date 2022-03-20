@@ -55,7 +55,9 @@ static int recv_handler(void* arg0)
 		offset = 0;
 		len = sizeof(header);
 		while (len > 0) {
+			printk(KERN_DEBUG "before recv deq\n");
 			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
+			printk(KERN_DEBUG "after recv deq\n");
 			if (ret == -1) break;
 			offset += ret;
 			len -= ret;
@@ -191,7 +193,9 @@ static int send_handler(void* arg0)
 	printk(KERN_INFO "SEND handler for %d is ready\n", sh->nid);
 
 	while (!kthread_should_stop()) {
+		printk(KERN_DEBUG "Debofre send deq\n");
 		deq_send(sh);
+		printk(KERN_DEBUG "after send deq\n");
 	}
 	kfree(sh->msg_q);
 	return 0;
