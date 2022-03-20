@@ -1408,7 +1408,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         check_and_repair_popcorn();
                     }
                 }
-                else if (node->address == info->addresses[i] && info->remove == 1) {
+                else if (node->address == info->addresses[i] && info->remove[i] == 1) {
                     printk(KERN_DEBUG "The node that is in the list has been requested to be removed\n");
 
                     //resolve node that shouldn't be there
@@ -1654,6 +1654,7 @@ bool initialise_node_list(void) {
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_INFO, node_list_info);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_CHECK, node_check_neighbours);
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_PING_INFO, node_ping_info);
 
     return true;
 }
