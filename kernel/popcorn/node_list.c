@@ -30,6 +30,7 @@ node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 
 DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
+DEFINE_SEMAPHORE(node_ping_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
 DEFINE_SEMAPHORE(update_list_sem);
 
@@ -46,6 +47,7 @@ EXPORT_SYMBOL(joining_token);
 EXPORT_SYMBOL(registered_on_popcorn_network);
 EXPORT_SYMBOL(root_node_list_info_list);
 EXPORT_SYMBOL(node_list_info_sem);
+EXPORT_SYMBOL(node_ping_info_sem);
 
 
 
@@ -1248,6 +1250,64 @@ void send_node_list_info(int their_index, char* random_token) {
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_INFO, their_index, &node_list_details, sizeof(node_list_info));
 }
 EXPORT_SYMBOL(send_node_list_info);
+
+/**
+ * Function that allows handlers to end connection
+ */
+void send_node_ping_info(int their_index, bool please_echo) {
+    int i;
+    int node_count = 0;
+    struct message_node* node;
+    uint32_t their_address;
+
+    printk(KERN_DEBUG "send_ping called\n");
+    
+    node = get_node(their_index);
+    if (node) {
+        their_address = node->address;
+    }
+    else {
+        printk(KERN_ERR "Could not get the node address to send to the node\n");
+    }
+
+    node_ping_info node_ping_details = {
+        .your_nid = their_index,
+        .please_echo = please_echo
+    };
+
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_PING, their_index, &node_ping_details, sizeof(node_ping_info));
+}
+EXPORT_SYMBOL(send_node_ping_info);
+
+/**
+ * Function to handle node ping
+ */
+static int handle_node_ping_info(struct pcn_kmsg_message *msg) {
+    int ret;
+    node_list_info *info;
+
+    printk(KERN_DEBUG "Recieved ping from nodet\n");
+
+
+	do {
+		ret = down_interruptible(&node_ping_info_sem);
+	} while (ret);
+    info = (node_list_info *)msg;
+
+    if (info->please_echo) {
+        printk(KERN_DEBUG "Replying to ping\n");
+        send_node_ping_info(msg->header.from_nid, false); //always send false in the reply so you only reply once to a message
+    }
+    else {
+        printk(KERN_DEBUG "Not replying to ping\n");
+    }
+
+	pcn_kmsg_done(msg);
+    up(&node_ping_info_sem);
+
+    return 0;
+}
+EXPORT_SYMBOL(handle_node_ping_info);
 
 /**
  * @param msg message recieved
