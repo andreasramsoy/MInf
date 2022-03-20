@@ -195,6 +195,7 @@ void check_and_repair_popcorn(void) {
     //TODO: transport structure is not always set, to avoid null pointer dereference you must test first
     //TODO: needed semaphore to manage the handling of the update list
     //TODO: needed to add timeout to socket as otherwise you would need to wait until a message appears before the thread would stop, problem again here with the normal timeout being for a future version of linux so used a file descriptor poll instead
+    //TODO: added kick command and ping command that allows the connection to be terminated to allow nodes to leave - this is because setting a timeout is not possible in this version of the kernel
 
     //measure changes since last check (send full)
 

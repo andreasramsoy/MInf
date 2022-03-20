@@ -195,7 +195,7 @@ void force_remove(int index) {
 }
 EXPORT_SYMBOL(force_remove);
 
-void ping(int index) {
+void node_ping(int index) {
     //function is for debugging and testing just to allow for a node to be kicked
     printk(KERN_DEBUG "Pinging node %d\n");
 
@@ -204,7 +204,7 @@ void ping(int index) {
     strncpy(output_buffer, "0 PINGED_NODE", sizeof(output_buffer));
     printk("Finished pinging node\n");
 }
-EXPORT_SYMBOL(force_remove);
+EXPORT_SYMBOL(node_ping);
 
 void full_check(void) {
     printk("A full check on the node list has been requested\n");
