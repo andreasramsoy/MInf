@@ -57,7 +57,7 @@ static int recv_handler(void* arg0)
 		while (len > 0) {
 			printk(KERN_DEBUG "before recv deq\n");
 			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
-			printk(KERN_DEBUG "after recv deq\n");
+			printk(KERN_DEBUG "after recv deq ret: %d\n", ret);
 			if (ret == -1) break;
 			offset += ret;
 			len -= ret;
