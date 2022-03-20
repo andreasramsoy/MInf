@@ -199,7 +199,7 @@ void node_ping(int index) {
     //function is for debugging and testing just to allow for a node to be kicked
     printk(KERN_DEBUG "Pinging node %d\n");
 
-    void send_node_list_info(index, "");
+    send_node_list_info(index, "");
 
     strncpy(output_buffer, "0 PINGED_NODE", sizeof(output_buffer));
     printk("Finished pinging node\n");
