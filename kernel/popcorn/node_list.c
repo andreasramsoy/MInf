@@ -675,8 +675,6 @@ void remove_node_core(int index, bool normal_removal) {
     address = node->address;
 
     if (!is_myself(node)) {
-        printk(KERN_DEBUG "Killing connections for this node\n");
-        node->transport->kill_node(node);
 
         node->transport->number_of_users--;
 
