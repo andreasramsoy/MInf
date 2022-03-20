@@ -1282,7 +1282,7 @@ EXPORT_SYMBOL(send_node_ping_info);
 /**
  * Function to handle node ping
  */
-static int handle_node_ping_info(struct pcn_kmsg_message *msg) {
+void handle_node_ping_info(struct pcn_kmsg_message *msg) {
     int ret;
     node_list_info *info;
 
@@ -1304,8 +1304,6 @@ static int handle_node_ping_info(struct pcn_kmsg_message *msg) {
 
 	pcn_kmsg_done(msg);
     up(&node_ping_info_sem);
-
-    return 0;
 }
 EXPORT_SYMBOL(handle_node_ping_info);
 
