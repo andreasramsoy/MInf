@@ -1284,7 +1284,7 @@ EXPORT_SYMBOL(send_node_ping_info);
  */
 void handle_node_ping_info(struct pcn_kmsg_message *msg) {
     int ret;
-    node_list_info *info;
+    node_ping_info *info;
 
     printk(KERN_DEBUG "Recieved ping from nodet\n");
 
