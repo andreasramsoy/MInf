@@ -1275,7 +1275,7 @@ void send_node_ping_info(int their_index, bool please_echo) {
         .please_echo = please_echo
     };
 
-	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_PING, their_index, &node_ping_details, sizeof(node_ping_info));
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_PING_INFO, their_index, &node_ping_details, sizeof(node_ping_info));
 }
 EXPORT_SYMBOL(send_node_ping_info);
 
