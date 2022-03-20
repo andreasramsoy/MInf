@@ -62,6 +62,7 @@ enum pcn_kmsg_type {
 	/* Controlling node list */
 	PCN_KMSG_TYPE_NODE_COMMAND,
 	PCN_KMSG_TYPE_NODE_LIST_INFO,
+	PCN_KMSG_TYPE_NODE_PING_INFO,
 
 	/* Checking the node list */
 	PCN_KMSG_TYPE_NODE_LIST_CHECK,
