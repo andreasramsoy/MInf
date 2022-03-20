@@ -1286,7 +1286,7 @@ void handle_node_ping_info(struct pcn_kmsg_message *msg) {
     int ret;
     node_ping_info *info;
 
-    printk(KERN_DEBUG "Recieved ping from nodet\n");
+    printk(KERN_DEBUG "Recieved ping from node\n");
 
 
 	do {
@@ -1294,9 +1294,10 @@ void handle_node_ping_info(struct pcn_kmsg_message *msg) {
 	} while (ret);
     info = (node_ping_info *)msg;
 
-    if (info->please_echo) {
+    if (info->please_echo > 0) {
         printk(KERN_DEBUG "Replying to ping\n");
-        send_node_ping_info(msg->header.from_nid, false); //always send false in the reply so you only reply once to a message
+        ssleep(1); //give time to process last sleep
+        send_node_ping_info(msg->header.from_nid, info->please_echo - 1); //always send false in the reply so you only reply once to a message
     }
     else {
         printk(KERN_DEBUG "Not replying to ping\n");
