@@ -349,7 +349,7 @@ struct node_list_info_list_item {
  */
 #define NODE_PING_FIELDS \
 	int your_nid; \
-	int please_echo;
+	bool please_echo;
 DEFINE_PCN_KMSG(node_ping_info, NODE_PING_FIELDS);
 
 

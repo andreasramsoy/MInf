@@ -63,6 +63,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
     int number_of_parameters;
     int index;
     int i;
+    int reply;
     int max_number_connections;
     char c;
     char protocol[COMMAND_BUFFER_SIZE];
@@ -123,15 +124,16 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             }
             #ifdef POPCORN_DEBUG_COMMANDS
             else if (sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);
-            else if (sscanf(buffer, "ping %d", &index) == number_of_parameters - 1) node_ping(index);
             #endif
             //else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
             else parse_error(number_of_parameters, buffer);
             break;
         case 3:
-            printk(KERN_DEBUG "Getting here\n"); //////////////////////////////////for debugging
+            #ifdef POPCORN_DEBUG_COMMANDS
+            if (sscanf(buffer, "ping %d %d", &index, &reply) == number_of_parameters - 1) node_ping(index, reply);
+            #endif
             //printk(KERN_DEBUG "Getting here %d\n", sscanf(buffer, "add %s %s", &address, &protocol)); //////////////////////////////////for debugging
-            parse_error(number_of_parameters, buffer);
+            else parse_error(number_of_parameters, buffer);
             break;
         case 4:
             if (sscanf(buffer, "add %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections);

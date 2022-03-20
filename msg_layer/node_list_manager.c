@@ -195,11 +195,11 @@ void force_remove(int index) {
 }
 EXPORT_SYMBOL(force_remove);
 
-void node_ping(int index) {
+void node_ping(int index, bool reply) {
     //function is for debugging and testing just to allow for a node to be kicked
     printk(KERN_DEBUG "Pinging node %d\n");
 
-    send_node_ping_info(index, 2); //ping a node and ask for a reply
+    send_node_ping_info(index, reply); //ping a node and ask for a reply
 
     strncpy(output_buffer, "0 PINGED_NODE", sizeof(output_buffer));
     printk("Finished pinging node\n");
