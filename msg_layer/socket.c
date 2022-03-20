@@ -59,6 +59,9 @@ static int recv_handler(void* arg0)
 			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
 			printk(KERN_DEBUG "after recv deq ret: %d\n", ret);
 			if (ret == -1) break;
+			if (ret == 0) {
+				return 1; //connection ended
+			}
 			offset += ret;
 			len -= ret;
 		}
