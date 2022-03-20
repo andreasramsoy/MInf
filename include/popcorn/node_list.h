@@ -143,6 +143,8 @@ extern bool is_myself(struct message_node* node);
 extern void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 extern void send_node_list_info(int their_index, char* random_token);
+extern void send_node_ping_info(int their_index, bool please_echo);
+extern static int handle_node_ping_info(struct pcn_kmsg_message *msg);
 
 extern int add_protocol(struct pcn_kmsg_transport* transport_item);
 extern void remove_protocol(struct pcn_kmsg_transport* transport_item);
