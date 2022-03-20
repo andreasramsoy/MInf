@@ -348,7 +348,7 @@ struct node_list_info_list_item {
  * For pinging nodes to allow them to leave
  */
 #define NODE_PING_FIELDS \
-	int your_nid;
+	int your_nid; \
 	bool please_echo;
 DEFINE_PCN_KMSG(node_ping_info, NODE_PING_FIELDS);
 
