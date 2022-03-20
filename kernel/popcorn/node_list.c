@@ -1292,7 +1292,7 @@ void handle_node_ping_info(struct pcn_kmsg_message *msg) {
 	do {
 		ret = down_interruptible(&node_ping_info_sem);
 	} while (ret);
-    info = (node_list_info *)msg;
+    info = (node_ping_info *)msg;
 
     if (info->please_echo) {
         printk(KERN_DEBUG "Replying to ping\n");
