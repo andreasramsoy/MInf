@@ -416,7 +416,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     node->bundle_id = -1;
 
     //transport structure
-    if (transport == NULL) {
+    if (transport == NULL && !is_myself(node)) {
         node->transport = DEFAULT_TRANSPORT_POINTER;
     }
     else {
