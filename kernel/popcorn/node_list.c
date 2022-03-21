@@ -99,18 +99,18 @@ void run_full_check(void) {
 
 
     for (i = 0; i < after_last_node_index; i++) {
+        printk(KERN_DEBUG "Adding node %d to update list\n", i);
         node  = get_node(i);
-
-        //for when this node does not have a transport structure
-        if (node->transport) {
-            transport_name = node->transport->name;
-        }
-        else {
-            transport_name = "";
-        }
 
         //add the value to the update list
         if (node != NULL) {
+            //for when this node does not have a transport structure
+            if (node->transport) {
+                transport_name = node->transport->name;
+            }
+            else {
+                transport_name = "";
+            }
             add_to_update_list(node->index, node->address, transport_name, false);
         }
         else {
@@ -416,7 +416,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     node->bundle_id = -1;
 
     //transport structure
-    if (transport == NULL && !is_myself(node)) {
+    if (transport == NULL) {
         node->transport = DEFAULT_TRANSPORT_POINTER;
     }
     else {
@@ -1374,14 +1374,6 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
             node = get_node(info->nids[i]);
 
-            //in case the transport structure is not set
-            if (node->transport) {
-                transport_name = node->transport->name;
-            }
-            else {
-                transport_name = DEFAULT_TRANSPORT_NAME;
-            }
-
             if (node == NULL && info->remove[i] == 0) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
@@ -1402,6 +1394,14 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 if (node->address != info->addresses[i] && info->remove[i] == 0) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
 
+                    //in case the transport structure is not set
+                    if (node->transport) {
+                        transport_name = node->transport->name;
+                    }
+                    else {
+                        transport_name = DEFAULT_TRANSPORT_NAME;
+                    }
+                    
                     //resolve incorrect node
                     if (i_am_right) {
                         add_to_update_list(node->index, node->address, transport_name, false);
