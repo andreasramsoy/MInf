@@ -150,6 +150,7 @@ void check_and_repair_popcorn(void) {
             i = after_last_node_index - 1; //reset to the end of the list
             first_pass = false;
         }
+        printk(KERN_DEBUG "Trying prev neighbour %d\n", i);
         previous_neighbour = get_node(i);
         if (previous_neighbour != NULL) {
             break;
@@ -166,6 +167,7 @@ void check_and_repair_popcorn(void) {
             i = 0; //reset to the end of the list
             first_pass = false;
         }
+        printk(KERN_DEBUG "Trying next neighbour %d\n", i);
         next_neighbour = get_node(i);
         if (next_neighbour != NULL) {
             break;
@@ -175,12 +177,16 @@ void check_and_repair_popcorn(void) {
     }
 
     if (previous_neighbour == NULL || next_neighbour == NULL) {
-        printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p", previous_neighbour, next_neighbour);
+        printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
         return; //cannot check (not an error just need more nodes)
     }
 
     if (previous_neighbour == next_neighbour) {
-        printk(KERN_INFO "Both neighbours are the same");
+        printk(KERN_INFO "Both neighbours are %d\n", previous_neighbour->index);
+    }
+    else {
+        printk(KERN_INFO "Next neighbour is: %d\n", next_neighbour->index);
+        printk(KERN_INFO "Prev neighbour is: %d\n", previous_neighbour->index);
     }
 
 
