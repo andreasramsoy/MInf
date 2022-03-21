@@ -138,6 +138,8 @@ void check_and_repair_popcorn(void) {
     bool end_not_reached;
     int i, ret;
     bool first_pass;
+    int previous_neighbour_index;
+    int next_neighbour_index;
 
     printk(KERN_INFO "Running a check and repair on Popcorn\n");
 
@@ -152,6 +154,7 @@ void check_and_repair_popcorn(void) {
         }
         printk(KERN_DEBUG "Trying prev neighbour %d\n", i);
         previous_neighbour = get_node(i);
+        previous_neighbour_index = i;
         if (previous_neighbour != NULL) {
             printk(KERN_DEBUG "Selected prev neighbour %d\n", previous_neighbour->index);
             break;
@@ -170,6 +173,7 @@ void check_and_repair_popcorn(void) {
         }
         printk(KERN_DEBUG "Trying next neighbour %d\n", i);
         next_neighbour = get_node(i);
+        next_neighbour_index = i;
         if (next_neighbour != NULL) {
             printk(KERN_DEBUG "Selected next neighbour %d\n", next_neighbour->index);
             break;
@@ -187,8 +191,8 @@ void check_and_repair_popcorn(void) {
         printk(KERN_INFO "Both neighbours are %d\n", previous_neighbour->index);
     }
     else {
-        printk(KERN_INFO "Next neighbour is: %d\n", next_neighbour->index);
-        printk(KERN_INFO "Prev neighbour is: %d\n", previous_neighbour->index);
+        printk(KERN_INFO "Prev neighbour is: %d\n", previous_neighbour_index);
+        printk(KERN_INFO "Next neighbour is: %d\n", next_neighbour_index);
     }
 
 
@@ -270,9 +274,9 @@ void check_and_repair_popcorn(void) {
                 printk(KERN_DEBUG "c%d node_check idx: %d, addr: %d, rem: %d, tran: %s\n", i, node_check_copy.nids[i], node_check_copy.addresses[i], node_check_copy.remove[i], node_check_copy.transports[i]);
             }
             printk(KERN_INFO "done copying message\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour->index, &node_check, sizeof(node_check));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, previous_neighbour_index, &node_check, sizeof(node_check));
             printk(KERN_INFO "Sent message 1\n");
-            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour->index, &node_check_copy, sizeof(node_check_neighbours));
+            pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK, next_neighbour_index, &node_check_copy, sizeof(node_check_neighbours));
             printk(KERN_INFO "Sent message 2\n");
 
             // if (command != NULL) {
