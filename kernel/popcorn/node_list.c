@@ -746,11 +746,11 @@ void remove_node_core(int index, bool normal_removal) {
         kfree(list);
     }
 
-    add_to_update_list(index, address, node->transport->name, true);
+    add_to_update_list(index, address, DEFAULT_TRANSPORT_NAME, true);
 
     if (normal_removal) {
         //should always do this unless you are debugging and allow for forcefully removing nodes
-        propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, node->address, node->transport->name, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
+        propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, address, DEFAULT_TRANSPORT_NAME, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
     }
 }
 
@@ -1379,7 +1379,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 transport_name = node->transport->name;
             }
             else {
-                transport_name = "";
+                transport_name = DEFAULT_TRANSPORT_NAME;
             }
 
             if (node == NULL && info->remove[i] == 0) {
