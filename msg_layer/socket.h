@@ -1,6 +1,8 @@
 #ifndef __POPCORN_SOCKET_TRANSPORT_H__
 #define __POPCORN_SOCKET_TRANSPORT_H__
 
+#define MAX_NUMBER_OF_SEND_ATTEMPTS 5
+
 #define PORT 30467
 #define MAX_SEND_DEPTH	1024
 #define NIPQUAD(addr) ((unsigned char *)&addr)[0],((unsigned char *)&addr)[1],((unsigned char *)&addr)[2],((unsigned char *)&addr)[3]

@@ -579,8 +579,8 @@ encryption_fail:
     return false;*/
 #endif
     printk(KERN_DEBUG "Now initialise individual node\n");
-
-    return node->transport->init_node(node); //destroys the connection
+    node->is_connected = true;
+    return node->transport->init_node(node);
 }
 EXPORT_SYMBOL(enable_node);
 
