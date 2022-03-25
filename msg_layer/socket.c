@@ -183,9 +183,11 @@ static int deq_send(struct sock_handle *sh)
 		if (sent < 0) {
 			printk(KERN_INFO "send interrupted, %d\n", sent);
 			if (attempt_number > MAX_NUMBER_OF_SEND_ATTEMPTS) {
+				printk(KERN_DEBUG "Socket max attempts exceeded\n");
 				get_node(sh->nid)->is_connected = false; //connection has ended
 			}
 			else {
+				attempt_number++;
 				io_schedule();
 				continue;
 			}
