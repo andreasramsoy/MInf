@@ -145,7 +145,6 @@ void sock_kmsg_put(struct pcn_kmsg_message *msg);
 static int deq_send(struct sock_handle *sh)
 {
 	int ret;
-	int attempt_number;
 	char *p;
 	unsigned long from;
 	size_t remaining;
@@ -172,7 +171,6 @@ static int deq_send(struct sock_handle *sh)
 	p = (char *)msg;
 	remaining = msg->header.size;
 
-	attempt_number = 0;
 
 	if (!(get_node(sh->nid)->is_connected)) {
 		printk(KERN_DEBUG "The node has been disconnected so cannot send messages\n");
@@ -183,15 +181,8 @@ static int deq_send(struct sock_handle *sh)
 		int sent = ksock_send(sh->sock, p, remaining);
 		if (sent < 0) {
 			printk(KERN_INFO "send interrupted, %d\n", sent);
-			if (attempt_number > MAX_NUMBER_OF_SEND_ATTEMPTS) {
-				printk(KERN_DEBUG "Socket max attempts exceeded\n");
-				get_node(sh->nid)->is_connected = false; //connection has ended
-			}
-			else {
-				attempt_number++;
-				io_schedule();
-				continue;
-			}
+			io_schedule();
+			continue;
 		}
 		attempt_number = 0;
 		p += sent;
