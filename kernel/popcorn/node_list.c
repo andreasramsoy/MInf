@@ -1372,6 +1372,10 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             }
 
             printk(KERN_DEBUG "Processing command\n");
+            printk(KERN_DEBUG "Processing command: %p\n", info);
+            printk(KERN_DEBUG "Processing command: %p\n", info->nids);
+            printk(KERN_DEBUG "Processing command: %p\n", info->nids[i]);
+            printk(KERN_DEBUG "Processing command: %p\n", get_node(info->nids[i]));
 
             node = get_node(info->nids[i]);
 
@@ -1390,8 +1394,10 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     add_node_at_position(new_node, info->nids[i], ""); //no token is needed as 
                 }
             }
-            else {
+            else if (node == NULL) {
                 //the node exists on our list
+                
+                printk(KERN_DEBUG "Node exists\n");
                 if (node->address != info->addresses[i] && info->remove[i] == 0) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
 
