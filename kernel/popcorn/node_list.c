@@ -114,7 +114,7 @@ void run_full_check(void) {
             add_to_update_list(node->index, node->address, transport_name, false);
         }
         else {
-            add_to_update_list(REMOVED_NODE, 0, "", true);
+            add_to_update_list(i, 0, "", true);
         }
     }
 
