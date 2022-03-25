@@ -145,6 +145,7 @@ void sock_kmsg_put(struct pcn_kmsg_message *msg);
 static int deq_send(struct sock_handle *sh)
 {
 	int ret;
+	int attempt_number;
 	char *p;
 	unsigned long from;
 	size_t remaining;
@@ -171,13 +172,25 @@ static int deq_send(struct sock_handle *sh)
 	p = (char *)msg;
 	remaining = msg->header.size;
 
-	while (remaining > 0) {
+	attempt_number = 0;
+
+	if (!(get_node(sh->nid)->is_connected)) {
+		printk(KERN_DEBUG "The node has been disconnected so cannot send messages\n");
+	}
+
+	while (!(get_node(sh->nid)->is_connected) && remaining > 0) {
 		int sent = ksock_send(sh->sock, p, remaining);
 		if (sent < 0) {
 			printk(KERN_INFO "send interrupted, %d\n", sent);
-			io_schedule();
-			continue;
+			if (attempt_number > MAX_NUMBER_OF_SEND_ATTEMPTS) {
+				get_node(sh->nid)->is_connected = false; //connection has ended
+			}
+			else {
+				io_schedule();
+				continue;
+			}
 		}
+		attempt_number = 0;
 		p += sent;
 		remaining -= sent;
 		//printk("Sent %d remaining %d\n", sent, remaining);
@@ -196,7 +209,7 @@ static int send_handler(void* arg0)
 	printk(KERN_INFO "SEND handler for %d is ready\n", sh->nid);
 
 	while (!kthread_should_stop()) {
-		printk(KERN_DEBUG "Debofre send deq\n");
+		printk(KERN_DEBUG "Before send deq\n");
 		deq_send(sh);
 		printk(KERN_DEBUG "after send deq\n");
 	}
@@ -245,7 +258,7 @@ int sock_kmsg_send(int dest_nid, struct pcn_kmsg_message *msg, size_t size)
 	DECLARE_COMPLETION_ONSTACK(done);
 	enq_send(dest_nid, msg, 0, &done);
 
-	if (!try_wait_for_completion(&done)) { 
+	if (!try_wait_for_completion(&done)) {
 		int ret = wait_for_completion_io_timeout(&done, 60 * HZ); /////uses spinlock here, are send and post in same queue? Want to prevent blocking
         if (!ret) return -EAGAIN;
 	}
