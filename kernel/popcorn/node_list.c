@@ -492,6 +492,7 @@ int find_first_null_pointer(void) {
 }
 EXPORT_SYMBOL(find_first_null_pointer);
 
+
 //disable and disconnect
 bool disable_node(int index) {
     struct message_node* node = get_node(index);
