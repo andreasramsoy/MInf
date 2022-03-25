@@ -184,7 +184,6 @@ static int deq_send(struct sock_handle *sh)
 			io_schedule();
 			continue;
 		}
-		attempt_number = 0;
 		p += sent;
 		remaining -= sent;
 		//printk("Sent %d remaining %d\n", sent, remaining);
