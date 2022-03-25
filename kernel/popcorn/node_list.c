@@ -179,7 +179,7 @@ void check_and_repair_popcorn(void) {
             break;
         }
 
-        i--;
+        i++;
     }
 
     if (previous_neighbour == NULL || next_neighbour == NULL) {
