@@ -1439,8 +1439,9 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     }
                     else {
                         //remove the node
-                        remove_node(node->index);
-                        add_to_update_list(node->index, node->address, transport_name, true); //note the change as other neighbours may want to know
+                        printk(KERN_DEBUG "The other node is more likely to be correct, disabling node...\n");
+                        remove_node(info->nids[i]);
+                        add_to_update_list(info->nids[i], node->address, transport_name, true); //note the change as other neighbours may want to know
                     }
                 }
                 
