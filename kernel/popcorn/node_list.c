@@ -155,7 +155,7 @@ void check_and_repair_popcorn(void) {
         printk(KERN_DEBUG "Trying prev neighbour %d\n", i);
         previous_neighbour = get_node(i);
         previous_neighbour_index = i;
-        if (previous_neighbour != NULL) {
+        if (previous_neighbour != NULL && my_nid != i) {
             printk(KERN_DEBUG "Selected prev neighbour %d\n", previous_neighbour->index);
             break;
         }
@@ -174,7 +174,7 @@ void check_and_repair_popcorn(void) {
         printk(KERN_DEBUG "Trying next neighbour %d\n", i);
         next_neighbour = get_node(i);
         next_neighbour_index = i;
-        if (next_neighbour != NULL) {
+        if (next_neighbour != NULL && my_nid != i) {
             printk(KERN_DEBUG "Selected next neighbour %d\n", next_neighbour->index);
             break;
         }
