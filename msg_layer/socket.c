@@ -180,10 +180,8 @@ static int deq_send(struct sock_handle *sh)
 		int sent = ksock_send(sh->sock, p, remaining);
 		if (sent < 0) {
 			printk(KERN_INFO "send interrupted, %d\n", sent);
-			else {
 				io_schedule();
 				continue;
-			}
 		}
 		p += sent;
 		remaining -= sent;
