@@ -430,6 +430,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_ERR "Failed to enable node\n");
     }
 
+
     if (!successful) {
         kfree(node);
         printk(KERN_ERR "Failed to create the node\n");
