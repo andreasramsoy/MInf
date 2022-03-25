@@ -1375,7 +1375,10 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
             node = get_node(info->nids[i]);
 
-            if (node == NULL && info->remove[i] == 0) {
+            if (info->nids[i] == my_nid) {
+                printk(KERN_DEBUG "This node is myself so do not need to do anything\n");
+            }
+            else if (node == NULL && info->remove[i] == 0) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
                 //there should be a not here
 
