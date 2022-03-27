@@ -175,6 +175,7 @@ static int deq_send(struct sock_handle *sh)
 	// if (!(get_node(sh->nid)->is_connected)) {
 	// 	printk(KERN_DEBUG "The node has been disconnected so cannot send messages\n");
 	// }
+	
 
 	//while (!(get_node(sh->nid)->is_connected) && remaining > 0) {
 	while (remaining > 0) {
