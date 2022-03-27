@@ -111,7 +111,7 @@ void run_full_check(void) {
             else {
                 transport_name = "";
             }
-            add_to_update_list(node->index, node->address, transport_name, false);
+            add_to_update_list(i, node->address, transport_name, false);
         }
         else {
             add_to_update_list(i, 0, "", true);
@@ -687,7 +687,7 @@ void remove_node_core(int index, bool normal_removal) {
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
-    set_popcorn_node_online(node->index, false);
+    set_popcorn_node_online(index, false);
     address = node->address;
 
     if (!is_myself(node)) {
@@ -1076,16 +1076,16 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     printk(KERN_DEBUG "Setting the index of the node\n");
     node->index = index;
 
-    printk(KERN_DEBUG "Index: %d\n", node->index);
+    printk(KERN_DEBUG "Index: %d\n", index);
     printk(KERN_DEBUG "Address: %4pI\n", node->address);
     printk(KERN_DEBUG "Handle: %p\n", node->handle);
     printk(KERN_DEBUG "Transport: %4pI\n", node->transport);
     printk(KERN_DEBUG "Arch: %d\n", node->arch);
 
-    if (my_nid != -1 && my_nid != node->index) broadcast_my_node_info_to_node(node->index); //give them info about architecture (done to every node that it connects to)
-    set_popcorn_node_online(node->index, true);
+    if (my_nid != -1 && my_nid != index) broadcast_my_node_info_to_node(index); //give them info about architecture (done to every node that it connects to)
+    set_popcorn_node_online(index, true);
     msleep(2000); //wait to allow other devices to catchup
-    if (my_nid != node->index) send_node_list_info(node->index, token); //verfies to the node that you are from the popcorn network
+    if (my_nid != index) send_node_list_info(index, token); //verfies to the node that you are from the popcorn network
 
     return true;
 }
@@ -1413,17 +1413,17 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     
                     //resolve incorrect node
                     if (i_am_right) {
-                        add_to_update_list(node->index, node->address, transport_name, false);
+                        add_to_update_list(info->nids[i], node->address, transport_name, false);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                         printk(KERN_DEBUG "Neighbour was wrong so triggering new check\n");
                         check_and_repair_popcorn();
                     }
                     else {
                         //add this node to our node list and send it back to them
-                        remove_node(node->index); //remove your old node
+                        remove_node(info->nids[i]); //remove your old node
                         new_node = create_node(info->addresses[i], protocol);
                         add_node_at_position(new_node, info->nids[i], ""); //add the new node
-                        add_to_update_list(node->index, node->address, transport_name, true);
+                        add_to_update_list(info->nids[i], node->address, transport_name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");
                         check_and_repair_popcorn();
@@ -1435,7 +1435,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     //resolve node that shouldn't be there
                     if (i_am_right) {
                         //add this node to our node list and send it back to them
-                        add_to_update_list(node->index, node->address, transport_name, false);
+                        add_to_update_list(info->nids[i], node->address, transport_name, false);
 
                         printk(KERN_DEBUG "Mistake was found in other node list so triggering check\n");
                         check_and_repair_popcorn();
