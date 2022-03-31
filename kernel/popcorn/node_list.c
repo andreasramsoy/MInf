@@ -811,7 +811,7 @@ void process_command(node_list_command* command) {
             node = create_node(command->address, string_to_transport(command->transport));
             if (node) {
                 printk("The recieved token was: %s", command->token);
-                if (add_node(node, command->max_connections, command->token) >= 0) printk(KERN_DEBUG "Added the new node\n");
+                if (add_node(node, command->max_connections, command->token, true) >= 0) printk(KERN_DEBUG "Added the new node\n");
                 else {
                     printk(KERN_ERR "Failed to add the node! If other nodes succeed then the node list will become inconsistent\n");
                     kfree(node);
@@ -1160,7 +1160,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
  * @param message_node* node the node that will be added to the list
  * @return int index of the location of the new node (-1 if it could not be added)
 */
-int add_node(struct message_node* node, int max_connections, char* token) { //function for adding a single node to the list
+int add_node(struct message_node* node, int max_connections, char* token, bool propagate) { //function for adding a single node to the list
     char* transport_name;
     
     printk(KERN_DEBUG "TOKEN in add_node: %s\n", token);
@@ -1200,7 +1200,7 @@ int add_node(struct message_node* node, int max_connections, char* token) { //fu
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
-    propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, transport_name, max_connections, token); //one max connection (replace later)
+    if (propagate) propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, transport_name, max_connections, token); //one max connection (replace later)
 
 	return node->index;
 }

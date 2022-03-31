@@ -136,7 +136,10 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             else parse_error(number_of_parameters, buffer);
             break;
         case 4:
-            if (sscanf(buffer, "add %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections);
+            #ifdef POPCORN_DEBUG_COMMANDS
+            if (sscanf(buffer, "add_no_prop %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections, false);
+            #endif
+            if (sscanf(buffer, "add %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections, true);
             else parse_error(number_of_parameters, buffer);
             break;
         default:

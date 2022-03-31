@@ -220,9 +220,10 @@ EXPORT_SYMBOL(full_check);
  * Adds a new node to the node list.
  * @param char* address address of the node
  * @param char* protocol the protocol to be used for the node
+ * @param bool propagate just for testing the check and correction system for the node list
  * @return void however the output_buffer is filled with the index of the newly created node in the node list (-1 if it failed)
 */
-void node_add(char* address_string, char* protocol_string, int max_connections) {
+void node_add(char* address_string, char* protocol_string, int max_connections, bool propagate) {
     //convert values that can be used in the popcorn messaging layer
     uint32_t address;
     struct message_node* node;
@@ -368,7 +369,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections) 
                 return;
             }
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
-            new_node_index = add_node(node, max_connections, token);
+            new_node_index = add_node(node, max_connections, token, propagate);
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
                 kfree(node);
