@@ -1110,7 +1110,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     struct neighbour_node_list* update_list;
     struct message_node* node;
     int ret;
-    char[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] token;
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 	do {
 		ret = down_interruptible(&update_list_sem);
