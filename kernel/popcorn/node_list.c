@@ -1216,7 +1216,7 @@ int add_node(struct message_node* node, int max_connections, char* token, bool p
 
 
 
-    //add_to_update_list(node->index, node->address, transport_name, false); //store in the node list
+    // add_to_update_list(node->index, node->address, transport_name, false); //store in the node list
 
 
 
