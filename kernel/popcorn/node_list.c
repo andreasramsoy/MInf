@@ -1278,7 +1278,8 @@ void send_node_list_info(int their_index, char* random_token) {
         strncpy(node_list_details.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else {
-        printk(KERN_DEBUG "Token was not needed so was not set\n");
+        printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
+        strncpy(node_list_details.token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
     if (node) printk(KERN_DEBUG "My address is: %d", node->address);
@@ -1508,6 +1509,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 		ret = down_interruptible(&node_list_info_sem);
 	} while (ret);
     info = (node_list_info *)msg;
+
+    printk("Token in node list info was: %s\n", info->token);
 
     if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
