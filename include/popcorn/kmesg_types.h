@@ -321,6 +321,7 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 	int nids[MAX_CHECKS_AT_ONCE]; \
 	uint32_t addresses[MAX_CHECKS_AT_ONCE]; \
 	char transports[MAX_CHECKS_AT_ONCE][MAX_TRANSPORT_STRING_LENGTH]; \
+	char tokens[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]; \
 	bool remove[MAX_CHECKS_AT_ONCE]
 DEFINE_PCN_KMSG(node_check_neighbours, NODE_CHECK_NEIGHBOURS_FIELDS);
 

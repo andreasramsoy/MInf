@@ -934,8 +934,12 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
         printk(KERN_DEBUG "Copied the token: %s\n", random_token);
         strncpy(command.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
+    else if (get_node(index)) {
+        strncpy(command.token, get_node(index)->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        printk(KERN_DEBUG "Token was taken from the node list\n");
+    }
     else {
-        printk(KERN_DEBUG "Token was not needed so was not set\n");
+        printk(KERN_DEBUG "No token was set\n");
     }
     pcn_kmsg_send(PCN_KMSG_TYPE_NODE_COMMAND, index, &command, sizeof(command));
 }
@@ -1104,11 +1108,14 @@ EXPORT_SYMBOL(force_remove_node);
  */
 void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove) {
     struct neighbour_node_list* update_list;
+    struct message_node* node;
     int ret;
+    char[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] token;
 
 	do {
 		ret = down_interruptible(&update_list_sem);
 	} while (ret);
+
 
     printk(KERN_INFO "add_to_update_list called\n");
     //add to the list of updated nodes
@@ -1145,6 +1152,13 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     printk(KERN_INFO "Adding transport structure string: %s\n", transport);
     strncpy(update_list->transport, transport, MAX_TRANSPORT_STRING_LENGTH);
     printk(KERN_INFO "Added transport structure string\n");
+    node = get_node(node_id);
+    if (node) {
+        strncpy(update_list->token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    }
+    else {
+        strncpy(update_list->token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    }
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
 
@@ -1199,6 +1213,8 @@ int add_node(struct message_node* node, int max_connections, char* token, bool p
 
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
+
+    strncpy(node->token, token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     if (propagate) propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, transport_name, max_connections, token); //one max connection (replace later)
 
@@ -1393,7 +1409,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 }
                 else {
                     new_node = create_node(info->addresses[i], protocol);
-                    add_node_at_position(new_node, info->nids[i], ""); //no token is needed as 
+                        strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    add_node_at_position(new_node, info->nids[i], info->token);
                 }
             }
             else if (node != NULL) {
@@ -1422,7 +1439,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         //add this node to our node list and send it back to them
                         remove_node(info->nids[i]); //remove your old node
                         new_node = create_node(info->addresses[i], protocol);
-                        add_node_at_position(new_node, info->nids[i], ""); //add the new node
+                        strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                        add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
                         add_to_update_list(info->nids[i], node->address, transport_name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");

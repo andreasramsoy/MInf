@@ -58,6 +58,7 @@ struct message_node {
     struct sock_handle* handle;
     struct pcn_kmsg_transport* transport;
 	enum popcorn_arch arch;
+	char[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] token;
 	int bundle_id;
 	bool is_connected;
     u8 key[POPCORN_AES_KEY_SIZE]; //key for AES (specific to that node)
@@ -80,6 +81,7 @@ struct neighbour_node_list {
     uint64_t index;
     uint32_t address;
 	bool remove;
+	char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 	char transport[MAX_TRANSPORT_STRING_LENGTH];
 	struct neighbour_node_list* next;
 };
