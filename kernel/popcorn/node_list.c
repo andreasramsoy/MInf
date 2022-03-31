@@ -1277,9 +1277,12 @@ void send_node_list_info(int their_index, char* random_token) {
     if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
         strncpy(node_list_details.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
-    else {
+    else if (node && node->token) {
         printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
         strncpy(node_list_details.token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    }
+    else {
+        printk(KERN_DEBUG "There was no node token to be sent\n");
     }
 
     if (node) printk(KERN_DEBUG "My address is: %d", node->address);
