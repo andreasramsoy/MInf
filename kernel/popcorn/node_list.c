@@ -253,10 +253,10 @@ void check_and_repair_popcorn(void) {
                     node_check.addresses[i] = 0;
                     node_check.remove[i] = false;
                     strncpy(node_check.transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
-                    strncpy(node_check.tokens[i], "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    strncpy(node_check.tokens[i], "No token", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
 
-                printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i]);
+                printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s, tok: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i], node_check.tokens[i]);
 
                 //check if we've reached the end of the data structure
                 if (command->next == NULL) {
@@ -1026,6 +1026,8 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
     }
 }
 
+
+
 /**
  * Adds node at a particular position. This is for when a node has connected
  * to this one which the token and nid and just needs to be placd into the 
@@ -1038,7 +1040,7 @@ bool add_node_at_position(struct message_node* node, int index, char* token) {
     int i;
 	int list_number;
 	struct node_list* list = root_node_list;
-    printk(KERN_DEBUG "TOKEN: add_node_at_position: %s\n", token);
+    printk(KERN_DEBUG "TOKEN for add_node_at_position: %s\n", token);
 
     printk(KERN_DEBUG "add_node_at_position called\n");
 
@@ -1158,11 +1160,13 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     printk(KERN_INFO "Added transport structure string\n");
     node = get_node(node_id);
     if (node) {
+        printk(KERN_DEBUG "Token that was already given to node: %s\n", node->token);
         strncpy(update_list->token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
     else {
         strncpy(update_list->token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
+    printk(KERN_DEBUG "Token put to update list was: %s\n", update_list->token);
     update_list->remove = remove;
     update_list->next = NULL; //end of the list
 
