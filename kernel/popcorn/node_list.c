@@ -242,6 +242,8 @@ void check_and_repair_popcorn(void) {
                     else {
                         strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     }
+
+                    strncpy(node_check.tokens[i], command->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
                 else {
                     printk(KERN_INFO "End of list reached filling with dummy values\n");
@@ -250,6 +252,7 @@ void check_and_repair_popcorn(void) {
                     node_check.addresses[i] = 0;
                     node_check.remove[i] = false;
                     strncpy(node_check.transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
+                    strncpy(node_check.tokens[i], "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
 
                 printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i]);
@@ -1409,7 +1412,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 }
                 else {
                     new_node = create_node(info->addresses[i], protocol);
-                        strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                     add_node_at_position(new_node, info->nids[i], info->tokens[i]);
                 }
             }
