@@ -1548,7 +1548,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     }
 
     printk(KERN_DEBUG "Copying info into newly allocated memory\n");
-    printk(KERN_DEBUG "Token received was: %s\n", info.token);
+    printk(KERN_DEBUG "Token received was: %s\n", info->token);
     memcpy(&(new_info->info), info, sizeof(*info)); //copy as the message will be deleted later
     printk(KERN_DEBUG "Token copied was: %s\n", new_info->info.token);
 
