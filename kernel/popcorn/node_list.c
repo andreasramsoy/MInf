@@ -229,6 +229,7 @@ void check_and_repair_popcorn(void) {
         while(end_not_reached) {
             for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
 
+
                 //fill up a data structure to be sent to the neighbouring node
                 if (end_not_reached) {
                     printk(KERN_INFO "More to send\n");
