@@ -369,6 +369,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
                 return;
             }
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
+            token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = '\0'; //terminating it makes it easier to print
             new_node_index = add_node(node, max_connections, token, propagate);
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
