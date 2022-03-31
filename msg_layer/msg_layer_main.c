@@ -50,6 +50,9 @@ int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
 }
 
 void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
+    #ifdef POPCORN_DEBUG_COMMANDS
+    printk(KERN_ERR "NOTE debug mode is on so may not be an error --- \n");
+    #endif
     printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
     strncpy(output_buffer, "ERROR", COMMAND_BUFFER_SIZE);
 }

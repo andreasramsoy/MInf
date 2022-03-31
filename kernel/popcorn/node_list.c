@@ -117,6 +117,7 @@ void run_full_check(void) {
             add_to_update_list(i, 0, "", true);
         }
     }
+    
 
     //now that the full list exists, send the update
     check_and_repair_popcorn();
@@ -1216,7 +1217,7 @@ int add_node(struct message_node* node, int max_connections, char* token, bool p
 
 
 
-    // add_to_update_list(node->index, node->address, transport_name, false); //store in the node list
+    //Ensure this has the correct token before uncommenting add_to_update_list(node->index, node->address, transport_name, false); //store in the node list
 
 
 
