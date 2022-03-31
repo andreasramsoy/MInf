@@ -1410,7 +1410,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 else {
                     new_node = create_node(info->addresses[i], protocol);
                         strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
-                    add_node_at_position(new_node, info->nids[i], info->token);
+                    add_node_at_position(new_node, info->nids[i], info->tokens[i]);
                 }
             }
             else if (node != NULL) {
