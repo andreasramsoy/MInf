@@ -117,7 +117,7 @@ void run_full_check(void) {
             add_to_update_list(i, 0, "", true);
         }
     }
-    
+
 
     //now that the full list exists, send the update
     check_and_repair_popcorn();
@@ -1365,7 +1365,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     bool i_am_right;
     char* transport_name;
 
-    printk(KERN_DEBUG "Recieved request to check neighbour's node list\n\n\n");
+    printk(KERN_DEBUG "\n\nRecieved request to check neighbour's node list\n");
 
 
 	do {
@@ -1377,6 +1377,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
     //for each check
     for (i = 0; i < MAX_CHECKS_AT_ONCE; i++) {
+        printk(KERN_DEBUG "Checking the value at position %d\n", i);
 
         if (i == my_nid || my_nid < msg->header.from_nid) {
             i_am_right = true;
@@ -1390,11 +1391,12 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             i_am_right = true;
         }
 
+        printk(KERN_INFO "Message: %d; Check for index: %d, address: %d, transport: %s, remove: %d, tok: %s\n", i, info->nids[i], info->addresses[i], info->transports[i], info->remove[i], info->tokens[i]);
+
         //check if there is a difference
         if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
-
-            printk(KERN_INFO "Message: %d; Check for index: %d, address: %d, transport: %s, remove: %d, tok: %s\n", i, info->nids[i], info->addresses[i], info->transports[i], info->remove[i], info->tokens[i]);
-
+            printk(KERN_ERR "Node is not padding\n");
+            
             //manage the protocol
             protocol = string_to_transport(info->transports[i]);
             transport_name = info->transports[i];
@@ -1483,6 +1485,9 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
             //resolve differences
             //add/remove node according to this (must remove and then add node if the address is different)
+        }
+        else {
+            printk(KERN_DEBUG "Message padding\n");
         }
     }
 
