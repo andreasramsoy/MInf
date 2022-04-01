@@ -439,40 +439,45 @@ int __sock_accept_client(struct message_node* node)
 		return ret;
 	}
 
-	/*
-	printk(KERN_DEBUG "Socket created, setting up TLS...\n");
+	bool first_connection = node->address == 0 ? true : false;
 
-	struct tls12_crypto_info_aes_gcm_128 crypto_info;
+	do {
+		/*
+		printk(KERN_DEBUG "Socket created, setting up TLS...\n");
 
-	crypto_info.info.version = TLS_1_2_VERSION;
-	crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
-	memcpy(crypto_info.iv, iv_write, TLS_CIPHER_AES_GCM_128_IV_SIZE);
-	memcpy(crypto_info.rec_seq, seq_number_write,
-										TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
-	memcpy(crypto_info.key, cipher_key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
-	memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
+		struct tls12_crypto_info_aes_gcm_128 crypto_info;
 
-	printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
-	*/
+		crypto_info.info.version = TLS_1_2_VERSION;
+		crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
+		memcpy(crypto_info.iv, iv_write, TLS_CIPHER_AES_GCM_128_IV_SIZE);
+		memcpy(crypto_info.rec_seq, seq_number_write,
+											TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
+		memcpy(crypto_info.key, cipher_key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
+		memcpy(crypto_info.salt, implicit_iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
 
-	printk(KERN_DEBUG "Listening for incoming connections...\n");
+		printk(KERN_DEBUG "Configured TLS options return value %d\n", setsockopt(sock, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)));
+		*/
 
-	ret = kernel_accept(sock_listen, &sock, 0);
-	if (ret < 0) {
-		printk(KERN_INFO "Failed to accept, %d\n", ret);
-		goto out_release;
-	}
-	printk(KERN_DEBUG "Accepted connection\n");
+		printk(KERN_DEBUG "Listening for incoming connections...\n");
 
-	ret = kernel_getpeername(sock, (struct sockaddr *)&addr, &addr_len);
-	if (ret < 0) {
-		goto out_release;
-	}
+		ret = kernel_accept(sock_listen, &sock, 0);
+		if (ret < 0) {
+			printk(KERN_INFO "Failed to accept, %d\n", ret);
+			goto out_release;
+		}
+		printk(KERN_DEBUG "Accepted connection\n");
 
-	printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
-	printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
+		ret = kernel_getpeername(sock, (struct sockaddr *)&addr, &addr_len);
+		if (ret < 0) {
+			goto out_release;
+		}
 
-    node->address = addr.sin_addr.s_addr;
+		printk(KERN_DEBUG "Wanting to connect to node %d: %4pI\n", node->index, node->address);
+		printk(KERN_DEBUG "Connection from                %4pI\n", addr.sin_addr.s_addr);
+
+		
+		if (!first_connection) node->address = addr.sin_addr.s_addr;
+	} while (node->address != addr.sin_addr.s_addr)
 
 	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
 

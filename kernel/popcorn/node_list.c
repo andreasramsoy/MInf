@@ -371,6 +371,8 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     printk(KERN_DEBUG "transport: %p", transport);
     printk(KERN_DEBUG "transport name: %s", transport->name);
 
+    node->address = 0; //set so we know to accept anything;
+
     success = enable_node(node);
 
 create_any_node_failure:
