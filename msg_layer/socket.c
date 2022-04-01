@@ -636,7 +636,10 @@ bool init_node_sock(struct message_node* node) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
 	}*/
-	if (!registered_on_popcorn_network || my_nid < node->index) { //node->index is usually -1
+	if (!registered_on_popcorn_network) { //always wait for you to be contacted if you aren't on the network
+		ret = __sock_accept_client(node);
+	}
+	else if (my_nid > node->index) { //node->index is usually -1 either case we listen
 		ret = __sock_accept_client(node);
 	}
 	else {
