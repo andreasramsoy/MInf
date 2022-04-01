@@ -48,6 +48,7 @@ EXPORT_SYMBOL(registered_on_popcorn_network);
 EXPORT_SYMBOL(root_node_list_info_list);
 EXPORT_SYMBOL(node_list_info_sem);
 EXPORT_SYMBOL(node_ping_info_sem);
+EXPORT_SYMBOL(node_neighbours_check_sem);
 
 
 
