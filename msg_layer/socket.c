@@ -365,6 +365,7 @@ static int __sock_start_handlers(struct message_node* node)
 		kthread_stop(tsk_send);
 		return PTR_ERR(tsk_recv);
 	}
+	printk(KERN_DEBUG "Finished setting up handlers\n");
 	node->handle->send_handler = tsk_send;
 	node->handle->recv_handler = tsk_recv;
 	return 0;
