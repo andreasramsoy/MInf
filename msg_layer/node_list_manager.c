@@ -301,7 +301,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
         transports = transport_list_head;
         printk(KERN_DEBUG "transport list head: %p\n", transport_list_head->transport_structure);
         printk(KERN_DEBUG "transport list head name: %s\n", transport_list_head->transport_structure->name);
-        while (transports != NULL && number_of_nodes_to_be_added > 0) {
+        while (transports != NULL && propagate && number_of_nodes_to_be_added > 0) {
             /**
              * for each transport type start listening for new nodes
              * once all nodes are accounted for then stop listening
