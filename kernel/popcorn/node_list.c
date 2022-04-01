@@ -404,6 +404,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_DEBUG "Creating node with address %d but no protocol was given\n", address_p);
     }
 
+    printk(KERN_DEBUG "create_node: Before allocating memory\n");
+
     node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
@@ -411,6 +413,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->address = address_p;
     node->index = -1;
+
+    printk(KERN_DEBUG "create_node: Before setting bundle id\n");
 
     //previously in bundle.c
     node->is_connected = false;
@@ -422,6 +426,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->bundle_id = -1;
 
+    printk(KERN_DEBUG "create_node: before setting transport\n");
+
     //transport structure
     if (transport == NULL && !is_myself(node)) {
         node->transport = DEFAULT_TRANSPORT_POINTER;
@@ -430,6 +436,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         node->transport = transport;
     }
     //now check in node list manager that the transport is not null
+
+    printk(KERN_DEBUG "create_node: before enabling\n");
 
     //setup comms
     if (!enable_node(node)) {
@@ -443,6 +451,8 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_ERR "Failed to create the node\n");
         return NULL;
     }
+
+    printk(KERN_DEBUG "create_node: Successfully created node\n");
 
     return node;
 }
@@ -1369,11 +1379,11 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "\n\nRecieved request to check neighbour's node list\n");
 
     printk(KERN_DEBUG "Count: %d", node_neighbours_check_sem.count);
-	do {
-		ret = down_interruptible(&node_neighbours_check_sem);
-        printk(KERN_DEBUG "semaphore ret was %d\n", ret);
-        msleep(100); //TODO: remove
-	} while (ret);
+	/*// do {
+	// 	ret = down_interruptible(&node_neighbours_check_sem);
+    //     printk(KERN_DEBUG "semaphore ret was %d\n", ret);
+    //     msleep(100); //TODO: remove
+	// } while (ret);*/
     printk(KERN_DEBUG "Penguin 1\n");
 
     //recieve the message
@@ -1494,7 +1504,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             printk(KERN_DEBUG "Message padding\n");
         }
     }
-    up(&node_neighbours_check_sem);
+    //up(&node_neighbours_check_sem);
     printk(KERN_DEBUG "Penguin 3\n");
 
 	pcn_kmsg_done(msg);
