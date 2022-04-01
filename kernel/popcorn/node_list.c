@@ -445,6 +445,7 @@ struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_t
 }
 
 struct message_node* create_node_with_id(uint32_t address_p, struct pcn_kmsg_transport* transport, int index) {
+    bool successful = true;
     struct message_node* node = create_node_no_enable(address_p, transport);
     node->index = index; //adds the index so that the socket knows to connect/accept
 
@@ -474,6 +475,7 @@ struct message_node* create_node_with_id(uint32_t address_p, struct pcn_kmsg_tra
  * @return message_node* node pointer to the new node, NULL if it could not be created
 */
 struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
+    bool successful = true;
     struct message_node* node = create_node_no_enable(address_p, transport);
     printk(KERN_DEBUG "create_node: before enabling\n");
 
