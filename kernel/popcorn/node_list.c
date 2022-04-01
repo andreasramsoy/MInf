@@ -1419,7 +1419,6 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             }
             else if (node == NULL && info->remove[i] == 0) {
                 printk(KERN_DEBUG "The node was not present on the node list but was on a neighbour\n");
-                //there should be a not here
 
                 //resolve whether it should be added
                 if (i_am_right) {
@@ -1430,8 +1429,10 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 else {
                     printk(KERN_DEBUG "Neighbour was right so add new node\n");
                     new_node = create_node(info->addresses[i], protocol);
+                    printk(KERN_DEBUG "Created new node\n");
                     strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                     add_node_at_position(new_node, info->nids[i], info->tokens[i]);
+                    printk(KERN_DEBUG "Done adding new node at position\n");
                 }
             }
             else if (node != NULL) {
@@ -1488,9 +1489,6 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 }
                 
             }
-
-            //resolve differences
-            //add/remove node according to this (must remove and then add node if the address is different)
         }
         else {
             printk(KERN_DEBUG "Message padding\n");
