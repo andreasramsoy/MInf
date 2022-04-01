@@ -140,6 +140,9 @@ extern char* protocol_to_string(struct pcn_kmsg_transport* transport);
 extern struct pcn_kmsg_transport* string_to_transport(char* protocol);
 extern uint32_t address_string_to_int(char* address);
 
+struct message_node* create_node_with_id(uint32_t address_p, struct pcn_kmsg_transport* transport, int index);
+struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_transport* transport);
+
 extern bool is_myself(struct message_node* node);
 
 extern void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);

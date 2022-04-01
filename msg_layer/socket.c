@@ -636,11 +636,11 @@ bool init_node_sock(struct message_node* node) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
 	}*/
-	if (registered_on_popcorn_network) {
-		ret = __sock_connect_to_server(node); //connect to any node that wants to
+	if (!registered_on_popcorn_network || my_nid < node->index) { //node->index is usually -1
+		ret = __sock_accept_client(node);
 	}
 	else {
-		ret = __sock_accept_client(node);
+		ret = __sock_connect_to_server(node); //connect to any node that wants to
 	}
 	
 	printk(KERN_DEBUG "Node initialisation, connections done\n");

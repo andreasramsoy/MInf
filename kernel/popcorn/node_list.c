@@ -388,16 +388,18 @@ create_any_node_failure:
 EXPORT_SYMBOL(create_any_node);
 
 /**
- * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
- * etc. so that if the structure of the nodes change then only this function needs to be changed
- * @param uint32_t address the address of new node
- * @param protocol_t protocol the protocol that the new node should use
- * @return message_node* node pointer to the new node, NULL if it could not be created
-*/
-struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
+ * @brief Create a node with id so that it knows whether to connect or accept other node connection
+ * 
+ * @param address_p 
+ * @param transport 
+ * @param index 
+ * @return struct message_node* 
+ */
+
+struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     bool successful = true;
-    printk(KERN_DEBUG "create_node called\n");
+    printk(KERN_DEBUG "create_node_no_enable called\n");
 
     if (transport != NULL) {
         printk(KERN_DEBUG "Creating node with address %d and protocol %s\n", address_p, transport->name);
@@ -406,7 +408,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
         printk(KERN_DEBUG "Creating node with address %d but no protocol was given\n", address_p);
     }
 
-    printk(KERN_DEBUG "create_node: Before allocating memory\n");
+    printk(KERN_DEBUG "create_node_no_enable: Before allocating memory\n");
 
     node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
@@ -416,7 +418,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     node->address = address_p;
     node->index = -1;
 
-    printk(KERN_DEBUG "create_node: Before setting bundle id\n");
+    printk(KERN_DEBUG "create_node_no_enable: Before setting bundle id\n");
 
     //previously in bundle.c
     node->is_connected = false;
@@ -428,7 +430,7 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     node->bundle_id = -1;
 
-    printk(KERN_DEBUG "create_node: before setting transport\n");
+    printk(KERN_DEBUG "create_node_no_enable: before setting transport\n");
 
     //transport structure
     if (transport == NULL && !is_myself(node)) {
@@ -439,6 +441,40 @@ struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* 
     }
     //now check in node list manager that the transport is not null
 
+    return node;
+}
+
+struct message_node* create_node_with_id(uint32_t address_p, struct pcn_kmsg_transport* transport, int index) {
+    struct message_node* node = create_node_no_enable(address_p, transport);
+    node->index = index; //adds the index so that the socket knows to connect/accept
+
+    //setup comms
+    if (!enable_node(node)) {
+        successful = false;
+        printk(KERN_ERR "create_node_with_id: Failed to enable node\n");
+    }
+
+
+    if (!successful) {
+        kfree(node);
+        printk(KERN_ERR "create_node_with_id: Failed to create the node\n");
+        return NULL;
+    }
+
+    printk(KERN_DEBUG "create_node_with_id: Successfully created node\n");
+
+    return node;
+}
+
+/**
+ * Creates, allocates space and returns a pointer to a node. This function is separate from the add_node, remove_node,
+ * etc. so that if the structure of the nodes change then only this function needs to be changed
+ * @param uint32_t address the address of new node
+ * @param protocol_t protocol the protocol that the new node should use
+ * @return message_node* node pointer to the new node, NULL if it could not be created
+*/
+struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport) {
+    struct message_node* node = create_node_no_enable(address_p, transport);
     printk(KERN_DEBUG "create_node: before enabling\n");
 
     //setup comms
@@ -1440,7 +1476,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 }
                 else {
                     printk(KERN_DEBUG "Neighbour was right so add new node\n");
-                    new_node = create_node(info->addresses[i], protocol);
+                    new_node = create_node_with_id(info->addresses[i], protocol, info->nids[i]);
                     printk(KERN_DEBUG "Created new node\n");
                     strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                     add_node_at_position(new_node, info->nids[i], info->tokens[i]);
@@ -1472,7 +1508,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     else {
                         //add this node to our node list and send it back to them
                         remove_node(info->nids[i]); //remove your old node
-                        new_node = create_node(info->addresses[i], protocol);
+                        new_node = create_node_with_id(info->addresses[i], protocol, info->nids[i]);
                         strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                         add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
                         add_to_update_list(info->nids[i], node->address, transport_name, true);
