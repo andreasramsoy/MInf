@@ -1379,11 +1379,11 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "\n\nRecieved request to check neighbour's node list\n");
 
     printk(KERN_DEBUG "Count: %d", node_neighbours_check_sem.count);
-	/*// do {
-	// 	ret = down_interruptible(&node_neighbours_check_sem);
-    //     printk(KERN_DEBUG "semaphore ret was %d\n", ret);
-    //     msleep(100); //TODO: remove
-	// } while (ret);*/
+	do {
+		ret = down_interruptible(&node_neighbours_check_sem);
+        printk(KERN_DEBUG "semaphore ret was %d\n", ret);
+        msleep(100); //TODO: remove
+	} while (ret);
     printk(KERN_DEBUG "Penguin 1\n");
 
     //recieve the message
@@ -1504,7 +1504,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
             printk(KERN_DEBUG "Message padding\n");
         }
     }
-    //up(&node_neighbours_check_sem);
+    up(&node_neighbours_check_sem);
     printk(KERN_DEBUG "Penguin 3\n");
 
 	pcn_kmsg_done(msg);
