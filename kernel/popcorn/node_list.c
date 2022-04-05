@@ -1485,6 +1485,7 @@ char* get_node_list_checksum(void) {
  * Preliminary check that triggers a full check
  */
 static int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
+    int ret;
     char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     struct pcn_kmsg_transport* protocol;
 
@@ -1502,7 +1503,7 @@ static int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     //release the semaphore and message as the rest may take more processing and not related to the message
 
-    if (strncmp(get_node_list_checksum(), info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) {
+    if (strncmp(get_node_list_checksum(), info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
         printk(KERN_INFO "Checksums matched so node lists must be the same\n");
     }
     else {
