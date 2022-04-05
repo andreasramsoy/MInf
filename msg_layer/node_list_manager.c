@@ -224,7 +224,7 @@ void prelim_check(void) {
     strncpy(output_buffer, "0 PRELIM_CHECK_REQUESTED", sizeof(output_buffer));
     printk("Finished running prelim check\n");
 }
-EXPORT_SYMBOL(full_check);
+EXPORT_SYMBOL(prelim_check);
 
 /**
  * Adds a new node to the node list.
