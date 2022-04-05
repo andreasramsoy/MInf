@@ -66,6 +66,7 @@ enum pcn_kmsg_type {
 
 	/* Checking the node list */
 	PCN_KMSG_TYPE_NODE_LIST_CHECK,
+	PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM,
 
 	/* Schedule server */
 	PCN_KMSG_TYPE_SCHED_PERIODIC,		/* XXX sched requires help!! */
