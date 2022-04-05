@@ -32,6 +32,7 @@ DEFINE_SEMAPHORE(command_queue_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_list_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_ping_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
+DEFINE_SEMAPHORE(node_neighbours_check_prelim_sem);
 DEFINE_SEMAPHORE(update_list_sem);
 
 #define DEFAULT_TRANSPORT_POINTER transport_list_head->transport_structure //for when there is no transport structure
