@@ -187,10 +187,16 @@ int get_next_neighbour() {
  * 
  */
 void run_prelim_check(void) {
+    struct message_node* previous_neighbour;
+    struct message_node* next_neighbour;
+
     printk(KERN_INFO "Running prelim check on Popcorn\n");
 
     int previous_neighbour_index = get_prev_neighbour();
     int next_neighbour_index = get_next_neighbour();
+
+    previous_neighbour = get_node(previous_neighbour_index);
+    next_neighbour = get_node(next_neighbour_index);
 
     if (previous_neighbour == NULL || next_neighbour == NULL) {
         printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
