@@ -223,7 +223,6 @@ void check_and_repair_popcorn(void) {
     node_check_neighbours node_check_copy;
     bool end_not_reached;
     int i, ret;
-    bool first_pass;
     int previous_neighbour_index;
     int next_neighbour_index;
 
@@ -1450,10 +1449,13 @@ EXPORT_SYMBOL(handle_node_ping_info);
  */
 void send_prelim_check(int their_index) {
     node_check_neighbours_prelim node_prelim_check;
+    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
     printk(KERN_DEBUG "send_prelim_check called\n");
 
-    strncpy(node_prelim_check.checksum, get_node_list_checksum(), NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    checksum = get_node_list_checksum();
+    strncpy(node_prelim_check.checksum, checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    kfree(checksum);
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, their_index, &node_prelim_check, sizeof(node_check_neighbours_prelim));
 }
@@ -1466,7 +1468,7 @@ void send_prelim_check(int their_index) {
 char* get_node_list_checksum(void) {
     int i;
     struct message_node* node;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = kmalloc(GFP_KERNEL, sizeof(char * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES));
 
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         checksum[i] = 0; //reset all to zero so that XOR starts from zero
@@ -1487,7 +1489,7 @@ char* get_node_list_checksum(void) {
 /**
  * Preliminary check that triggers a full check
  */
-static void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
+void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     int ret;
     char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     struct pcn_kmsg_transport* protocol;
@@ -1506,13 +1508,15 @@ static void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     //release the semaphore and message as the rest may take more processing and not related to the message
 
-    if (strncmp(get_node_list_checksum(), info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
+    checksum = get_node_list_checksum();
+    if (strncmp(checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
         printk(KERN_INFO "Checksums matched so node lists must be the same\n");
     }
     else {
         printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
         run_full_check();
     }
+    kfree(checksum);
 
 
     printk(KERN_DEBUG "Done handling prelim check\n");
