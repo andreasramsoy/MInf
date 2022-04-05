@@ -1449,7 +1449,7 @@ EXPORT_SYMBOL(handle_node_ping_info);
  */
 void send_prelim_check(int their_index) {
     node_check_neighbours_prelim node_prelim_check;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    char* checksum;
 
     printk(KERN_DEBUG "send_prelim_check called\n");
 
@@ -1468,7 +1468,7 @@ void send_prelim_check(int their_index) {
 char* get_node_list_checksum(void) {
     int i;
     struct message_node* node;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = kmalloc(GFP_KERNEL, sizeof(char * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES));
+    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = kmalloc(GFP_KERNEL, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         checksum[i] = 0; //reset all to zero so that XOR starts from zero
@@ -1491,7 +1491,7 @@ char* get_node_list_checksum(void) {
  */
 void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     int ret;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    char* checksum;
     struct pcn_kmsg_transport* protocol;
 
     printk(KERN_DEBUG "\n\nRecieved a prelim check\n");
