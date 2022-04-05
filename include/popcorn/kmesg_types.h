@@ -325,6 +325,13 @@ DEFINE_PCN_KMSG(node_list_command, NODE_COMMAND_FIELDS);
 	bool remove[MAX_CHECKS_AT_ONCE]
 DEFINE_PCN_KMSG(node_check_neighbours, NODE_CHECK_NEIGHBOURS_FIELDS);
 
+/**
+ * Message for a preliminary check, mismatch will trigger full check
+ * 
+ */
+#define NODE_CHECK_NEIGHBOURS_PRELIM_FIELDS \
+	char checksum[NODE_LIST_INFO_TOKEN_SIZE_BYTES]
+DEFINE_PCN_KMSG(node_check_neighbours_prelim, NODE_CHECK_NEIGHBOURS_PRELIM_FIELDS);
 
 /**
  * Info about node list for incomming nodes

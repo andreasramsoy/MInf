@@ -216,6 +216,16 @@ void full_check(void) {
 }
 EXPORT_SYMBOL(full_check);
 
+void prelim_check(void) {
+    printk("A prelim check on the node list has been requested\n");
+
+    run_prelim_check();
+
+    strncpy(output_buffer, "0 PRELIM_CHECK_REQUESTED", sizeof(output_buffer));
+    printk("Finished running prelim check\n");
+}
+EXPORT_SYMBOL(full_check);
+
 /**
  * Adds a new node to the node list.
  * @param char* address address of the node

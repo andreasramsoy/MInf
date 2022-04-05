@@ -124,6 +124,9 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
                 if (strncmp(protocol, "full", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
                     full_check();
                 }
+                elif (strncmp(protocol, "prelim", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
+                    prelim_check();
+                }
             }
             #ifdef POPCORN_DEBUG_COMMANDS
             else if (sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);

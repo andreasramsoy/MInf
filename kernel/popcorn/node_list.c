@@ -125,26 +125,10 @@ void run_full_check(void) {
 }
 EXPORT_SYMBOL(run_full_check);
 
-/**
- * Runs a check on the neighbouring nodes, can send only 
- * changes since last check or a full list
- * 
- */
-void check_and_repair_popcorn(void) {
-    struct message_node* previous_neighbour;
-    struct message_node* next_neighbour;
-    struct neighbour_node_list* command;
-    struct neighbour_node_list* command_prev;
-    node_check_neighbours node_check;
-    node_check_neighbours node_check_copy;
-    bool end_not_reached;
-    int i, ret;
-    bool first_pass;
+int get_prev_neighbour() {
+    int i;
     int previous_neighbour_index;
-    int next_neighbour_index;
-
-    printk(KERN_INFO "Running a check and repair on Popcorn\n");
-
+    bool first_pass;
 
     //get previous node
     i = my_nid - 1;
@@ -165,6 +149,14 @@ void check_and_repair_popcorn(void) {
         i--;
     }
 
+    return previous_neighbour_index;
+}
+
+int get_next_neighbour() {
+    int i;
+    int next_neighbour_index;
+    bool first_pass;
+
     //get next node
     i = my_nid + 1;
     first_pass = true;
@@ -184,10 +176,24 @@ void check_and_repair_popcorn(void) {
         i++;
     }
 
+    return next_neighbour_index;
+}
+
+/**
+ * function that triggers prelim check on each of the neighbours
+ * 
+ */
+void run_prelim_check(void) {
+    printk(KERN_INFO "Running prelim check on Popcorn\n");
+
+    previous_neighbour_index = get_prev_neighbour();
+    next_neighbour_index = get_next_neighbour();
+
     if (previous_neighbour == NULL || next_neighbour == NULL) {
         printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
         return; //cannot check (not an error just need more nodes)
     }
+
 
     if (previous_neighbour == next_neighbour) {
         printk(KERN_INFO "Both neighbours are %d\n", previous_neighbour->index);
@@ -197,25 +203,47 @@ void check_and_repair_popcorn(void) {
         printk(KERN_INFO "Next neighbour is: %d\n", next_neighbour_index);
     }
 
+    send_prelim_check(previous_neighbour_index);
+    send_prelim_check(next_neighbour_index);
+}
+EXPORT_SYMBOL(run_prelim_check);
 
-    //TODO: store the node list of the previous and the next node (not full just key data), then you can see if it has changed
-    //TODO: use a linked list for a data structure for a node list for neighbours
-    //TODO: since checks take place one at a time then you only need one list for the changes
-    //TODO: a connected node needs to tell the other node to open connection
-    //TODO: set a maximum of checks that occur in one message - reduces message size as this must be fixed size - does this? Means you just send more messages if there are more to check
-    //TODO: fills in dummy values into data structure if all have been sent, then sends multiple messages
-    //TODO: if there is an error but the other node should update then send your correct value back to them (they may have resolved it by then)
-    //TODO: ensures an independent transport structure as created last year so this information also needs to be sent
-    //TODO: function that runs a full check of the node lsit, this can be triggered from the node list manager
-    //TODO: the token is needed is used to ensure nodes know to accept forgeign connections (i.e. an unknown node connects). There we use a token that is passed through the network so we know that the connection is from the network, if we are being told of a node from within the network then this means the token is not required but instead the mutual node must notify both
-    //TODO: transport structure is not always set, to avoid null pointer dereference you must test first
-    //TODO: needed semaphore to manage the handling of the update list
-    //TODO: needed to add timeout to socket as otherwise you would need to wait until a message appears before the thread would stop, problem again here with the normal timeout being for a future version of linux so used a file descriptor poll instead
-    //TODO: added kick command and ping command that allows the connection to be terminated to allow nodes to leave - this is because setting a timeout is not possible in this version of the kernel
-    //TODO: instead allowed to ask for a reply so that a message can be sent after a given time as the OS cannot hang in a handler
-    //TODO: handling removing nodes
+/**
+ * Runs a check on the neighbouring nodes, can send only 
+ * changes since last check or a full list
+ * 
+ */
+void check_and_repair_popcorn(void) {
+    struct message_node* previous_neighbour;
+    struct message_node* next_neighbour;
+    struct neighbour_node_list* command;
+    struct neighbour_node_list* command_prev;
+    node_check_neighbours node_check;
+    node_check_neighbours node_check_copy;
+    bool end_not_reached;
+    int i, ret;
+    bool first_pass;
+    int previous_neighbour_index;
+    int next_neighbour_index;
 
-    //measure changes since last check (send full)
+    printk(KERN_INFO "Running a check and repair on Popcorn\n");
+
+    previous_neighbour_index = get_prev_neighbour();
+    next_neighbour_index = get_next_neighbour();
+
+    if (previous_neighbour == NULL || next_neighbour == NULL) {
+        printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
+        return; //cannot check (not an error just need more nodes)
+    }
+
+
+    if (previous_neighbour == next_neighbour) {
+        printk(KERN_INFO "Both neighbours are %d\n", previous_neighbour->index);
+    }
+    else {
+        printk(KERN_INFO "Prev neighbour is: %d\n", previous_neighbour_index);
+        printk(KERN_INFO "Next neighbour is: %d\n", next_neighbour_index);
+    }
 
 	do {
 		ret = down_interruptible(&update_list_sem);
@@ -360,6 +388,9 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
         printk(KERN_ERR "Could not create the node\n");
         goto create_any_node_failure;
     }
+    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        node->token[i] = 0; //set default
+    }
 
     //previously in bundle.c
     node->is_connected = false;
@@ -414,6 +445,9 @@ struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_t
     if (node == NULL) {
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
+    }
+    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        node->token[i] = 0; //set default
     }
     node->address = address_p;
     node->index = -1;
@@ -511,6 +545,9 @@ struct message_node* create_instigator_node(uint32_t address_p) {
     if (node == NULL) {
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
+    }
+    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        node->token[i] = 0; //set default
     }
     node->address = address_p;
     node->transport = NULL; //should never be used but set so make bugs easier to find
@@ -1404,6 +1441,82 @@ void handle_node_ping_info(struct pcn_kmsg_message *msg) {
 EXPORT_SYMBOL(handle_node_ping_info);
 
 /**
+ * @brief prelim check to send checksum before triggering full check
+ * 
+ */
+void send_prelim_check(int their_index) {
+    node_check_neighbours_prelim node_prelim_check;
+
+    printk(KERN_DEBUG "send_prelim_check called\n");
+
+    strncpy(node_prelim_check.checksum, get_node_list_checksum(), NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+
+	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, their_index, &node_prelim_check, sizeof(node_check_neighbours_prelim));
+}
+
+/**
+ * @brief function to generate the checksum for the node list in a preliminary check
+ * 
+ * @return char* 
+ */
+char* get_node_list_checksum(void) {
+    int i;
+    struct message_node* node;
+    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        checksum[i] = 0; //reset all to zero so that XOR starts from zero
+    }
+
+    for (i = 0; i < after_last_node_index; i++) {
+        node = get_node(i);
+        if (node) {
+            for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+                checksum[i] = checksum[i] ^ node->token[i]; //XOR values
+            }
+        }
+    }
+
+    return checksum;
+}
+
+/**
+ * Preliminary check that triggers a full check
+ */
+static int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
+    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    struct pcn_kmsg_transport* protocol;
+
+    printk(KERN_DEBUG "\n\nRecieved a prelim check\n");
+
+	do {
+		ret = down_interruptible(&node_neighbours_check_prelim_sem);
+	} while (ret);
+
+    //recieve the message
+    node_check_neighbours_prelim *info = (node_check_neighbours_prelim *)msg;
+    strncpy(checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    up(&node_neighbours_check_prelim_sem);
+	pcn_kmsg_done(msg);
+
+    //release the semaphore and message as the rest may take more processing and not related to the message
+
+    if (strncmp(get_node_list_checksum(), info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) {
+        printk(KERN_INFO "Checksums matched so node lists must be the same\n");
+    }
+    else {
+        printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
+        run_full_check();
+    }
+
+
+    printk(KERN_DEBUG "Done handling prelim check\n");
+
+    return 0;
+}
+EXPORT_SYMBOL(handle_node_check_neighbours_prelim);
+
+/**
  * @param msg message recieved
  * Takes a message and processes to check if there are changes to the node list
  * @return int 
@@ -1772,6 +1885,7 @@ bool initialise_node_list(void) {
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_COMMAND, node_list_command);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_INFO, node_list_info);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_CHECK, node_check_neighbours);
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, node_check_neighbours_prelim);
     REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_NODE_PING_INFO, node_ping_info);
 
     return true;

@@ -124,6 +124,9 @@ extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 void remove_node_core(int index, bool normal_removal);
 extern struct message_node* get_node(int index);
 extern void run_full_check(void);
+extern void run_prelim_check(void);
+void send_prelim_check(int their_index);
+char* get_node_list_checksum(void);
 extern void force_remove_node(int index);
 extern void check_and_repair_popcorn(void);
 extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport);
@@ -150,6 +153,7 @@ extern void send_node_command_message(int index, enum node_list_command_type com
 extern void send_node_list_info(int their_index, char* random_token);
 extern void send_node_ping_info(int their_index, bool please_echo);
 extern void handle_node_ping_info(struct pcn_kmsg_message *msg);
+extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
 
 extern int add_protocol(struct pcn_kmsg_transport* transport_item);
 extern void remove_protocol(struct pcn_kmsg_transport* transport_item);

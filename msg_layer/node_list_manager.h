@@ -24,6 +24,7 @@ extern void node_get(int index);
 extern int listen_for_nodes(struct pcn_kmsg_transport* transport);
 extern void stop_listening_threads(void);
 extern void full_check(void);
+extern void prelim_check(void);
 extern void node_add(char* address_string, char* protocol_string, int max_connections, bool propagate);
 extern void activate_popcorn(char* address_string);
 extern void node_remove(int index);
