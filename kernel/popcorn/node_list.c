@@ -1468,7 +1468,7 @@ void send_prelim_check(int their_index) {
 char* get_node_list_checksum(void) {
     int i;
     struct message_node* node;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = kmalloc(GFP_KERNEL, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    char* checksum = kmalloc(GFP_KERNEL, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         checksum[i] = 0; //reset all to zero so that XOR starts from zero
