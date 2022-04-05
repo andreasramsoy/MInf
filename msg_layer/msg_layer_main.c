@@ -124,7 +124,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
                 if (strncmp(protocol, "full", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
                     full_check();
                 }
-                elif (strncmp(protocol, "prelim", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
+                else if (strncmp(protocol, "prelim", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
                     prelim_check();
                 }
             }
