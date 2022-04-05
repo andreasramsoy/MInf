@@ -1521,7 +1521,6 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
         printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
         run_full_check();
     }
-    kfree(my_checksum);
 
 
     printk(KERN_DEBUG "Done handling prelim check\n");
