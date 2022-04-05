@@ -152,8 +152,8 @@ extern void send_to_child(int node_index, enum node_list_command_type node_comma
 extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* token);
 extern void send_node_list_info(int their_index, char* random_token);
 extern void send_node_ping_info(int their_index, bool please_echo);
-extern void handle_node_ping_info(struct pcn_kmsg_message *msg);
-extern void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
+extern int handle_node_ping_info(struct pcn_kmsg_message *msg);
+extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
 
 int get_prev_neighbour(void);
 int get_next_neighbour(void);

@@ -129,6 +129,7 @@ EXPORT_SYMBOL(run_full_check);
 int get_prev_neighbour() {
     int i;
     int previous_neighbour_index;
+    struct message_node* previous_neighbour;
     bool first_pass;
 
     //get previous node
@@ -156,6 +157,7 @@ int get_prev_neighbour() {
 int get_next_neighbour() {
     int i;
     int next_neighbour_index;
+    struct message_node* next_neighbour;
     bool first_pass;
 
     //get next node
@@ -230,6 +232,9 @@ void check_and_repair_popcorn(void) {
 
     previous_neighbour_index = get_prev_neighbour();
     next_neighbour_index = get_next_neighbour();
+
+    previous_neighbour = get_node(previous_neighbour_index);
+    next_neighbour = get_node(next_neighbour_index);
 
     if (previous_neighbour == NULL || next_neighbour == NULL) {
         printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
@@ -1208,7 +1213,6 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     struct neighbour_node_list* update_list;
     struct message_node* node;
     int ret;
-    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
 	do {
 		ret = down_interruptible(&update_list_sem);
@@ -1390,8 +1394,6 @@ EXPORT_SYMBOL(send_node_list_info);
  * Function that allows handlers to end connection
  */
 void send_node_ping_info(int their_index, bool please_echo) {
-    int i;
-    int node_count = 0;
     struct message_node* node;
     uint32_t their_address;
 
@@ -1417,7 +1419,7 @@ EXPORT_SYMBOL(send_node_ping_info);
 /**
  * Function to handle node ping
  */
-void handle_node_ping_info(struct pcn_kmsg_message *msg) {
+int handle_node_ping_info(struct pcn_kmsg_message *msg) {
     int ret;
     node_ping_info *info;
 
@@ -1440,6 +1442,8 @@ void handle_node_ping_info(struct pcn_kmsg_message *msg) {
 
 	pcn_kmsg_done(msg);
     up(&node_ping_info_sem);
+
+    return 0;
 }
 EXPORT_SYMBOL(handle_node_ping_info);
 
@@ -1489,10 +1493,10 @@ char* get_node_list_checksum(void) {
 /**
  * Preliminary check that triggers a full check
  */
-void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
+int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     int ret;
-    char* checksum;
-    struct pcn_kmsg_transport* protocol;
+    char their_checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+    char* my_checksum;
 
     printk(KERN_DEBUG "\n\nRecieved a prelim check\n");
 
@@ -1502,24 +1506,26 @@ void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     //recieve the message
     node_check_neighbours_prelim *info = (node_check_neighbours_prelim *)msg;
-    strncpy(checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    strncpy(their_checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     up(&node_neighbours_check_prelim_sem);
 	pcn_kmsg_done(msg);
 
     //release the semaphore and message as the rest may take more processing and not related to the message
 
-    checksum = get_node_list_checksum();
-    if (strncmp(checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
+    my_checksum = get_node_list_checksum();
+    if (strncmp(my_checksum, their_checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
         printk(KERN_INFO "Checksums matched so node lists must be the same\n");
     }
     else {
         printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
         run_full_check();
     }
-    kfree(checksum);
+    kfree(my_checksum);
 
 
     printk(KERN_DEBUG "Done handling prelim check\n");
+
+    return 0;
 
 }
 EXPORT_SYMBOL(handle_node_check_neighbours_prelim);
