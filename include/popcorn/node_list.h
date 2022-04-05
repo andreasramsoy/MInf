@@ -155,6 +155,9 @@ extern void send_node_ping_info(int their_index, bool please_echo);
 extern void handle_node_ping_info(struct pcn_kmsg_message *msg);
 extern void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
 
+int get_prev_neighbour(void);
+int get_next_neighbour(void);
+
 extern int add_protocol(struct pcn_kmsg_transport* transport_item);
 extern void remove_protocol(struct pcn_kmsg_transport* transport_item);
 

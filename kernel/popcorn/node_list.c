@@ -187,8 +187,8 @@ int get_next_neighbour() {
 void run_prelim_check(void) {
     printk(KERN_INFO "Running prelim check on Popcorn\n");
 
-    previous_neighbour_index = get_prev_neighbour();
-    next_neighbour_index = get_next_neighbour();
+    int previous_neighbour_index = get_prev_neighbour();
+    int next_neighbour_index = get_next_neighbour();
 
     if (previous_neighbour == NULL || next_neighbour == NULL) {
         printk(KERN_INFO "Not enough neighbours to perform a check, their pointers are prev: %p, next: %p\n", previous_neighbour, next_neighbour);
@@ -380,6 +380,7 @@ void generate_symmetric_key(struct message_node* node) {
 struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
     struct message_node* node;
     bool success;
+    int i;
 
     printk(KERN_DEBUG "create_any_node called\n");
 
@@ -389,7 +390,7 @@ struct message_node* create_any_node(struct pcn_kmsg_transport* transport) {
         printk(KERN_ERR "Could not create the node\n");
         goto create_any_node_failure;
     }
-    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         node->token[i] = 0; //set default
     }
 
@@ -430,6 +431,7 @@ EXPORT_SYMBOL(create_any_node);
 
 struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_transport* transport) {
     struct message_node* node;
+    int i;
     bool successful = true;
     printk(KERN_DEBUG "create_node_no_enable called\n");
 
@@ -447,7 +449,7 @@ struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_t
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
     }
-    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         node->token[i] = 0; //set default
     }
     node->address = address_p;
@@ -541,13 +543,14 @@ EXPORT_SYMBOL(create_node);
 struct message_node* create_instigator_node(uint32_t address_p) {
     struct message_node* node;
     bool successful = true;
+    int i;
 
     node = kmalloc(sizeof(struct message_node), GFP_KERNEL);
     if (node == NULL) {
         printk(KERN_ERR "Could not create the node as a null pointer was returned\n");
         return NULL;
     }
-    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         node->token[i] = 0; //set default
     }
     node->address = address_p;
@@ -1484,7 +1487,7 @@ char* get_node_list_checksum(void) {
 /**
  * Preliminary check that triggers a full check
  */
-static int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
+static void handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     int ret;
     char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     struct pcn_kmsg_transport* protocol;
@@ -1514,7 +1517,6 @@ static int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     printk(KERN_DEBUG "Done handling prelim check\n");
 
-    return 0;
 }
 EXPORT_SYMBOL(handle_node_check_neighbours_prelim);
 
