@@ -1514,7 +1514,7 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     //release the semaphore and message as the rest may take more processing and not related to the message
 
     get_node_list_checksum(my_checksum);
-    printk(KERN_DEBUG "My token was %x, theirs was %x", my_checksum, their_checksum);
+    printk(KERN_DEBUG "My token was %s, theirs was %s", my_checksum, their_checksum);
     if (strncmp(my_checksum, their_checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
         printk(KERN_INFO "Checksums matched so node lists must be the same\n");
     }
