@@ -19,7 +19,7 @@ struct neighbour_node_list* next_neighbour;
 struct neighbour_node_list* updated_nodes;
 
 void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSPORT_STRING_LENGTH], bool remove);
-void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
+void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
 
 
 #define COMMAND_QUEUE_LENGTH 5 //number of items that can be stored before sending a message to sender
@@ -1031,7 +1031,7 @@ EXPORT_SYMBOL(handle_node_list_command);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* random_token) {
+void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
 	int i;
     bool equals;
     node_list_command command = {
@@ -1131,7 +1131,7 @@ EXPORT_SYMBOL(send_to_child);
  * @param char* transport_type
  * @param int max_connections
  */
-void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
+void propagate_command(enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     printk(KERN_DEBUG "propagate_command called\n");
     if (my_nid < 0) {
         printk(KERN_ERR "Cannot propagate when this node's my_nid is not set (this happens when we are not a part of any node list)\n");
@@ -1152,7 +1152,7 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
  * @param position in node list where it shall be placed
  * @return success
  */
-bool add_node_at_position(struct message_node* node, int index, char* token) {
+bool add_node_at_position(struct message_node* node, int index, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
 	int list_number;
 	struct node_list* list = root_node_list;
@@ -1300,7 +1300,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
  * @param message_node* node the node that will be added to the list
  * @return int index of the location of the new node (-1 if it could not be added)
 */
-int add_node(struct message_node* node, int max_connections, char* token, bool propagate) { //function for adding a single node to the list
+int add_node(struct message_node* node, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES], bool propagate) { //function for adding a single node to the list
     char* transport_name;
     
     printk(KERN_DEBUG "TOKEN in add_node: %s\n", token);
@@ -1352,7 +1352,7 @@ EXPORT_SYMBOL(add_node);
  * Function to forward details about the node list to an
  * incomming node
  */
-void send_node_list_info(int their_index, char* random_token) {
+void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
     int node_count = 0;
     bool equals;

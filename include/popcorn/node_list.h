@@ -133,8 +133,8 @@ extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport
 extern struct message_node* create_instigator_node(uint32_t address_p);
 extern struct message_node* create_node(uint32_t address_p, struct pcn_kmsg_transport* transport);
 extern void remove_node(int index);
-extern bool add_node_at_position(struct message_node* node, int position, char* token);
-extern int add_node(struct message_node* node, int max_connections, char* token, bool propagate);
+extern bool add_node_at_position(struct message_node* node, int position, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
+extern int add_node(struct message_node* node, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES], bool propagate);
 
 extern int find_first_null_pointer(void);
 extern bool disable_node(int index);
@@ -148,9 +148,9 @@ struct message_node* create_node_no_enable(uint32_t address_p, struct pcn_kmsg_t
 
 extern bool is_myself(struct message_node* node);
 
-extern void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token);
-extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* token);
-extern void send_node_list_info(int their_index, char* random_token);
+extern void send_to_child(int node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
+extern void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
+extern void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
 extern void send_node_ping_info(int their_index, bool please_echo);
 extern int handle_node_ping_info(struct pcn_kmsg_message *msg);
 extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
