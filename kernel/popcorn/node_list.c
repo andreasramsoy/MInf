@@ -1743,7 +1743,6 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         printk(KERN_DEBUG "Set my_nid to %d", my_nid);
         number_of_nodes_to_be_added = info->number_of_nodes;
         memcpy(joining_token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
-        memcpy(get_node(my_nid)->token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
     printk(KERN_DEBUG "Message is from: %d\n", info->my_nid);

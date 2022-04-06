@@ -306,6 +306,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             printk(KERN_ERR "Could not add myself to the node list\n");
             return;
         }
+        myself->token = joining_token; //set token so that all node lists are consistent
 
 
         printk(KERN_DEBUG "Node info recieved, ready to listen for connections\n");
