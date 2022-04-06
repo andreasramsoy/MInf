@@ -1639,6 +1639,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
             }
 
+
             if (info->nids[i] == my_nid) {
                 printk(KERN_DEBUG "This node is myself so do not need to do anything\n");
             }
