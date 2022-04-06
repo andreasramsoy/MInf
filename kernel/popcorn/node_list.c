@@ -1624,6 +1624,22 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
             node = get_node(info->nids[i]);
 
+            if (node) {
+                printk(KERN_DEBUG "Node exists, update any missing info\n");
+                equals = true;
+                for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
+                    if (info->tokens[i][j] != 0) equals = true;
+                }
+                if (equals) {
+                    printk(KERN_DEBUG "Token was zero so updated it\n");
+                    for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
+                        node->token[i] = info->tokens[i][j];
+                    }
+                }
+
+                if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
+            }
+
             if (info->nids[i] == my_nid) {
                 printk(KERN_DEBUG "This node is myself so do not need to do anything\n");
             }
@@ -1649,19 +1665,6 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 //the node exists on our list
                 
                 printk(KERN_DEBUG "Node exists\n");
-
-                equals = true;
-                for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
-                    if (info->tokens[i][j] != 0) equals = true;
-                }
-                if (equals) {
-                    printk(KERN_DEBUG "Token was zero so updated it\n");
-                    for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
-                        node->token[i] = info->tokens[i][j];
-                    }
-                }
-
-                if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
 
                 if (node->address != info->addresses[i] && info->remove[i] == 0) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
