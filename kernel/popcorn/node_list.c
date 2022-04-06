@@ -1650,7 +1650,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 
                 printk(KERN_DEBUG "Node exists\n");
 
-                equals = true
+                equals = true;
                 for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
                     if (info->tokens[i][j] != 0) equals = true;
                 }
