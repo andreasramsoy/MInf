@@ -1508,9 +1508,10 @@ void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES
         node = get_node(i);
         printk(KERN_DEBUG "Checking node %d token to the checksum, after last node idx: %d\n", i, after_last_node_index);
         if (node != NULL) {
-            printk(KERN_DEBUG "XORing node %d\n", i);
+            printk(KERN_DEBUG "\nXORing node %d\n", i);
             for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
                 checksum[j] = checksum[j] ^ (node->token[j]); //XOR values
+                printk(KERN_DEBUG "XOR value now: %d\n", checksum[j]);
             }
         }
     }
