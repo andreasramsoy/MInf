@@ -278,6 +278,7 @@ void check_and_repair_popcorn(void) {
                     node_check.addresses[i] = command->address;
                     node_check.remove[i] = command->remove;
                     strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
+
                     if (strncmp(node_check.transports[i], "", MAX_TRANSPORT_STRING_LENGTH) == 0) {
                         strncpy(node_check.transports[i], DEFAULT_TRANSPORT_NAME, MAX_TRANSPORT_STRING_LENGTH);
                     }
@@ -285,7 +286,7 @@ void check_and_repair_popcorn(void) {
                         strncpy(node_check.transports[i], command->transport, MAX_TRANSPORT_STRING_LENGTH);
                     }
 
-                    strncpy(node_check.tokens[i], command->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    memcpy(node_check.tokens[i], command->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
                 else {
                     printk(KERN_INFO "End of list reached filling with dummy values\n");
@@ -294,7 +295,7 @@ void check_and_repair_popcorn(void) {
                     node_check.addresses[i] = 0;
                     node_check.remove[i] = false;
                     strncpy(node_check.transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
-                    strncpy(node_check.tokens[i], "No token", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    memcpy(node_check.tokens[i], "No token", sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
 
                 printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s, tok: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i], node_check.tokens[i]);
@@ -1027,7 +1028,9 @@ EXPORT_SYMBOL(handle_node_list_command);
  * @param int max_connections
  */
 void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char* random_token) {
-	node_list_command command = {
+	int i;
+    bool equals;
+    node_list_command command = {
 		.sender = my_nid,
 		.node_command_type = command_type,
         .address = address,
@@ -1037,12 +1040,18 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
     printk(KERN_DEBUG "Sending node command message\n");
 
     strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
-    if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
+    bool equal = true;
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        if (random_token[i] != 0) {
+            equal = false; //just a check to see if any of the token has been set
+        }
+    }
+    if (equal) {
         printk(KERN_DEBUG "Copied the token: %s\n", random_token);
-        strncpy(command.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
+        memcpy(command.token, random_token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else if (get_node(index)) {
-        strncpy(command.token, get_node(index)->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        memcpy(command.token, get_node(index)->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
         printk(KERN_DEBUG "Token was taken from the node list\n");
     }
     else {
@@ -1219,6 +1228,7 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     struct neighbour_node_list* update_list;
     struct message_node* node;
     int ret;
+    int i;
 
 	do {
 		ret = down_interruptible(&update_list_sem);
@@ -1263,10 +1273,12 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
     node = get_node(node_id);
     if (node) {
         printk(KERN_DEBUG "Token that was already given to node: %s\n", node->token);
-        strncpy(update_list->token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        memcpy(update_list->token, node->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
     else {
-        strncpy(update_list->token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+            update_list->token[i] = 0; //fill token with zero values
+        }
     }
     printk(KERN_DEBUG "Token put to update list was: %s\n", update_list->token);
     update_list->remove = remove;
@@ -1324,7 +1336,7 @@ int add_node(struct message_node* node, int max_connections, char* token, bool p
 
     printk(KERN_DEBUG "Successfully added node at index %lld\n", node->index);
 
-    strncpy(node->token, token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    memcpy(node->token, token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     if (propagate) propagate_command(NODE_LIST_ADD_NODE_COMMAND, node->address, transport_name, max_connections, token); //one max connection (replace later)
 
@@ -1339,6 +1351,7 @@ EXPORT_SYMBOL(add_node);
 void send_node_list_info(int their_index, char* random_token) {
     int i;
     int node_count = 0;
+    bool equals;
     struct message_node* node;
     uint32_t their_address;
 
@@ -1376,12 +1389,17 @@ void send_node_list_info(int their_index, char* random_token) {
         .my_address = (node != NULL) ? node->address : 0,
         .number_of_nodes = node_count,
     };
-    if (strncmp(random_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) != 0) {
-        strncpy(node_list_details.token, random_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
+
+    equals = true;
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        if (random_token[i] != 0) equals = false; //not a zero token
+    }
+    if (equals) {
+        memcpy(node_list_details.token, random_token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else if (node && node->token) {
         printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
-        strncpy(node_list_details.token, node->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        memcpy(node_list_details.token, node->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
     else {
         printk(KERN_DEBUG "There was no node token to be sent\n");
@@ -1464,7 +1482,7 @@ void send_prelim_check(int their_index) {
     printk(KERN_DEBUG "send_prelim_check called\n");
 
     get_node_list_checksum(checksum);
-    strncpy(node_prelim_check.checksum, checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    memcpy(node_prelim_check.checksum, checksum, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, their_index, &node_prelim_check, sizeof(node_check_neighbours_prelim));
 }
@@ -1509,7 +1527,7 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     //recieve the message
     node_check_neighbours_prelim *info = (node_check_neighbours_prelim *)msg;
-    strncpy(their_checksum, info->checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    memcpy(their_checksum, info->checksum, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     up(&node_neighbours_check_prelim_sem);
 	pcn_kmsg_done(msg);
 
@@ -1518,7 +1536,7 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     get_node_list_checksum(my_checksum);
     printk(KERN_DEBUG "My token was %s, theirs was %s\n\n", my_checksum, their_checksum);
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-        printk(KERN_DEBUG "Token mine, thiers: %d, %d", my_checksum[i], their_checksum[i]);
+        printk(KERN_DEBUG "Token mine, thiers: %d, %d\n", my_checksum[i], their_checksum[i]);
         if (my_checksum[i] != their_checksum[i]) {
             printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
             run_full_check();
@@ -1611,7 +1629,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     printk(KERN_DEBUG "Neighbour was right so add new node\n");
                     new_node = create_node_with_id(info->addresses[i], protocol, info->nids[i]);
                     printk(KERN_DEBUG "Created new node\n");
-                    strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    memcpy(new_node->token, info->tokens[i], sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                     add_node_at_position(new_node, info->nids[i], info->tokens[i]);
                     printk(KERN_DEBUG "Done adding new node at position\n");
                 }
@@ -1642,7 +1660,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         //add this node to our node list and send it back to them
                         remove_node(info->nids[i]); //remove your old node
                         new_node = create_node_with_id(info->addresses[i], protocol, info->nids[i]);
-                        strncpy(new_node->token, info->tokens[i], NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                        memcpy(new_node->token, info->tokens[i], sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                         add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
                         add_to_update_list(info->nids[i], node->address, transport_name, true);
                         add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
@@ -1696,6 +1714,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     struct node_list_info_list_item* new_info;
     struct node_list_info_list_item* node_list_info_list;
     int ret;
+    int i;
+    bool equals;
     node_list_info *info;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
@@ -1708,13 +1728,17 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 
     printk("Token in node list info was: %s\n", info->token);
 
-    if (strncmp(joining_token, "", NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0 && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
+    equals = true;
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        if (joining_token[i] != 0) equals = false;
+    }
+    if (equals && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
         printk(KERN_DEBUG "Has not been set and this is the instigator node\n");
         my_nid = info->your_nid;
         printk(KERN_DEBUG "Set my_nid to %d", my_nid);
         number_of_nodes_to_be_added = info->number_of_nodes;
-        strncpy(joining_token, info->token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        memcpy(joining_token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
     printk(KERN_DEBUG "Message is from: %d\n", info->my_nid);
