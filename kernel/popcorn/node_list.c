@@ -1006,6 +1006,8 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
     memcpy(command_copy, command, sizeof(*command));
 
+    printk(KERN_DEBUG "Token on the command was %s\n", command.token);
+
 	pcn_kmsg_done(msg);
 
     printk(KERN_DEBUG "Copied command\n");
@@ -1073,7 +1075,7 @@ EXPORT_SYMBOL(send_node_command_message);
  * @param char* transport_type
  * @param int max_connections
  */
-void send_to_child(int parent_node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char* token) {
+void send_to_child(int parent_node_index, enum node_list_command_type node_command_type, uint32_t address, char* transport_type, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     //struct message_node* existing_node; //note the name of one of the parameters is already node
     struct message_node* node;
     int index;
@@ -1316,7 +1318,7 @@ int add_node(struct message_node* node, int max_connections, char token[NODE_LIS
 	//List number:       index / MAX_NUM_NODES_PER_LIST
 	//Index within list: index % MAX_NUM_NODES_PER_LIST
 	if (!add_node_at_position(node, find_first_null_pointer(), token)) { //first free space (may be on a list that needs creating)
-        printk(KERN_DEBUG "Could not add the node\n");
+        printk(KERN_ERR "Could not add the node\n");
         return -1;
     }
 
@@ -1722,7 +1724,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
     struct node_list_info_list_item* node_list_info_list;
     int ret;
     int i;
-    bool equals;
+    bool no_joining_token;
     node_list_info *info;
 
     printk(KERN_DEBUG "Recieved info about the node list\n");
@@ -1735,11 +1737,11 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
 
     printk("Token in node list info was: %s\n", info->token);
 
-    equals = true;
+    no_joining_token = true;
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-        if (joining_token[i] != 0) equals = false;
+        if (joining_token[i] != 0) no_joining_token = false;
     }
-    if (equals && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
+    if (no_joining_token && msg->header.from_nid == find_first_null_pointer()) { //the instigator must be the first node in the list
         //this is the instigator node (no other connections made so must be)
         printk(KERN_DEBUG "Has not been set and this is the instigator node\n");
         my_nid = info->your_nid;
@@ -1747,6 +1749,8 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         number_of_nodes_to_be_added = info->number_of_nodes;
         memcpy(joining_token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
+
+    if (get_node(msg->header.from_nid)) memcpy(get_node(msg->header.from_nid), info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     printk(KERN_DEBUG "Message is from: %d\n", info->my_nid);
     printk(KERN_DEBUG "States that number of nodes in list is: %d\n", info->number_of_nodes);
