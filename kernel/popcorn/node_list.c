@@ -1006,7 +1006,7 @@ static int handle_node_list_command(struct pcn_kmsg_message *msg) {
 
     memcpy(command_copy, command, sizeof(*command));
 
-    printk(KERN_DEBUG "Token on the command was %s\n", command.token);
+    //printk(KERN_DEBUG "Token on the command was %s\n", command->token);
 
 	pcn_kmsg_done(msg);
 
