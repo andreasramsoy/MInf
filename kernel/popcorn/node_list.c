@@ -1633,7 +1633,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 if (equals) {
                     printk(KERN_DEBUG "Token was zero so updated it\n");
                     for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
-                        node->token[i] = info->tokens[i][j];
+                        node->token[j] = info->tokens[i][j];
                     }
                 }
 
