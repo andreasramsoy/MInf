@@ -243,8 +243,9 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
     int instigator_node_index;
     int new_node_index;
     bool success;
+    int i;
     char name[40];
-    char* token;
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
     //handle user input
     printk(KERN_DEBUG "node_add called\n");
@@ -279,7 +280,11 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             printk(KERN_ERR "Root node list info list cannot be null as it has just sent\n");
             return;
         }
-        if (add_node_at_position(node, root_node_list_info_list->info.my_nid, "")) { //add the instigator node to its correct position
+
+        for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+            token[i] = 0;
+        }
+        if (add_node_at_position(node, root_node_list_info_list->info.my_nid, token)) { //add the instigator node to its correct position
             number_of_nodes_to_be_added--; //the instigator node has been added so one less to worry about
             node->arch = root_node_list_info_list->info.arch; //set arch from info given
         }
@@ -297,7 +302,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             printk(KERN_ERR "Could not create a node for myself\n");
             return;
         }
-        if (!add_node_at_position(myself, root_node_list_info_list->info.your_nid, "")) {
+        if (!add_node_at_position(myself, root_node_list_info_list->info.your_nid, token)) {
             printk(KERN_ERR "Could not add myself to the node list\n");
             return;
         }
@@ -373,13 +378,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
                 printk(KERN_ERR "Failed to create new node\n");
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
-            token = kmalloc(NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES, GFP_KERNEL);
-            if (!token) {
-                printk(KERN_ERR "Failed to allocate memory for token\n");
-                return;
-            }
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
-            token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES] = '\0'; //terminating it makes it easier to print
             new_node_index = add_node(node, max_connections, token, propagate);
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
@@ -390,7 +389,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             //node now added
 
             //send_to_child(my_nid, NODE_LIST_ADD_NODE_COMMAND, address, protocol_string, max_connections, token);
-            kfree(token);
         }
     }
 
@@ -407,6 +405,8 @@ EXPORT_SYMBOL(node_add);
 void activate_popcorn(char* address_string) {
     struct message_node* node;
     int index;
+    int i;
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     uint32_t address = in_aton(address_string);
     printk(KERN_DEBUG "Popcorn network is being activated\n");
 
@@ -433,7 +433,10 @@ void activate_popcorn(char* address_string) {
     node->index = 0;
 
     //add myself
-    index = add_node(node, 1, "", true); //token and max connections not needed for itself
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+        token[i] = 0;
+    }
+    index = add_node(node, 1, token, true); //token and max connections not needed for itself
     if (index != 0) { //note it should always be zero as this is the first node to be added
         printk(KERN_ERR "The node was supposed to be put in the first position (index 0) but it was in position %d\n", index);
         goto failed_to_register;
@@ -470,6 +473,8 @@ EXPORT_SYMBOL(activate_popcorn);
 */
 void node_remove(int index) {
     int first_node;
+    int i;
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     printk(KERN_DEBUG "node_remove called\n");
     int max_connections = 1; /** TODO: forward and store this value */
     if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
@@ -480,7 +485,10 @@ void node_remove(int index) {
         if (registered_on_popcorn_network) {
             if (my_nid == first_node) {
                 //I am the instigator so start removing
-                send_to_child(my_nid, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", max_connections, ""); //not all parameters are needed as
+                for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+                    token[i] = 0;
+                }
+                send_to_child(my_nid, NODE_LIST_REMOVE_NODE_COMMAND, 0, "", max_connections, token); //not all parameters are needed as
                 //now that the message has been forwarded, it is safe to remove the node (without other nodes not getting the message)
                 remove_node(index);
                 strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));

@@ -790,6 +790,7 @@ void remove_node_core(int index, bool normal_removal) {
     bool no_nodes;
     struct node_list* prev_list;
     struct node_list* list = root_node_list;
+    char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     uint32_t address;
     struct message_node* node = get_node(index);
     disable_node(index); //sets to the always fail transport
@@ -861,7 +862,10 @@ void remove_node_core(int index, bool normal_removal) {
 
     if (normal_removal) {
         //should always do this unless you are debugging and allow for forcefully removing nodes
-        propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, address, DEFAULT_TRANSPORT_NAME, DEFAULT_MAX_CONNECTIONS, ""); //one max connection (replace later)
+        for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+            token[i] = 0;
+        }
+        propagate_command(NODE_LIST_REMOVE_NODE_COMMAND, address, DEFAULT_TRANSPORT_NAME, DEFAULT_MAX_CONNECTIONS, token); //one max connection (replace later)
     }
 }
 
