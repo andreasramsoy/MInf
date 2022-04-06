@@ -120,7 +120,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             printk(KERN_DEBUG "My joining token is: %s\n", joining_token);
             equals = true;
             for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-                if (node_info->info.token[i] != joining_token[i]) equals = false
+                if (node_info->info.token[i] != joining_token[i]) equals = false;
             }
             if (equals) {
                 //correct token so can now add to the node list and remove from node list info list
