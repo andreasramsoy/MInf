@@ -1628,7 +1628,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 printk(KERN_DEBUG "Node exists, update any missing info\n");
                 no_token = true;
                 for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
-                    if (info->tokens[i][j] != 0) no_token = false;
+                    if (node->token[j] != 0) no_token = false;
                 }
                 if (no_token) {
                     printk(KERN_DEBUG "Token was zero so updated it\n");
