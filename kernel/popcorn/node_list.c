@@ -1568,6 +1568,8 @@ EXPORT_SYMBOL(handle_node_check_neighbours_prelim);
  */
 static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
     int ret, i;
+    int j;
+    bool equals;
     struct message_node* node;
     struct message_node* new_node;
     struct pcn_kmsg_transport* protocol;
@@ -1647,6 +1649,18 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 //the node exists on our list
                 
                 printk(KERN_DEBUG "Node exists\n");
+
+                equals = true
+                for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
+                    if (info->tokens[i][j] != 0) equals = true;
+                }
+                if (equals) {
+                    printk(KERN_DEBUG "Token was zero so updated it\n");
+                    for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
+                        node->token[i] = info->tokens[i][j];
+                    }
+                }
+
                 if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
 
                 if (node->address != info->addresses[i] && info->remove[i] == 0) {
