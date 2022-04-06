@@ -1647,8 +1647,11 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                 //the node exists on our list
                 
                 printk(KERN_DEBUG "Node exists\n");
+                if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
+
                 if (node->address != info->addresses[i] && info->remove[i] == 0) {
                     printk(KERN_DEBUG "There is a node here but it does not match the one we want (and it shouldn't be removed\n");
+
 
                     //in case the transport structure is not set
                     if (node->transport) {
