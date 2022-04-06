@@ -1497,6 +1497,7 @@ void send_prelim_check(int their_index) {
  */
 void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
+    int j;
     struct message_node* node;
 
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
@@ -1508,8 +1509,8 @@ void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES
         printk(KERN_DEBUG "Checking node %d token to the checksum, after last node idx: %d\n", i, after_last_node_index);
         if (node != NULL) {
             printk(KERN_DEBUG "XORing node %d\n", i);
-            for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-                checksum[i] = checksum[i] ^ (node->token[i]); //XOR values
+            for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
+                checksum[j] = checksum[j] ^ (node->token[j]); //XOR values
             }
         }
     }
