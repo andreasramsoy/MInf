@@ -1636,7 +1636,6 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         node->token[j] = info->tokens[i][j];
                     }
                 }
-
                 if (node->address == 0) node->address = info->addresses[i]; //update if there is missing info
             }
 
