@@ -1519,13 +1519,11 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     printk(KERN_DEBUG "My token was %s, theirs was %s\n\n", my_checksum, their_checksum);
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         printk(KERN_DEBUG "Token mine, thiers: %d, %d", my_checksum[i], their_checksum[i]);
-    }
-    if (strncmp(my_checksum, their_checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
-        printk(KERN_INFO "Checksums matched so node lists must be the same\n");
-    }
-    else {
-        printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
-        run_full_check();
+        if (my_checksum[i] != their_checksum[i]) {
+            printk(KERN_INFO "Checksums did NOT match, triggering full check\n");
+            run_full_check();
+            break; //don't run for every wrong character
+        }
     }
 
 
