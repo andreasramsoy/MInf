@@ -1630,7 +1630,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
                 //resolve whether it should be added
                 if (i_am_right) {
-                    add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
+                    //add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                     printk(KERN_DEBUG "Neighbour had node that shouldn't be there, triggering check\n");
                     check_and_repair_popcorn();
                 }
@@ -1663,8 +1663,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     
                     //resolve incorrect node
                     if (i_am_right) {
-                        add_to_update_list(info->nids[i], node->address, transport_name, false);
-                        add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
+                        //add_to_update_list(info->nids[i], node->address, transport_name, false);
+                        //add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], true);
                         printk(KERN_DEBUG "Neighbour was wrong so triggering new check\n");
                         check_and_repair_popcorn();
                     }
@@ -1674,8 +1674,8 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         new_node = create_node_with_id(info->addresses[i], protocol, info->nids[i]);
                         memcpy(new_node->token, info->tokens[i], sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                         add_node_at_position(new_node, info->nids[i], info->tokens[i]); //add the new node
-                        add_to_update_list(info->nids[i], node->address, transport_name, true);
-                        add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
+                        //add_to_update_list(info->nids[i], node->address, transport_name, true);
+                        //add_to_update_list(info->nids[i], info->addresses[i], info->transports[i], false);
                         printk(KERN_DEBUG "Replaced an old node so triggering new check\n");
                         check_and_repair_popcorn();
                     }
@@ -1686,7 +1686,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                     //resolve node that shouldn't be there
                     if (i_am_right) {
                         //add this node to our node list and send it back to them
-                        add_to_update_list(info->nids[i], node->address, transport_name, false);
+                        //add_to_update_list(info->nids[i], node->address, transport_name, false);
 
                         printk(KERN_DEBUG "Mistake was found in other node list so triggering check\n");
                         check_and_repair_popcorn();
@@ -1695,7 +1695,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
                         //remove the node
                         printk(KERN_DEBUG "The other node is more likely to be correct, disabling node...\n");
                         remove_node(info->nids[i]);
-                        add_to_update_list(info->nids[i], node->address, transport_name, true); //note the change as other neighbours may want to know
+                        //add_to_update_list(info->nids[i], node->address, transport_name, true); //note the change as other neighbours may want to know
                     }
                 }
                 
