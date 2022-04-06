@@ -1484,7 +1484,7 @@ void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES
     for (i = 0; i < after_last_node_index; i++) {
         node = get_node(i);
         if (node != NULL) {
-            printf(KERN_DEBUG "Adding node %d token to the checksum", i);
+            printk(KERN_DEBUG "Adding node %d token to the checksum", i);
             for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
                 checksum[i] = checksum[i] ^ node->token[i]; //XOR values
             }
