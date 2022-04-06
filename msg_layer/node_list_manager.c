@@ -76,6 +76,8 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     struct node_list_info_list_item* node_info;
     struct node_list_info_list_item* node_info_prev;
     int ret;
+    int i;
+    bool equals;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
     printk(KERN_DEBUG "Transport with pointer %p", transport);
@@ -116,14 +118,18 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             //node_info should now contain address we're looking for
             printk(KERN_DEBUG "Token provided was: %s\n", node_info->info.token);
             printk(KERN_DEBUG "My joining token is: %s\n", joining_token);
-            if (strncmp(node_info->info.token, joining_token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES) == 0) {
+            equals = true;
+            for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+                if (node_info->info.token[i] != joining_token[i]) equals = false
+            }
+            if (equals) {
                 //correct token so can now add to the node list and remove from node list info list
 
                 if (get_node(node_info->info.your_nid) != NULL && get_node(node_info->info.your_nid) != get_node(my_nid)) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }
-                if (add_node_at_position(node, node_info->info.my_nid, node_info->info.token)) {
+                if (add_node_at_position(node, node_info->info.your_nid, node_info->info.token)) {
                     printk(KERN_DEBUG "Successfully added new node\n");
                     number_of_nodes_to_be_added--;
                 }
