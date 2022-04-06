@@ -1497,6 +1497,7 @@ void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES
  */
 int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     int ret;
+    int i;
     char their_checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     char my_checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
@@ -1516,7 +1517,7 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     get_node_list_checksum(my_checksum);
     printk(KERN_DEBUG "My token was %s, theirs was %s\n\n", my_checksum, their_checksum);
-    for (int i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         printk(KERN_DEBUG "Token mine, thiers: %d, %d", my_checksum[i], their_checksum[i]);
     }
     if (strncmp(my_checksum, their_checksum, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES)) {
