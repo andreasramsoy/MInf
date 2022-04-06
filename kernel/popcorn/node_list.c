@@ -295,7 +295,7 @@ void check_and_repair_popcorn(void) {
                     node_check.addresses[i] = 0;
                     node_check.remove[i] = false;
                     strncpy(node_check.transports[i], "None", MAX_TRANSPORT_STRING_LENGTH);
-                    memcpy(node_check.tokens[i], "No token", sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+                    memcpy(node_check.tokens[i], "No token       ", sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
                 }
 
                 printk(KERN_DEBUG "node_check dx: %d, addr: %d, rem: %d, tran: %s, tok: %s\n", node_check.nids[i], node_check.addresses[i], node_check.remove[i], node_check.transports[i], node_check.tokens[i]);
