@@ -1610,7 +1610,7 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 
         //check if there is a difference
         if (info->nids[i] != END_OF_NODE_CHANGES) { //this is an actual check and not just padding
-            printk(KERN_ERR "Node is not padding\n");
+            printk(KERN_DEBUG "Node is not padding\n");
             
             //manage the protocol
             protocol = string_to_transport(info->transports[i]);
