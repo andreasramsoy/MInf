@@ -254,9 +254,6 @@ static inline int __build_and_check_msg(enum pcn_kmsg_type type, int to, struct 
 	msg->header.size = size;
 	msg->header.from_nid = my_nid;
 
-	printk(KERN_DEBUG "Filled in msg parameters\n");
-
-
 #ifdef POPCORN_ENCRYPTION_ON
 	int error;
 	//struct crypto_wait wait;
