@@ -590,7 +590,7 @@ EXPORT_SYMBOL(create_instigator_node);
 
 int find_first_null_pointer(void) {
     int i;
-    printk(KERN_DEBUG "Find first null pointer called\n");
+    //printk(KERN_DEBUG "Find first null pointer called\n");
 
     i = 0;
     

@@ -198,9 +198,7 @@ static int send_handler(void* arg0)
 	printk(KERN_INFO "SEND handler for %d is ready\n", sh->nid);
 
 	while (!kthread_should_stop()) {
-		printk(KERN_DEBUG "Before send deq\n");
 		deq_send(sh);
-		printk(KERN_DEBUG "after send deq\n");
 	}
 	kfree(sh->msg_q);
 	return 0;
