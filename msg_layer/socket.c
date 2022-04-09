@@ -55,13 +55,8 @@ static int recv_handler(void* arg0)
 		offset = 0;
 		len = sizeof(header);
 		while (len > 0) {
-			printk(KERN_DEBUG "before recv deq\n");
 			ret = ksock_recv(sh->sock, (char *)(&header) + offset, len);
-			printk(KERN_DEBUG "after recv deq ret: %d\n", ret);
-			if (ret == -1) break;
-			if (ret == 0) {
-				return 1; //connection ended
-			}
+			if (ret <= 0) break;
 			offset += ret;
 			len -= ret;
 		}
@@ -542,25 +537,18 @@ EXPORT_SYMBOL(__sock_listen_to_connection);
 bool kill_node_sock(struct message_node* node) {
 	struct sock_handle* sh;
 
-	printk(KERN_INFO "Deinitialising node %d\n", node->index);
-
 	sh = node->handle;
 	if (sh->send_handler) {
-		printk(KERN_INFO "Sock ending 1.1\n");
 		kthread_stop(sh->send_handler);
 	} else {
-		printk(KERN_INFO "Sock ending 1.2\n");
 		if (sh->msg_q) kfree(sh->msg_q);
 	}
-	printk(KERN_INFO "Sock ending 2\n");
 	if (sh->recv_handler) {
 		kthread_stop(sh->recv_handler);
 	}
-	printk(KERN_INFO "Sock ending 3\n");
 	if (sh->sock) {
 		sock_release(sh->sock);
 	}
-	printk(KERN_INFO "Sock ending 4\n");
 	return true;
 }
 EXPORT_SYMBOL(kill_node_sock);
@@ -636,7 +624,7 @@ bool init_node_sock(struct message_node* node) {
 		printk(KERN_DEBUG "Skipping socket setup as this is myself\n");
 		ret = 0; //zero is no error (for when nid == my_nid)
 	}*/
-	
+
 	if (!registered_on_popcorn_network) { //always wait for you to be contacted if you aren't on the network
 		ret = __sock_accept_client(node);
 	}
