@@ -43,7 +43,7 @@ DEFINE_SEMAPHORE(update_list_sem);
 #define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
 
 //must run inline to avoid memcpy when running in timer
-#define GET_NODE_LIST_CHECKSUM (checksum) {  \
+#define GET_NODE_LIST_CHECKSUM(checksum) {  \
     int checksum_node_counter;  \
     int checksum_token_counter; \
     struct message_node* checksum_node; \
