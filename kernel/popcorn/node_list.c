@@ -56,7 +56,7 @@ DEFINE_SEMAPHORE(update_list_sem);
         if (checksum_node != NULL) {    \
             printk(KERN_DEBUG "\nXORing node %d\n", checksum_node_counter); \
             for (checksum_token_counter = 0; checksum_token_counter < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; checksum_token_counter++) {   \
-                checksum[j] = checksum[j] ^ (checksum_node->token[j]); \
+                checksum[checksum_token_counter] = checksum[checksum_token_counter] ^ (checksum_node->token[checksum_token_counter]); \
                 printk(KERN_DEBUG "XOR value now: %d\n", checksum[checksum_token_counter]); \
             }   \
         }   \
