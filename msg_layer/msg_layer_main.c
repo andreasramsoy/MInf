@@ -17,6 +17,7 @@
 #include "node_list_manager.h"
 
 #define POPCORN_DEBUG_COMMANDS
+#define CHECKER_SLEEP_TIME 2000
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Messaging layer of the popcorn system");
@@ -239,10 +240,20 @@ static void __exit exit_kmsg(void) {
 
 
 void checker(void) {
+    unsigned long previous_time;
     unsigned long sleeptime = 0;
     while (!kthread_should_stop()) {
         sleeptime = check_neighbours_checker();
-		msleep(sleeptime);
+        previous_time = time_of_last_change;
+        while (previous_time == time_of_last_change && sleeptime > 0) {
+		    msleep(CHECKER_SLEEP_TIME);
+            if (sleeptime > CHECKER_SLEEP_TIME) {
+                sleeptime = sleeptime - CHECKER_SLEEP_TIME;
+            }
+            else {
+                sleeptime = 0;
+            }
+        }
 	}
 }
 

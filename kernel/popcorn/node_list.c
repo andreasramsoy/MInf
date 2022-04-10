@@ -26,7 +26,6 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
 int command_queue_start;
 int command_queue_end;
 
-unsigned long time_of_last_change;
 
 node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
 
@@ -73,6 +72,7 @@ EXPORT_SYMBOL(root_node_list_info_list);
 EXPORT_SYMBOL(node_list_info_sem);
 EXPORT_SYMBOL(node_ping_info_sem);
 EXPORT_SYMBOL(node_neighbours_check_sem);
+EXPORT_SYMBOL(time_of_last_change);
 
 
 

@@ -123,6 +123,7 @@ extern int after_last_node_index;
 extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+extern unsigned long time_of_last_change;
 
 void remove_node_core(int index, bool normal_removal);
 extern struct message_node* get_node(int index);
