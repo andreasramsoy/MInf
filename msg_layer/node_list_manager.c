@@ -93,7 +93,6 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             //connection has been established - wait for message with token and nid
             while (node_info == NULL) {
                 printk(KERN_DEBUG "Waiting for node info to arrive\n");
-                msleep(100); /** TODO: change from spinlock to something more efficient */
             }
 
             do {
@@ -102,7 +101,6 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
 
             node_info = root_node_list_info_list;
             while (node_info->info.my_address != node->address) {
-                msleep(100); /** TODO: change from spinlock to something more efficient */
                 printk(KERN_INFO "Recieved message from %d, looking for %d", node_info->info.my_address, node->address);
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 up(&node_list_info_sem);
@@ -279,7 +277,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
 
         while (my_nid == -1) {
             printk(KERN_DEBUG "Waiting for instigator node to send info about the node list\n");
-            msleep(5000); /** TODO: change this to lower value (this high to not spam terminal) */
         }
 
         if (root_node_list_info_list == NULL) {
@@ -333,7 +330,6 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             //transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             listen_for_nodes(transports->transport_structure);
             
-            msleep(1000);
             //kthread_stop(transports->listener);
             printk(KERN_DEBUG "Listener request made\n");
 
