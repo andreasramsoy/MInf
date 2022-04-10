@@ -1156,7 +1156,7 @@ void check_neighbours_timer_callback(unsigned long data) {
         //schedule next run only if they aren't waiting for this to end
 
         //this is equivilant to 2 ^ number of minutes elapsed
-        next_timer = (1 << ((int) jiffies_to_msecs(jiffies) - time_of_last_change) / 1000 / 60))) * 1000;
+        next_timer = (1 << ((int) (jiffies_to_msecs(jiffies) - time_of_last_change) / 1000 / 60)) * 1000;
 
         if (next_timer > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
             next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
