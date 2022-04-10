@@ -42,6 +42,7 @@
 #define NODE_LIST_INITAL_TOKEN_ATTEMPTS 5 //number of connections that can attempt to connect before aborting
 #define DEFAULT_MAX_CONNECTIONS 20
 #define CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS 5 * 1000
+#define CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS 2 * 1000
 
 enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 
