@@ -207,6 +207,11 @@ void run_prelim_check(void) {
         return; //cannot check (not an error just need more nodes)
     }
 
+    if (previous_neighbour == my_nid || next_neighbour == my_nid) {
+        printk(KERN_INFO "One of the neighbours were myself, cannot check\n");
+        return;
+    }
+
 
     if (previous_neighbour == next_neighbour) {
         printk(KERN_INFO "Both neighbours are %d\n", previous_neighbour->index);
@@ -1153,6 +1158,7 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
 
 void check_neighbours_timer_callback(unsigned long data) {
     unsigned long next_timer;
+
     run_prelim_check(); //run the check
     if (time_of_last_change > 0) {
         //schedule next run only if they aren't waiting for this to end
