@@ -5,6 +5,7 @@
 
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
+#include <math.h>
 #include <linux/timer.h>
 
 #include <popcorn/kmesg_types.h>
@@ -1149,16 +1150,16 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
     }
 }
 
-vooid check_neighbours_timer_callback(struct timer_list* data) {
+void check_neighbours_timer_callback(unsigned long data) {
     unsigned long next_timer;
-    send_prelim_check(); //run the check
+    run_prelim_check(); //run the check
     if (time_of_last_change > 0) {
         //schedule next run only if they aren't waiting for this to end
         if (jiffies - time_of_last_change > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
             next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
         }
         else {
-            next_timer  = (1.05 ^ ((jiffies_to_msecs(jiffies) - time_of_last_change) / 1000)) * 1000;
+            next_timer  = (unsigned long) powf(1.05, ((jiffies_to_msecs(jiffies) - time_of_last_change) / 1000)) * 1000;
         }
         mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(next_timer));
     }
