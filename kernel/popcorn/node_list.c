@@ -1212,7 +1212,7 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
 
     if (my_nid != -1 && my_nid != index) broadcast_my_node_info_to_node(index); //give them info about architecture (done to every node that it connects to)
     set_popcorn_node_online(index, true);
-    msleep(100); //wait to allow other devices to catchup
+    msleep(1000); //wait to allow other devices to catchup
     if (my_nid != index) send_node_list_info(index, token); //verfies to the node that you are from the popcorn network
 
     return true;
