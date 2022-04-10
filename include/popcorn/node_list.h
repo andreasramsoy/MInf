@@ -41,6 +41,7 @@
 #define NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES 16
 #define NODE_LIST_INITAL_TOKEN_ATTEMPTS 5 //number of connections that can attempt to connect before aborting
 #define DEFAULT_MAX_CONNECTIONS 20
+#define CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS 5 * 1000
 
 enum node_list_command_type{NODE_LIST_ADD_NODE_COMMAND, NODE_LIST_REMOVE_NODE_COMMAND};
 
@@ -120,6 +121,7 @@ extern int after_last_node_index;
 extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+extern static struct timer_list check_neighbours_timer;
 
 void remove_node_core(int index, bool normal_removal);
 extern struct message_node* get_node(int index);
@@ -154,7 +156,10 @@ extern void send_node_list_info(int their_index, char random_token[NODE_LIST_INF
 extern void send_node_ping_info(int their_index, bool please_echo);
 extern int handle_node_ping_info(struct pcn_kmsg_message *msg);
 extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
+extern void start_checker(void);
+extern void stop_checker(void);
 
+unsigned long time_of_last_change;
 int get_prev_neighbour(void);
 int get_next_neighbour(void);
 

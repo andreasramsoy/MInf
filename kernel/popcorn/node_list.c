@@ -5,6 +5,7 @@
 
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
+#include <linux/timer.h>
 
 #include <popcorn/kmesg_types.h>
 
@@ -50,6 +51,7 @@ EXPORT_SYMBOL(root_node_list_info_list);
 EXPORT_SYMBOL(node_list_info_sem);
 EXPORT_SYMBOL(node_ping_info_sem);
 EXPORT_SYMBOL(node_neighbours_check_sem);
+EXPORT_SYMBOL(check_neighbours_timer);
 
 
 
@@ -780,6 +782,7 @@ bool is_myself(struct message_node* node)
 EXPORT_SYMBOL(is_myself);
 
 void remove_node(int index) {
+    time_of_last_change = jiffies;
     remove_node_core(index, true);
 }
 EXPORT_SYMBOL(remove_node);
@@ -793,6 +796,8 @@ void remove_node_core(int index, bool normal_removal) {
     char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     uint32_t address;
     struct message_node* node = get_node(index);
+
+    time_of_last_change = jiffies;
     disable_node(index); //sets to the always fail transport
     printk(KERN_DEBUG "Node has been disabled\n");
 
@@ -1144,6 +1149,33 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
     }
 }
 
+vooid check_neighbours_timer_callback(struct timer_list* data) {
+    unsigned long next_timer;
+    send_prelim_check(); //run the check
+    if (time_of_last_change > 0) {
+        //schedule next run only if they aren't waiting for this to end
+        if (jiffies - time_of_last_change > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
+            next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
+        }
+        else {
+            next_timer  = (1.05 ^ ((jiffies_to_msecs(jiffies) - time_of_last_change) / 1000)) * 1000;
+        }
+        mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(next_timer));
+    }
+}
+
+void start_checker(void) {
+    //initialises the timer for running checks
+    time_of_last_change = jiffies;
+    setup_timer(&check_neighbours_timer, check_neighbours_timer_callback, 0);
+}
+EXPORT_SYMBOL(start_checker);
+
+void stop_checker(void) {
+    time_of_last_change = 0;
+    del_timer(&check_neighbours_timer);
+}
+EXPORT_SYMBOL(stop_checker);
 
 
 /**
@@ -1161,6 +1193,8 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
     printk(KERN_DEBUG "TOKEN for add_node_at_position: %s\n", token);
 
     printk(KERN_DEBUG "add_node_at_position called\n");
+
+    time_of_last_change = jiffies;
 
     if (get_node(index) != NULL) {
         printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
@@ -1220,6 +1254,7 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
 EXPORT_SYMBOL(add_node_at_position);
 
 void force_remove_node(int index) {
+    time_of_last_change = jiffies;
     //removes a node without propagating the message
     remove_node_core(index, false);
 }
@@ -1305,6 +1340,8 @@ void add_to_update_list(int node_id, uint32_t address, char transport[MAX_TRANSP
 int add_node(struct message_node* node, int max_connections, char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES], bool propagate) { //function for adding a single node to the list
     char* transport_name;
     
+    time_of_last_change = jiffies;
+
     printk(KERN_DEBUG "TOKEN in add_node: %s\n", token);
     if (node == NULL) {
         printk(KERN_ERR "Trying to add a NULL node\n");

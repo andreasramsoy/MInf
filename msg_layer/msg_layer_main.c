@@ -206,6 +206,9 @@ static void __exit exit_kmsg(void) {
     //init_rdma();
     #endif
 
+	printk(KERN_INFO "Popcorn messaging layer: stopping timer\n");
+    deinitialise_checker();
+
     // add more protocols as needed, they will need to be removed when exitting too, they should be included
     // as a header file implementing the pcn_kmsg_transport as an interface
 
@@ -252,9 +255,13 @@ static int __init init_kmsg(void) {
 	 */
 	printk(KERN_INFO "Popcorn messaging layer: initialising peers proc\n");
 	//peers_init();
+
+	printk(KERN_INFO "Popcorn messaging layer: initialising the checker\n");
+    initialise_checker(); //do this before allowing changes
 	
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list controller\n");
 	initialise_node_list_controller(); //allow user to change nodes
+
 
     return 0;
 
