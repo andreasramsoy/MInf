@@ -52,6 +52,7 @@ EXPORT_SYMBOL(node_list_info_sem);
 EXPORT_SYMBOL(node_ping_info_sem);
 EXPORT_SYMBOL(node_neighbours_check_sem);
 EXPORT_SYMBOL(check_neighbours_timer);
+EXPORT_SYMBOL(time_of_last_change);
 
 
 

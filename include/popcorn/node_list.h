@@ -118,6 +118,8 @@ extern struct node_list_info_list_item* root_node_list_info_list;
 
 extern struct semaphore node_list_info_sem;
 
+extern unsigned long time_of_last_change;
+
 extern int after_last_node_index;
 extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
@@ -160,7 +162,6 @@ extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
 extern void start_checker(void);
 extern void stop_checker(void);
 
-unsigned long time_of_last_change;
 int get_prev_neighbour(void);
 int get_next_neighbour(void);
 
