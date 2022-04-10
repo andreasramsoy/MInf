@@ -1176,6 +1176,7 @@ void start_checker(void) {
     //initialises the timer for running checks
     time_of_last_change = jiffies;
     setup_timer(&check_neighbours_timer, check_neighbours_timer_callback, 0);
+    mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(1000));
 }
 EXPORT_SYMBOL(start_checker);
 
