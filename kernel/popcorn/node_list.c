@@ -43,13 +43,12 @@ DEFINE_SEMAPHORE(update_list_sem);
 #define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
 
 //must run inline to avoid memcpy when running in timer
-#define GET_NODE_LIST_CHECKSUM (checksum)   \
-{   \
+#define GET_NODE_LIST_CHECKSUM (checksum) {  \
     int checksum_node_counter;  \
     int checksum_token_counter; \
     struct message_node* checksum_node; \
     for (checksum_token_counter = 0; checksum_token_counter < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; checksum_token_counter++) {   \
-        checksum[checksum_token_counter] = 0; //reset all to zero so that XOR starts from zero  \
+        checksum[checksum_token_counter] = 0;  \
     }   \
     for (checksum_node_counter = 0; checksum_node_counter < after_last_node_index; checksum_node_counter++) {   \
         checksum_node = get_node(checksum_node_counter);    \
@@ -57,7 +56,7 @@ DEFINE_SEMAPHORE(update_list_sem);
         if (checksum_node != NULL) {    \
             printk(KERN_DEBUG "\nXORing node %d\n", checksum_node_counter); \
             for (checksum_token_counter = 0; checksum_token_counter < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; checksum_token_counter++) {   \
-                checksum[j] = checksum[j] ^ (checksum_node->token[j]); //XOR values \
+                checksum[j] = checksum[j] ^ (checksum_node->token[j]); \
                 printk(KERN_DEBUG "XOR value now: %d\n", checksum[checksum_token_counter]); \
             }   \
         }   \
