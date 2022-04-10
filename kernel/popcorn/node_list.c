@@ -207,8 +207,8 @@ void run_prelim_check(void) {
         return; //cannot check (not an error just need more nodes)
     }
 
-    if (previous_neighbour == my_nid || next_neighbour == my_nid) {
-        printk(KERN_INFO "One of the neighbours were myself, cannot check\n");
+    if (my_nid == -1 || previous_neighbour_index == my_nid || next_neighbour_index == my_nid) {
+        printk(KERN_INFO "One of the neighbours were myself, cannot check, my_nid: %d, \n", my_nid);
         return;
     }
 
