@@ -5,7 +5,6 @@
 
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
-#include <math.h>
 #include <linux/timer.h>
 
 #include <popcorn/kmesg_types.h>
@@ -1155,12 +1154,18 @@ void check_neighbours_timer_callback(unsigned long data) {
     run_prelim_check(); //run the check
     if (time_of_last_change > 0) {
         //schedule next run only if they aren't waiting for this to end
-        if (jiffies - time_of_last_change > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
+
+        //this is equivilant to 2 ^ number of minutes elapsed
+        next_timer = (1 << ((int) jiffies_to_msecs(jiffies) - time_of_last_change) / 1000 / 60))) * 1000;
+
+        if (next_timer > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
             next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
         }
-        else {
-            next_timer  = (unsigned long) powf(1.05, ((jiffies_to_msecs(jiffies) - time_of_last_change) / 1000)) * 1000;
+        else if (next_timer < CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS) {
+            //catches case where it rounds to zero
+            next_timer = CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS;
         }
+
         mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(next_timer));
     }
 }
