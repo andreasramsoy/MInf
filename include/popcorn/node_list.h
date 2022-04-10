@@ -156,8 +156,8 @@ extern void send_node_list_info(int their_index, char random_token[NODE_LIST_INF
 extern void send_node_ping_info(int their_index, bool please_echo);
 extern int handle_node_ping_info(struct pcn_kmsg_message *msg);
 extern int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg);
-extern void start_checker(void);
-extern void stop_checker(void);
+
+extern unsigned long check_neighbours_checker(void);
 
 int get_prev_neighbour(void);
 int get_next_neighbour(void);

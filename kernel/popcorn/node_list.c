@@ -5,7 +5,6 @@
 
 #include <popcorn/bundle.h>
 #include <popcorn/pcn_kmsg.h>
-#include <linux/timer.h>
 
 #include <popcorn/kmesg_types.h>
 
@@ -27,7 +26,6 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
 int command_queue_start;
 int command_queue_end;
 
-struct timer_list check_neighbours_timer;
 unsigned long time_of_last_change;
 
 node_list_command* command_queue[COMMAND_QUEUE_LENGTH];
@@ -1177,41 +1175,26 @@ void propagate_command(enum node_list_command_type node_command_type, uint32_t a
     }
 }
 
-void check_neighbours_timer_callback(unsigned long data) {
+unsigned long check_neighbours_checker(void) {
     unsigned long next_timer;
 
     run_prelim_check(); //run the check
-    if (time_of_last_change > 0) {
-        //schedule next run only if they aren't waiting for this to end
+    //schedule next run only if they aren't waiting for this to end
 
-        //this is equivilant to 2 ^ number of minutes elapsed
-        next_timer = (1 << ((int) (jiffies_to_msecs(jiffies) - time_of_last_change) / 1000 / 60)) * 1000;
+    //this is equivilant to 2 ^ number of minutes elapsed
+    next_timer = (1 << ((int) (jiffies_to_msecs(jiffies) - time_of_last_change) / 1000 / 60)) * 1000;
 
-        if (next_timer > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
-            next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
-        }
-        else if (next_timer < CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS) {
-            //catches case where it rounds to zero
-            next_timer = CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS;
-        }
-
-        mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(next_timer));
+    if (next_timer > CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS) {
+        next_timer = CHECKER_TIMER_MAX_TIME_INTERVAL_MSECS;
     }
-}
+    else if (next_timer < CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS) {
+        //catches case where it rounds to zero
+        next_timer = CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS;
+    }
 
-void start_checker(void) {
-    //initialises the timer for running checks
-    time_of_last_change = jiffies;
-    setup_timer(&check_neighbours_timer, check_neighbours_timer_callback, 0);
-    mod_timer(&check_neighbours_timer, jiffies + msecs_to_jiffies(1000));
+    return jiffies + msecs_to_jiffies(next_timer);
 }
-EXPORT_SYMBOL(start_checker);
-
-void stop_checker(void) {
-    time_of_last_change = 0;
-    del_timer(&check_neighbours_timer);
-}
-EXPORT_SYMBOL(stop_checker);
+EXPORT_SYMBOL(check_neighbours_checker);
 
 
 /**
@@ -1560,6 +1543,8 @@ void send_prelim_check(int their_index) {
     printk(KERN_DEBUG "send_prelim_check called\n");
 
     GET_NODE_LIST_CHECKSUM(node_prelim_check.checksum);
+
+    printk(KERN_DEBUG "sending message to neighbour\n");
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, their_index, &node_prelim_check, sizeof(node_check_neighbours_prelim));
 }

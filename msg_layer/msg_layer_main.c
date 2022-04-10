@@ -30,6 +30,8 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
  */
 #define COMMAND_HELP_TEXT "Placeholder for help text - note it cannot go over the max buffer size"
 
+struct task_struct *node_list_checker_task;
+
 static struct proc_dir_entry *nodes_controller;
 
 int count_parameters (char buffer[COMMAND_BUFFER_SIZE]) {
@@ -207,7 +209,7 @@ static void __exit exit_kmsg(void) {
     #endif
 
 	printk(KERN_INFO "Popcorn messaging layer: stopping timer\n");
-    deinitialise_checker();
+    kthread_stop(node_list_checker_task);
 
     // add more protocols as needed, they will need to be removed when exitting too, they should be included
     // as a header file implementing the pcn_kmsg_transport as an interface
@@ -235,6 +237,16 @@ static void __exit exit_kmsg(void) {
 	printk(KERN_INFO "Popcorn messaging layer has been unloaded\n");
 }
 
+
+void checker(void) {
+    unsigned long sleeptime = 0;
+    while (!kthread_should_stop()) {
+        sleeptime = check_neighbours_checker();
+		msleep(sleeptime);
+	}
+}
+
+
 static int __init init_kmsg(void) {
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
 
@@ -255,12 +267,20 @@ static int __init init_kmsg(void) {
 	 */
 	printk(KERN_INFO "Popcorn messaging layer: initialising peers proc\n");
 	//peers_init();
-
-	printk(KERN_INFO "Popcorn messaging layer: initialising the checker\n");
-    initialise_checker(); //do this before allowing changes
 	
 	printk(KERN_INFO "Popcorn messaging layer: initialising node list controller\n");
 	initialise_node_list_controller(); //allow user to change nodes
+
+
+	printk(KERN_INFO "Popcorn messaging layer: initialising the checker\n");
+
+	node_list_checker_task = kthread_run(handler, node->handle, "node_list_checker");
+	if (IS_ERR(node_list_checker_task)) {
+		printk(KERN_ERR "Cannot create node_list_checker handler, %ld\n", PTR_ERR(tsk));
+	}
+    else {
+        printk(KERN_INFO "Popcorn messaging layer: successfully created the checker task\n");
+    }
 
 
     return 0;

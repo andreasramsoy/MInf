@@ -34,7 +34,5 @@ extern void node_update_protocol(int index, char* protocol);
 extern void node_highest_index(void);
 extern void force_remove(int index);
 extern void node_ping(int index, bool reply);
-extern void initialise_checker(void);
-extern void deinitialise_checker(void);
 
 #endif

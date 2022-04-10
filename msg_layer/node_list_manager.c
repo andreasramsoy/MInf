@@ -67,17 +67,6 @@ int forward_message_to(void) {
     return -1;
 }
 
-void initialise_checker(void) {
-    //call on node list to start periodic task of running prelim checks
-    start_checker();
-}
-EXPORT_SYMBOL(initialise_checker);
-
-void deinitialise_checker(void) {
-    //call on node list to start periodic task of running prelim checks
-    stop_checker();
-}
-EXPORT_SYMBOL(deinitialise_checker);
 
 /**
  * Called in a thread will listen and add nodes to the node list
