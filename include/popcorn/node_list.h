@@ -129,7 +129,6 @@ extern struct message_node* get_node(int index);
 extern void run_full_check(void);
 extern void run_prelim_check(void);
 void send_prelim_check(int their_index);
-void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]);
 extern void force_remove_node(int index);
 extern void check_and_repair_popcorn(void);
 extern struct message_node* create_any_node(struct pcn_kmsg_transport* transport);

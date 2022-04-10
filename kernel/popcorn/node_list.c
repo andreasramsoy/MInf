@@ -42,6 +42,29 @@ DEFINE_SEMAPHORE(update_list_sem);
 #define DEFAULT_TRANSPORT_POINTER transport_list_head->transport_structure //for when there is no transport structure
 #define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
 
+//must run inline to avoid memcpy when running in timer
+#define GET_NODE_LIST_CHECKSUM (checksum) {\
+    int checksum_node_counter;\
+    int checksum_token_counter;\
+    struct message_node* checksum_node;\
+    \
+    for (checksum_token_counter = 0; checksum_token_counter < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; checksum_token_counter++) {\
+        checksum[checksum_token_counter] = 0; //reset all to zero so that XOR starts from zero\
+    }\
+    \
+    for (checksum_node_counter = 0; checksum_node_counter < after_last_node_index; checksum_node_counter++) {\
+        checksum_node = get_node(checksum_node_counter);\
+        printk(KERN_DEBUG "Checking node %d token to the checksum, after last node idx: %d\n", checksum_node_counter, after_last_node_index);\
+        if (checksum_node != NULL) {\
+            printk(KERN_DEBUG "\nXORing node %d\n", checksum_node_counter);\
+            for (checksum_token_counter = 0; checksum_token_counter < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; checksum_token_counter++) {\
+                checksum[j] = checksum[j] ^ (checksum_node->token[j]); //XOR values\
+                printk(KERN_DEBUG "XOR value now: %d\n", checksum[checksum_token_counter]);\
+            }\
+        }\
+    }\
+}
+
 bool registered_on_popcorn_network;
 
 EXPORT_SYMBOL(transport_list_head);
@@ -1535,40 +1558,12 @@ EXPORT_SYMBOL(handle_node_ping_info);
  */
 void send_prelim_check(int their_index) {
     node_check_neighbours_prelim node_prelim_check;
-    char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 
     printk(KERN_DEBUG "send_prelim_check called\n");
 
-    get_node_list_checksum(checksum);
-    memcpy(node_prelim_check.checksum, checksum, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    GET_NODE_LIST_CHECKSUM(node_prelim_check.checksum);
 
 	pcn_kmsg_send(PCN_KMSG_TYPE_NODE_LIST_CHECK_PRELIM, their_index, &node_prelim_check, sizeof(node_check_neighbours_prelim));
-}
-
-/**
- * @brief function to generate the checksum for the node list in a preliminary check
- * 
- */
-void get_node_list_checksum(char checksum[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
-    int i;
-    int j;
-    struct message_node* node;
-
-    for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-        checksum[i] = 0; //reset all to zero so that XOR starts from zero
-    }
-
-    for (i = 0; i < after_last_node_index; i++) {
-        node = get_node(i);
-        printk(KERN_DEBUG "Checking node %d token to the checksum, after last node idx: %d\n", i, after_last_node_index);
-        if (node != NULL) {
-            printk(KERN_DEBUG "\nXORing node %d\n", i);
-            for (j = 0; j < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; j++) {
-                checksum[j] = checksum[j] ^ (node->token[j]); //XOR values
-                printk(KERN_DEBUG "XOR value now: %d\n", checksum[j]);
-            }
-        }
-    }
 }
 
 /**
@@ -1594,7 +1589,7 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
 
     //release the semaphore and message as the rest may take more processing and not related to the message
 
-    get_node_list_checksum(my_checksum);
+    GET_NODE_LIST_CHECKSUM(my_checksum);
     printk(KERN_DEBUG "My token was %s, theirs was %s\n\n", my_checksum, their_checksum);
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         printk(KERN_DEBUG "Token mine, thiers: %d, %d\n", my_checksum[i], their_checksum[i]);
