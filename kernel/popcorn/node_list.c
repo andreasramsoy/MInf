@@ -1097,6 +1097,7 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
                 no_token = false; //just a check to see if any of the token has been set
             }
         }
+        
         if (!no_token){
             memcpy(command.token, get_node(index)->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
             printk(KERN_DEBUG "Token was taken from the node list\n");
