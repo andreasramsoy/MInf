@@ -79,7 +79,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int ret;
     int i;
     bool equals;
-    int number_of_nodes_added = 1; //already added instigator
+    int number_of_nodes_added = 0;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
     printk(KERN_DEBUG "Transport with pointer %p", transport);
