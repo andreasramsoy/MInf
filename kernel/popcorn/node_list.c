@@ -1463,13 +1463,15 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         memcpy(node_list_details.token, random_token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else {
-        no_token = true;
-        for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-            if (node->token[i] != 0) no_token = false; //not a zero token
-        }
-        if (node && !no_token) {
-            printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
-            memcpy(node_list_details.token, node->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+        if (node) {
+            no_token = true;
+            for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+                if (node->token[i] != 0) no_token = false; //not a zero token
+            }
+            if (!no_token) {
+                printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
+                memcpy(node_list_details.token, node->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+            }
         }
         else {
             printk(KERN_DEBUG "There was no node token to be sent\n");
