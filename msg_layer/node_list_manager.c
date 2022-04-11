@@ -79,7 +79,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int ret;
     int i;
     bool equals;
-    int number_of_nodes_added = 1; //already added instigator
+    int number_of_nodes_added = 0; //already added instigator
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
     printk(KERN_DEBUG "Transport with pointer %p", transport);
@@ -134,6 +134,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
                 if (add_node_at_position(node, node_info->info.my_nid, node_info->info.token)) {
                     printk(KERN_DEBUG "Successfully added new node\n");
+                    number_of_nodes_added++;
                 }
                 else {
                     printk(KERN_ERR "Failed to add the new node\n");
@@ -158,13 +159,8 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
             else {
                 printk(KERN_ERR "The TOKEN did NOT match! Cannot add this node!\n");
                 if (node) kfree(node);
+                attempts_left--;
             }
-        }
-        if (node) {
-            number_of_nodes_added++;
-        }
-        else {
-            attempts_left--;
         }
     }
     
