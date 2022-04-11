@@ -132,7 +132,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                     printk(KERN_ERR "Two nodes were trying to be added to the same position! Inconsistant node list!\n");
                     /** TODO: Add some sort of reporting system? */
                 }
-                if (add_node_at_position(node, node_info->info.your_nid, node_info->info.token)) {
+                if (add_node_at_position(node, node_info->info.my_nid, node_info->info.token)) {
                     printk(KERN_DEBUG "Successfully added new node\n");
                     number_of_nodes_added++;
                 }
