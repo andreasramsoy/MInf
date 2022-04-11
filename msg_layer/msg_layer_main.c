@@ -249,7 +249,6 @@ static void __exit exit_kmsg(void) {
 	printk(KERN_INFO "Popcorn messaging layer has been unloaded\n");
 }
 
-
 void checker(void) {
     unsigned long previous_time;
     unsigned long sleeptime = 0;
