@@ -1069,7 +1069,7 @@ EXPORT_SYMBOL(handle_node_list_command);
  */
 void send_node_command_message(int index, enum node_list_command_type command_type, uint32_t address, char* transport_type, int max_connections, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
 	int i;
-    bool equals;
+    bool no_token;
     node_list_command command = {
 		.sender = my_nid,
 		.node_command_type = command_type,
@@ -1080,19 +1080,31 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
     printk(KERN_DEBUG "Sending node command message\n");
 
     strncpy(command.transport, transport_type, TRANSPORT_NAME_MAX_LENGTH); //copy the string as otherwise pointer will be copied instead
-    bool equal = true;
+    no_token = true;
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
         if (random_token[i] != 0) {
-            equal = false; //just a check to see if any of the token has been set
+            no_token = false; //just a check to see if any of the token has been set
         }
     }
-    if (equal) {
+    if (!no_token) {
         printk(KERN_DEBUG "Copied the token: %s\n", random_token);
         memcpy(command.token, random_token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else if (get_node(index)) {
-        memcpy(command.token, get_node(index)->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
-        printk(KERN_DEBUG "Token was taken from the node list\n");
+        no_token = true;
+        for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
+            if (random_token[i] != 0) {
+                no_token = false; //just a check to see if any of the token has been set
+            }
+        }
+        if (!no_token){
+            memcpy(command.token, get_node(index)->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+            printk(KERN_DEBUG "Token was taken from the node list\n");
+        }
+        else {
+            printk(KERN_DEBUG "There was no token\n");
+        }
+        
     }
     else {
         printk(KERN_DEBUG "No token was set\n");
