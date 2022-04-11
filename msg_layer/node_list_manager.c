@@ -192,6 +192,7 @@ void stop_listening_threads(void) {
 EXPORT_SYMBOL(stop_listening_threads);
 
 void force_remove(int index) {
+    node_list_locked = true;
     //function is for debugging and testing the error detection system
     printk(KERN_DEBUG "Force removing node %d\n");
 
@@ -199,6 +200,7 @@ void force_remove(int index) {
 
     strncpy(output_buffer, "0 FORCE_REMOVED_A_NODE", sizeof(output_buffer));
     printk("Finished kicking node\n");
+    node_list_locked = false;
 }
 EXPORT_SYMBOL(force_remove);
 
@@ -253,6 +255,9 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
     int i;
     char name[40];
     char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
+
+
+    node_list_locked = true;
 
     //handle user input
     printk(KERN_DEBUG "node_add called\n");
@@ -402,6 +407,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
 
     snprintf(output_buffer, COMMAND_BUFFER_SIZE, "%d", new_node_index);
     printk(KERN_DEBUG "Done adding node\n");
+    node_list_locked = false;
 }
 EXPORT_SYMBOL(node_add);
 
@@ -418,6 +424,7 @@ void activate_popcorn(char* address_string) {
     uint32_t address = in_aton(address_string);
     printk(KERN_DEBUG "Popcorn network is being activated\n");
 
+    node_list_locked = true;
     if (registered_on_popcorn_network) {
         printk(KERN_ERR "Already a part of a popcorn network - cannot create a new one\n");
         goto failed_to_register;
@@ -460,6 +467,7 @@ void activate_popcorn(char* address_string) {
     registered_on_popcorn_network = true;
     strncpy(output_buffer, "0 REGISTERED NEW POPCORN NETWORK", sizeof(output_buffer));
 
+    node_list_locked = false;
     return;
 
 failed_to_register:
@@ -467,6 +475,8 @@ failed_to_register:
     if (node) {
         kfree(node);
     }
+
+    node_list_locked = false;
     registered_on_popcorn_network = false;
     strncpy(output_buffer, "1 FAILED TO REGISTER NETWORK", sizeof(output_buffer));
 }
@@ -485,6 +495,8 @@ void node_remove(int index) {
     char token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
     printk(KERN_DEBUG "node_remove called\n");
     int max_connections = 1; /** TODO: forward and store this value */
+
+    node_list_locked = true;
     if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         first_node = forward_message_to();
@@ -512,6 +524,8 @@ void node_remove(int index) {
         }
     }
     printk(KERN_DEBUG "Done handling node removal\n");
+
+    node_list_locked = false;
 }
 EXPORT_SYMBOL(node_remove);
 
@@ -553,6 +567,7 @@ EXPORT_SYMBOL(node_get_protocol);
 void node_update_protocol(int index, char* protocol) {
     printk(KERN_DEBUG "node_update_protocol called\n");
     printk(KERN_ERR "node_update_protocol disabled as adding and removing is now propagated through network\n");
+    node_list_locked = true;
     /*if (!get_node(index)) strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     else {
         disable_node(index); //tear down existing connection
@@ -560,6 +575,7 @@ void node_update_protocol(int index, char* protocol) {
         if (enable_node(index)) strncpy(output_buffer, BOOL_TRUE_RETURN_STRING, sizeof(output_buffer));
         else strncpy(output_buffer, BOOL_FALSE_RETURN_STRING, sizeof(output_buffer));
     }*/
+    node_list_locked = false;
 }
 EXPORT_SYMBOL(node_update_protocol);
 

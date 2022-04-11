@@ -35,7 +35,6 @@ DEFINE_SEMAPHORE(node_ping_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
 DEFINE_SEMAPHORE(node_neighbours_check_prelim_sem);
 DEFINE_SEMAPHORE(update_list_sem);
-DEFINE_SEMAPHORE(node_list_locked);
 
 #define DEFAULT_TRANSPORT_POINTER transport_list_head->transport_structure //for when there is no transport structure
 #define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
@@ -61,6 +60,7 @@ DEFINE_SEMAPHORE(node_list_locked);
     }   \
 }
 
+bool node_list_locked;
 bool registered_on_popcorn_network;
 unsigned long time_of_last_change;
 
@@ -812,11 +812,7 @@ EXPORT_SYMBOL(is_myself);
 
 void remove_node(int index) {
     time_of_last_change = jiffies;
-    do {
-        ret = down_interruptible(&node_list_locked);
-    } while (ret);
     remove_node_core(index, true);
-    up(&node_list_locked);
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -1222,10 +1218,6 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
 
     time_of_last_change = jiffies;
 
-    do {
-        ret = down_interruptible(&node_list_locked);
-    } while (ret);
-
     if (get_node(index) != NULL) {
         printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
         return false;
@@ -1279,7 +1271,6 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
     msleep(2000); //wait to allow other devices to catchup
     if (my_nid != index) send_node_list_info(index, token); //verfies to the node that you are from the popcorn network
 
-    up(&node_list_locked);
     return true;
 }
 EXPORT_SYMBOL(add_node_at_position);
@@ -1582,6 +1573,12 @@ int handle_node_check_neighbours_prelim(struct pcn_kmsg_message *msg) {
     up(&node_neighbours_check_prelim_sem);
 	pcn_kmsg_done(msg);
 
+    if (node_list_locked) {
+        printk(KERN_DEBUG "Node list is locked so ignoring check\n");
+        up(&node_neighbours_check_prelim_sem);
+        return 0;
+    }
+
     //release the semaphore and message as the rest may take more processing and not related to the message
 
     GET_NODE_LIST_CHECKSUM(my_checksum);
@@ -1625,6 +1622,14 @@ static int handle_node_check_neighbours(struct pcn_kmsg_message *msg) {
 		ret = down_interruptible(&node_neighbours_check_sem);
 	} while (ret);
     printk(KERN_DEBUG "Penguin 1\n");
+
+
+    if (node_list_locked) {
+        printk(KERN_DEBUG "Node list is locked so ignoring check\n");
+        pcn_kmsg_done(msg);
+        up(&node_neighbours_check_sem);
+        return 0;
+    }
 
     //recieve the message
     node_check_neighbours *info = (node_check_neighbours *)msg;
