@@ -61,6 +61,7 @@ DEFINE_SEMAPHORE(update_list_sem);
 }
 
 bool registered_on_popcorn_network;
+unsigned long time_of_last_change;
 
 EXPORT_SYMBOL(transport_list_head);
 EXPORT_SYMBOL(root_node_list);
