@@ -278,7 +278,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
 
         while (my_nid == -1) {
             printk(KERN_DEBUG "Waiting for instigator node to send info about the node list\n");
-            ssleep(500);
+            msleep(500);
         }
 
         if (root_node_list_info_list == NULL) {

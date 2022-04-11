@@ -1520,7 +1520,7 @@ int handle_node_ping_info(struct pcn_kmsg_message *msg) {
 
     if (info->please_echo > 0) {
         printk(KERN_DEBUG "Replying to ping\n");
-        ssleep(1); //give time to process last sleep
+        msleep(1000); //give time to process last sleep
         send_node_ping_info(msg->header.from_nid, info->please_echo); //always send false in the reply so you only reply once to a message
     }
     else {
