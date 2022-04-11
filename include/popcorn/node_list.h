@@ -124,6 +124,7 @@ extern bool registered_on_popcorn_network;
 extern int number_of_nodes_to_be_added;
 extern char joining_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES];
 extern unsigned long time_of_last_change;
+extern struct semaphore node_list_locked;
 
 void remove_node_core(int index, bool normal_removal);
 extern struct message_node* get_node(int index);

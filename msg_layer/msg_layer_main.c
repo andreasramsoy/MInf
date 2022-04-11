@@ -32,7 +32,6 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 #define COMMAND_HELP_TEXT "Placeholder for help text - note it cannot go over the max buffer size"
 
 struct task_struct *node_list_checker_task;
-bool node_list_locked;
 
 static struct proc_dir_entry *nodes_controller;
 
@@ -58,16 +57,18 @@ void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
     printk(KERN_ERR "NOTE debug mode is on so may not be an error --- \n");
     #endif
     printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
-    printk(KERN_ERR "Note: The node list lock was set to %d, an active lock will prevent changes\n", node_list_locked);
+    printk(KERN_ERR "Note: The node list lock was set to %d, an active lock will prevent changes\n", node_list_locked.count);
     strncpy(output_buffer, "ERROR", COMMAND_BUFFER_SIZE);
 }
 
 void lock_node_list(void) {
-    node_list_locked = true;
+    do {
+        ret = down_interruptible(&node_list_locked);
+    } while (ret);
 }
 
 void unlock_node_list(void) {
-    node_list_locked = false;
+    up(&node_list_locked);
 }
 
 void show_help(void) {
@@ -132,9 +133,9 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             break;
         case 2:
             if (sscanf(buffer, "get %d", &index) == number_of_parameters - 1) node_get(index);
-            else if (!node_list_locked && sscanf(buffer, "activate %s", address) == number_of_parameters - 1) activate_popcorn(address);
-            else if (!node_list_locked && sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
-            else if (!node_list_locked && sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
+            else if (node_list_locked.count > 0 && sscanf(buffer, "activate %s", address) == number_of_parameters - 1) activate_popcorn(address);
+            else if (node_list_locked.count > 0 && sscanf(buffer, "remove %d", &index) == number_of_parameters - 1) node_remove(index);
+            else if (node_list_locked.count > 0 && sscanf(buffer, "update %d %s", &index, protocol) == number_of_parameters - 1) node_update_protocol(index, protocol);
             else if (sscanf(buffer, "check %s", protocol) == number_of_parameters - 1) {
                 if (strncmp(protocol, "full", sizeof(COMMAND_BUFFER_SIZE)) == 0) {
                     full_check();
@@ -144,7 +145,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
                 }
             }
             #ifdef POPCORN_DEBUG_COMMANDS
-            else if (!node_list_locked && sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);
+            else if (node_list_locked.count > 0 && sscanf(buffer, "kick %d", &index) == number_of_parameters - 1) force_remove(index);
             #endif
             //else if (sscanf(buffer, "load %s", file_address) == number_of_parameters - 1) node_load(file_address);
             else parse_error(number_of_parameters, buffer);
@@ -160,7 +161,7 @@ static ssize_t parse_commands(struct file *file, const char __user *usr_buff, si
             #ifdef POPCORN_DEBUG_COMMANDS
             if (sscanf(buffer, "add_no_prop %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections, false);
             #endif
-            if (!node_list_locked && sscanf(buffer, "add %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections, true);
+            if (node_list_locked.count > 0 && sscanf(buffer, "add %s %s %d", address, protocol, &max_number_connections) == number_of_parameters - 1) node_add(address, protocol, max_number_connections, true);
             else parse_error(number_of_parameters, buffer);
             break;
         default:
@@ -254,10 +255,15 @@ static void __exit exit_kmsg(void) {
 void checker(void) {
     unsigned long previous_time;
     unsigned long sleeptime = 0;
+    int ret;
     while (!kthread_should_stop()) {
+        do {
+		    ret = down_interruptible(&node_list_locked);
+        } while (ret);
         sleeptime = check_neighbours_checker();
+        up(&node_list_locked);
         previous_time = time_of_last_change;
-        while (node_list_locked || (previous_time == time_of_last_change && sleeptime > 0)) {
+        while (node_list_locked.count > 0 || (previous_time == time_of_last_change && sleeptime > 0)) {
 		    msleep(CHECKER_SLEEP_TIME);
             if (sleeptime > CHECKER_SLEEP_TIME) {
                 sleeptime = sleeptime - CHECKER_SLEEP_TIME;
@@ -272,8 +278,6 @@ void checker(void) {
 
 static int __init init_kmsg(void) {
 	printk(KERN_INFO "Loading Popcorn messaging layer...\n");
-
-    node_list_locked = false;
 
 	printk(KERN_INFO "Popcorn messaging layer: Adding protocols for messaging layer\n");
     #ifdef POPCORN_SOCK_ON

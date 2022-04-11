@@ -35,6 +35,7 @@ DEFINE_SEMAPHORE(node_ping_info_sem); //binary semaphore
 DEFINE_SEMAPHORE(node_neighbours_check_sem);
 DEFINE_SEMAPHORE(node_neighbours_check_prelim_sem);
 DEFINE_SEMAPHORE(update_list_sem);
+DEFINE_SEMAPHORE(node_list_locked);
 
 #define DEFAULT_TRANSPORT_POINTER transport_list_head->transport_structure //for when there is no transport structure
 #define DEFAULT_TRANSPORT_NAME DEFAULT_TRANSPORT_POINTER->name
@@ -74,6 +75,7 @@ EXPORT_SYMBOL(node_list_info_sem);
 EXPORT_SYMBOL(node_ping_info_sem);
 EXPORT_SYMBOL(node_neighbours_check_sem);
 EXPORT_SYMBOL(time_of_last_change);
+EXPORT_SYMBOL(node_list_locked);
 
 
 
@@ -810,7 +812,11 @@ EXPORT_SYMBOL(is_myself);
 
 void remove_node(int index) {
     time_of_last_change = jiffies;
+    do {
+        ret = down_interruptible(&node_list_locked);
+    } while (ret);
     remove_node_core(index, true);
+    up(&node_list_locked);
 }
 EXPORT_SYMBOL(remove_node);
 
@@ -1216,6 +1222,10 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
 
     time_of_last_change = jiffies;
 
+    do {
+        ret = down_interruptible(&node_list_locked);
+    } while (ret);
+
     if (get_node(index) != NULL) {
         printk(KERN_ERR "Cannot add a node to position %d as a node is already here!", index);
         return false;
@@ -1269,6 +1279,7 @@ bool add_node_at_position(struct message_node* node, int index, char token[NODE_
     msleep(2000); //wait to allow other devices to catchup
     if (my_nid != index) send_node_list_info(index, token); //verfies to the node that you are from the popcorn network
 
+    up(&node_list_locked);
     return true;
 }
 EXPORT_SYMBOL(add_node_at_position);
