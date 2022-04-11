@@ -299,13 +299,13 @@ static int __init init_kmsg(void) {
 
 	printk(KERN_INFO "Popcorn messaging layer: initialising the checker\n");
 
-	// node_list_checker_task = kthread_run(checker, 0, "node_list_checker");
-	// if (IS_ERR(node_list_checker_task)) {
-	// 	printk(KERN_ERR "Cannot create node_list_checker handler, %ld\n", PTR_ERR(node_list_checker_task));
-	// }
-    // else {
-    //     printk(KERN_INFO "Popcorn messaging layer: successfully created the checker task\n");
-    // }
+	node_list_checker_task = kthread_run(checker, 0, "node_list_checker");
+	if (IS_ERR(node_list_checker_task)) {
+		printk(KERN_ERR "Cannot create node_list_checker handler, %ld\n", PTR_ERR(node_list_checker_task));
+	}
+    else {
+        printk(KERN_INFO "Popcorn messaging layer: successfully created the checker task\n");
+    }
 
 
     return 0;
