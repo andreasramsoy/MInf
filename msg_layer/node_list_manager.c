@@ -79,13 +79,15 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
     int ret;
     int i;
     bool equals;
+    int number_of_nodes_added = 0;
     int attempts_left = NODE_LIST_INITAL_TOKEN_ATTEMPTS;
     printk(KERN_DEBUG "Listening for nodes\n");
     printk(KERN_DEBUG "Transport with pointer %p", transport);
     printk(KERN_DEBUG "Listening for transport (1) %s\n", transport->name);
 
-    while (number_of_nodes_to_be_added > 0 && attempts_left > 0) {
-        printk(KERN_DEBUG "Nodes still to be added: %d\n", number_of_nodes_to_be_added);
+    while (number_of_nodes_to_be_added - number_of_nodes_added > 0 && attempts_left > 0) {
+        printk(KERN_DEBUG "Nodes on network: %d\n", number_of_nodes_to_be_added);
+        printk(KERN_DEBUG "Nodes added: %d\n", number_of_nodes_added);
         printk(KERN_DEBUG "Attempts left: %d\n", attempts_left);
         //keep accepting until all are added or no attempts left
         printk(KERN_DEBUG "Listening for transport %s\n", transport->name);
@@ -132,7 +134,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
                 if (add_node_at_position(node, node_info->info.your_nid, node_info->info.token)) {
                     printk(KERN_DEBUG "Successfully added new node\n");
-                    number_of_nodes_to_be_added--;
+                    number_of_nodes_added++;
                 }
                 else {
                     printk(KERN_ERR "Failed to add the new node\n");
@@ -163,7 +165,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
         attempts_left--;
     }
     
-    if (number_of_nodes_to_be_added == 0 && attempts_left > 0) {
+    if (number_of_nodes_to_be_added - number_of_nodes_added == 0 && attempts_left > 0) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
     return 0;
