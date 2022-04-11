@@ -1467,7 +1467,7 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
             if (node->token[i] != 0) no_token = false; //not a zero token
         }
-        if (node && node->token) {
+        if (node && !no_token) {
             printk(KERN_DEBUG "Nodes token was set as: %s\n", node->token);
             memcpy(node_list_details.token, node->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
         }
