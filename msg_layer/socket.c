@@ -290,8 +290,10 @@ static int __show_peers(struct seq_file *seq, void *v)
 	for (i = 0; i < after_last_node_index; i++) 
 	{
 		if (i == my_nid) myself = "*";
+		if (get_node(i)) {
 		seq_printf(seq, "%s %3d  "NIPQUAD_FMT"  %s\n", myself,
 		           i, NIPQUAD(get_node(i)->address), "NODE_IP");
+		}
 		myself = " ";
 	}
 	return 0;
