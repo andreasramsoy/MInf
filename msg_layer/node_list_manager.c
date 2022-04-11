@@ -103,7 +103,7 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
 
             node_info = root_node_list_info_list;
             msleep(100);
-            while (node_info->info.my_address != node->address && node->address != 0) {
+            while (node_info->info.my_address != node->address && (node->address == 0 && node_info->next != NULL)) {
                 printk(KERN_INFO "Recieved message from %d, looking for %d", node_info->info.my_address, node->address);
                 printk(KERN_DEBUG "Looping through connections to find node\n");
                 up(&node_list_info_sem);
