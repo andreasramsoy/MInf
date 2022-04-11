@@ -1416,7 +1416,7 @@ EXPORT_SYMBOL(add_node);
 void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES]) {
     int i;
     int node_count = 0;
-    bool equals;
+    bool no_token;
     struct message_node* node;
     uint32_t their_address;
 
@@ -1455,11 +1455,11 @@ void send_node_list_info(int their_index, char random_token[NODE_LIST_INFO_RANDO
         .number_of_nodes = node_count,
     };
 
-    equals = true;
+    no_token = true;
     for (i = 0; i < NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES; i++) {
-        if (random_token[i] != 0) equals = false; //not a zero token
+        if (random_token[i] != 0) no_token = false; //not a zero token
     }
-    if (equals) {
+    if (no_token) {
         memcpy(node_list_details.token, random_token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //use size of random token as this can be ""
     }
     else if (node && node->token) {
