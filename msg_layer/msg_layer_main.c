@@ -32,7 +32,6 @@ MODULE_DESCRIPTION("Messaging layer of the popcorn system");
 #define COMMAND_HELP_TEXT "Placeholder for help text - note it cannot go over the max buffer size"
 
 struct task_struct *node_list_checker_task;
-bool node_list_locked;
 
 static struct proc_dir_entry *nodes_controller;
 
