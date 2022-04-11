@@ -58,7 +58,7 @@ void parse_error(int number_of_parameters, char buffer[COMMAND_BUFFER_SIZE]) {
     printk(KERN_ERR "NOTE debug mode is on so may not be an error --- \n");
     #endif
     printk(KERN_ERR "Parse error: %d parameters, string is \"%s\"\n", number_of_parameters, buffer);
-    printk(KERN_ERR "Note: The node list lock was set to %d, an active lock will prevent changes\n", node_list_lock);
+    printk(KERN_ERR "Note: The node list lock was set to %d, an active lock will prevent changes\n", node_list_locked);
     strncpy(output_buffer, "ERROR", COMMAND_BUFFER_SIZE);
 }
 
