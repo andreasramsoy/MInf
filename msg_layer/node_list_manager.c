@@ -134,7 +134,6 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 }
                 if (add_node_at_position(node, node_info->info.my_nid, node_info->info.token)) {
                     printk(KERN_DEBUG "Successfully added new node\n");
-                    number_of_nodes_added++;
                 }
                 else {
                     printk(KERN_ERR "Failed to add the new node\n");
@@ -161,11 +160,15 @@ int listen_for_nodes(struct pcn_kmsg_transport* transport) {
                 if (node) kfree(node);
             }
         }
-
-        attempts_left--;
+        if (node) {
+            number_of_nodes_added++;
+        }
+        else {
+            attempts_left--;
+        }
     }
     
-    if (number_of_nodes_to_be_added - number_of_nodes_added == 0 && attempts_left > 0) {
+    if (number_of_nodes_to_be_added - number_of_nodes_added <= 0 && attempts_left > 0) {
         registered_on_popcorn_network = true; //fully integrated into system now with all nodes connected
     }
     return 0;
