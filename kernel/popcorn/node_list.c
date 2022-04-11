@@ -1815,7 +1815,7 @@ static int handle_node_list_info(struct pcn_kmsg_message *msg) {
         memcpy(joining_token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
     }
 
-    if (get_node(msg->header.from_nid)) memcpy(get_node(msg->header.from_nid), info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
+    if (get_node(msg->header.from_nid)) memcpy(get_node(msg->header.from_nid)->token, info->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
 
     printk(KERN_DEBUG "Message is from: %d\n", info->my_nid);
     printk(KERN_DEBUG "States that number of nodes in list is: %d\n", info->number_of_nodes);
