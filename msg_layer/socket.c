@@ -470,7 +470,7 @@ int __sock_accept_client(struct message_node* node)
 
 		
 		if (!first_connection) node->address = addr.sin_addr.s_addr;
-	} while (node->address != addr.sin_addr.s_addr && node->address != NULL);
+	} while (node->address != addr.sin_addr.s_addr);
 
 	printk(KERN_DEBUG "Finished attempting to connect (or has connected)\n");
 
