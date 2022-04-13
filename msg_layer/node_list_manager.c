@@ -286,7 +286,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
 
         while (my_nid == -1) {
             printk(KERN_DEBUG "Waiting for instigator node to send info about the node list\n");
-            msleep(5000);
+            msleep(100);
         }
 
         if (root_node_list_info_list == NULL) {
@@ -340,7 +340,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             //transports->listener = kthread_run((listen_for_nodes)(transports->transport_structure), transports->transport_structure, name);
             listen_for_nodes(transports->transport_structure);
             
-            msleep(1000);
+            //msleep(1000);
             //kthread_stop(transports->listener);
             printk(KERN_DEBUG "Listener request made\n");
 
