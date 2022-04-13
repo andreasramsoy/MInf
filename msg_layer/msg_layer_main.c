@@ -254,8 +254,8 @@ void checker(void) {
     unsigned long sleeptime = 0;
     while (!kthread_should_stop()) {
         sleeptime = check_neighbours_checker();
-        //previous_time = time_of_last_change;
-        while (node_list_locked || sleeptime > 0) {
+        previous_time = time_of_last_change;
+        while (node_list_locked || sleeptime > 0 || previous_time != time_of_last_change) {
 		    msleep(CHECKER_SLEEP_TIME);
             if (sleeptime > CHECKER_SLEEP_TIME) {
                 sleeptime = sleeptime - CHECKER_SLEEP_TIME;
