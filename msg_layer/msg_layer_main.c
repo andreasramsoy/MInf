@@ -253,9 +253,11 @@ void checker(void) {
     unsigned long previous_time;
     unsigned long sleeptime = 0;
     while (!kthread_should_stop()) {
+        printk(KERN_DEBUG "outer loop\n");
         sleeptime = check_neighbours_checker();
-        previous_time = time_of_last_change;
+        //previous_time = time_of_last_change;
         while (node_list_locked || sleeptime > 0) {
+            printk(KERN_DEBUG "in sub loop\n");
 		    msleep(CHECKER_SLEEP_TIME);
             if (sleeptime > CHECKER_SLEEP_TIME) {
                 sleeptime = sleeptime - CHECKER_SLEEP_TIME;

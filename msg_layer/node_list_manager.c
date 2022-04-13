@@ -390,6 +390,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             node = create_node(address, protocol);
             if (!node) {
                 printk(KERN_ERR "Failed to create new node\n");
+                node_list_locked = false;
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
             get_random_bytes(token, NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES); //random token that will be passed across popcorn so only real nodes can join
@@ -397,6 +398,7 @@ void node_add(char* address_string, char* protocol_string, int max_connections, 
             if (new_node_index == -1) {
                 printk(KERN_ERR "Failed to add the new node\n");
                 kfree(node);
+                node_list_locked = false;
                 return; //couldn't manage so don't forward as other nodes will probably fail too
             }
 
