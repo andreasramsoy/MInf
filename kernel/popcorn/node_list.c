@@ -1097,7 +1097,7 @@ void send_node_command_message(int index, enum node_list_command_type command_ty
                 no_token = false; //just a check to see if any of the token has been set
             }
         }
-        
+
         if (!no_token){
             memcpy(command.token, get_node(index)->token, sizeof(char) * NODE_LIST_INFO_RANDOM_TOKEN_SIZE_BYTES);
             printk(KERN_DEBUG "Token was taken from the node list\n");
@@ -1208,7 +1208,7 @@ unsigned long check_neighbours_checker(void) {
         next_timer = CHECKER_TIMER_MIN_TIME_INTERVAL_MSECS;
     }
 
-    return jiffies + msecs_to_jiffies(next_timer);
+    return msecs_to_jiffies(next_timer);
 }
 EXPORT_SYMBOL(check_neighbours_checker);
 
